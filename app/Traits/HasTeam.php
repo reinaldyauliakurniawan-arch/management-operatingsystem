@@ -2,18 +2,18 @@
 
 namespace App\Traits;
 
-use App\Scopes\OrganizationScope;
+use App\Scopes\TeamScope;
 use Illuminate\Support\Facades\Auth;
 
-trait HasOrganization
+trait HasTeam
 {
-    protected static function bootHasOrganization()
+    protected static function bootHasTeam()
     {
-        static::addGlobalScope(new OrganizationScope);
+        static::addGlobalScope(new TeamScope);
 
         static::creating(function ($model) {
-            if (! $model->organization_id) {
-                $model->organization_id = session('active_organization_id');
+            if (! $model->team_id) {
+                $model->team_id = session('active_team_id');
             }
 
             if (Auth::check()) {

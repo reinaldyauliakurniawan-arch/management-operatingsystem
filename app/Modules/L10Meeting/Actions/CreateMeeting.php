@@ -10,7 +10,7 @@ class CreateMeeting
     public function execute(array $data): Meeting
     {
         $meeting = Meeting::create([
-            'organization_id' => Auth::user()->organization_id,
+            'team_id' => Auth::user()->team_id,
             'type' => $data['type'] ?? 'L10',
             'started_at' => now(),
         ]);

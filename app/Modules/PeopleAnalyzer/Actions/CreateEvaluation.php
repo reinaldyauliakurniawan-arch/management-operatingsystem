@@ -11,7 +11,7 @@ class CreateEvaluation
     {
         return Evaluation::updateOrCreate(
             [
-                'organization_id' => Auth::user()->organization_id,
+                'team_id' => Auth::user()->team_id,
                 'user_id' => $data['user_id'],
             ],
             $data

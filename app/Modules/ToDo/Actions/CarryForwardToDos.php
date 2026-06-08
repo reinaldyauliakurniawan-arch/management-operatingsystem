@@ -10,7 +10,7 @@ class CarryForwardToDos
 {
     public function execute(): int
     {
-        $incomplete = ToDo::where('organization_id', Auth::user()->organization_id)
+        $incomplete = ToDo::where('team_id', Auth::user()->team_id)
             ->where('is_completed', false)
             ->where('due_date', '<', Carbon::today())
             ->get();

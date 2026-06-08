@@ -34,6 +34,14 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                'userTeams' => $request->user() ? $request->user()->teams()->get()->map(function($team) {
+                    return [
+                        'id' => $team->id,
+                        'name' => $team->name,
+                        'role' => $team->pivot->role,
+                    ];
+                }) : [],
+                'activeTeamId' => session('active_team_id'),
             ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),

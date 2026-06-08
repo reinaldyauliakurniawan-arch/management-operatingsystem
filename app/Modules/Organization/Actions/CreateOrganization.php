@@ -3,6 +3,8 @@
 namespace App\Modules\Organization\Actions;
 
 use App\Models\Organization;
+use App\Modules\Teams\Models\Team;
+use App\Modules\Teams\Models\TeamMember;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -16,9 +18,23 @@ class CreateOrganization
             'created_by' => Auth::id(),
         ]);
 
-        Auth::user()->update([
+        // Create initial leadership team
+        $team = Team::create([
             'organization_id' => $organization->id,
-            'role' => 'admin',
+            'name' => 'Leadership Team',
+            'type' => 'leadership',
+        ]);
+
+        TeamMember::create([
+            'team_id' => $team->id,
+            'user_id' => Auth::id(),
+            'role' => 'leader',
+            'is_integrator' => true,
+        ]);
+
+        session([
+            'active_team_id' => $team->id,
+            'active_organization_id' => $organization->id,
         ]);
 
         return $organization;

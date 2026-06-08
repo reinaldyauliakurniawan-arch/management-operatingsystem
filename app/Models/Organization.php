@@ -4,15 +4,33 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\HasOrganization;
+use App\Modules\Teams\Models\Team;
 
 class Organization extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasOrganization;
 
-    protected $fillable = ['name', 'slug', 'created_by', 'updated_by'];
+    protected $fillable = ['name', 'slug', 'parent_org_id', 'created_by', 'updated_by'];
 
     public function users()
     {
-        return $this->hasMany(User::class);
+        // Users are now linked via teams
+        return $this->hasManyThrough(User::class, Team::class);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Organization::class, 'parent_org_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Organization::class, 'parent_org_id');
+    }
+
+    public function teams()
+    {
+        return $this->hasMany(Team::class);
     }
 }

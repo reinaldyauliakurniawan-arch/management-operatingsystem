@@ -16,7 +16,7 @@ class PeopleAnalyzerController extends Controller
 {
     public function index()
     {
-        $vto = VTOPlan::where('organization_id', Auth::user()->organization_id)->first();
+        $vto = VTOPlan::where('team_id', Auth::user()->team_id)->first();
         $coreValues = $vto->core_values ?? [];
 
         $evaluations = Evaluation::with('user')->get();

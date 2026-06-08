@@ -15,7 +15,7 @@ class VTOController extends Controller
     public function index()
     {
         $vto = VTOPlan::firstOrCreate([
-            'organization_id' => Auth::user()->organization_id,
+            'team_id' => Auth::user()->team_id,
         ]);
 
         return Inertia::render('VTO/Index', [

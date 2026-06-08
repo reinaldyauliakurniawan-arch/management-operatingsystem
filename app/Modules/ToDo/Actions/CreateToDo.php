@@ -10,7 +10,7 @@ class CreateToDo
     public function execute(array $data): ToDo
     {
         return ToDo::create(array_merge($data, [
-            'organization_id' => Auth::user()->organization_id,
+            'team_id' => Auth::user()->team_id,
         ]));
     }
 }

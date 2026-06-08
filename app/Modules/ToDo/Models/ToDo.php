@@ -2,19 +2,19 @@
 
 namespace App\Modules\ToDo\Models;
 
-use App\Traits\HasOrganization;
+use App\Traits\HasTeam;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 
 class ToDo extends Model
 {
-    use SoftDeletes, HasOrganization;
+    use SoftDeletes, HasTeam;
 
     protected $table = 'to_dos';
 
     protected $fillable = [
-        'organization_id',
+        'team_id',
         'title',
         'owner_id',
         'due_date',

@@ -16,8 +16,19 @@ class EnsureHasOrganization
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && !Auth::user()->organization_id && !$request->routeIs('organization.*') && !$request->routeIs('logout')) {
+        if (Auth::check() && !$request->user()->teams()->exists() && !$request->routeIs('organization.*') && !$request->routeIs('logout')) {
             return redirect()->route('organization.create');
+        }
+
+        // Auto-set active team if not set
+        if (Auth::check() && !session('active_team_id')) {
+            $team = $request->user()->teams()->first();
+            if ($team) {
+                session([
+                    'active_team_id' => $team->id,
+                    'active_organization_id' => $team->organization_id,
+                ]);
+            }
         }
 
         return $next($request);

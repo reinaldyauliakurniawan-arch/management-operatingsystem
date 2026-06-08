@@ -62,4 +62,3 @@ export default function Create({ users }: { users: any[] }) {
         </AuthenticatedLayout>
     );
 }
-

@@ -2,18 +2,18 @@
 
 namespace App\Modules\VTO\Models;
 
-use App\Traits\HasOrganization;
+use App\Traits\HasTeam;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class VTOPlan extends Model
 {
-    use SoftDeletes, HasOrganization;
+    use SoftDeletes, HasTeam;
 
     protected $table = 'vto_plans';
 
     protected $fillable = [
-        'organization_id',
+        'team_id',
         'core_values',
         'core_focus_purpose',
         'core_focus_niche',

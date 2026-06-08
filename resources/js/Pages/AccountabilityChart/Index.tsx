@@ -85,12 +85,12 @@ export default function Index({ seats, users }: any) {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {seats.data.map((seat: any) => (
-                            <Card className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" key={seat.id}>
-                                <Card className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass"Header>
-                                    <Card className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass"Title>{seat.title}</CardTitle>
+                            <Card key={seat.id}>
+                                <CardHeader>
+                                    <CardTitle>{seat.title}</CardTitle>
                                     <p className="text-sm text-muted-foreground">{seat.user?.name || 'Vacant'}</p>
                                 </CardHeader>
-                                <Card className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass"Content>
+                                <CardContent>
                                     <ul className="text-sm list-disc pl-4 space-y-1">
                                         {seat.responsibilities.map((r: string, idx: number) => (
                                             <li key={idx}>{r}</li>
@@ -108,4 +108,3 @@ export default function Index({ seats, users }: any) {
         </AuthenticatedLayout>
     );
 }
-

@@ -160,4 +160,3 @@ export default function Index({ rocks, users }: { rocks: { data: Rock[] }, users
         </AuthenticatedLayout>
     );
 }
-

@@ -30,6 +30,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     if (file_exists(base_path('app/Modules/Organization/routes.php'))) {
         require base_path('app/Modules/Organization/routes.php');
     }
+    if (file_exists(base_path('app/Modules/Teams/routes.php'))) {
+        require base_path('app/Modules/Teams/routes.php');
+    }
     if (file_exists(base_path('app/Modules/VTO/routes.php'))) {
         require base_path('app/Modules/VTO/routes.php');
     }

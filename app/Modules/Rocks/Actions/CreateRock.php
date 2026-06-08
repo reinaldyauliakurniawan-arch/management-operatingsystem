@@ -10,7 +10,7 @@ class CreateRock
     public function execute(array $data): Rock
     {
         return Rock::create(array_merge($data, [
-            'organization_id' => Auth::user()->organization_id,
+            'team_id' => Auth::user()->team_id,
         ]));
     }
 }

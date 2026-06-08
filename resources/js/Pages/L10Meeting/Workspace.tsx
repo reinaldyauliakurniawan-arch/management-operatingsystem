@@ -160,4 +160,3 @@ export default function Workspace({ meeting, rocks, metrics, todos, issues }: an
         </AuthenticatedLayout>
     );
 }
-

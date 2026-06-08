@@ -2,17 +2,17 @@
 
 namespace App\Modules\Rocks\Models;
 
-use App\Traits\HasOrganization;
+use App\Traits\HasTeam;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 
 class Rock extends Model
 {
-    use SoftDeletes, HasOrganization;
+    use SoftDeletes, HasTeam;
 
     protected $fillable = [
-        'organization_id',
+        'team_id',
         'title',
         'description',
         'owner_id',

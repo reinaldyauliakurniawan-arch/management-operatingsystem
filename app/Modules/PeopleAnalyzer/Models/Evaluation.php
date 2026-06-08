@@ -2,18 +2,19 @@
 
 namespace App\Modules\PeopleAnalyzer\Models;
 
-use App\Traits\HasOrganization;
+use App\Traits\HasTeam;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 
 class Evaluation extends Model
 {
-    use SoftDeletes, HasOrganization;
+    use SoftDeletes, HasTeam;
 
     protected $fillable = [
-        'organization_id',
-        'user_id',
+        'team_id',
+        'evaluatee_id',
+        'evaluator_id',
         'core_value_ratings',
         'gets_it',
         'wants_it',
@@ -26,8 +27,13 @@ class Evaluation extends Model
         'core_value_ratings' => 'array',
     ];
 
-    public function user()
+    public function evaluatee()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'evaluatee_id');
+    }
+
+    public function evaluator()
+    {
+        return $this->belongsTo(User::class, 'evaluator_id');
     }
 }

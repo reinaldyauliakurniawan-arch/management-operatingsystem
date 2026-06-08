@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import TeamSwitcher from '@/Components/TeamSwitcher';
 import {
     LayoutDashboard,
     Target,
@@ -30,6 +31,11 @@ export default function Sidebar() {
             <div className="flex h-16 shrink-0 items-center">
                 <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">Harmonic System</span>
             </div>
+
+            <div className="px-2">
+                <TeamSwitcher />
+            </div>
+
             <nav className="flex flex-1 flex-col">
                 <ul role="list" className="flex flex-1 flex-col gap-y-7">
                     <li>
