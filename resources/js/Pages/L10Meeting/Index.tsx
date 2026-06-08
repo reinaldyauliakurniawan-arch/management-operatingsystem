@@ -52,3 +52,4 @@ export default function Index({ meetings }: any) {
         </AuthenticatedLayout>
     );
 }
+

@@ -128,3 +128,4 @@ export default function Index({ issues, users }: { issues: { data: Issue[] }, us
         </AuthenticatedLayout>
     );
 }
+

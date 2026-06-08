@@ -150,3 +150,4 @@ export default function VTOIndex({ vto }: { vto: { data: VTOData } }) {
         </AuthenticatedLayout>
     );
 }
+

@@ -108,3 +108,4 @@ export default function Index({ seats, users }: any) {
         </AuthenticatedLayout>
     );
 }
+

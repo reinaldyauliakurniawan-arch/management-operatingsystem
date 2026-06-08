@@ -131,3 +131,4 @@ export default function Index({ todos, users }: { todos: { data: ToDo[] }, users
         </AuthenticatedLayout>
     );
 }
+

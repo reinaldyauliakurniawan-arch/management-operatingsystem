@@ -144,3 +144,4 @@ export default function Index({ metrics, users, weeks }: { metrics: { data: Metr
         </AuthenticatedLayout>
     );
 }
+
