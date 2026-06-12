@@ -29,6 +29,7 @@ function DropdownMenuContent({
     return (
         <MenuPrimitive.Portal>
             <MenuPrimitive.Positioner>
+                {/* @ts-expect-error - base-ui type mismatch between Positioner and Popup state */}
                 <MenuPrimitive.Popup
                     data-slot="dropdown-menu-content"
                     className={cn(

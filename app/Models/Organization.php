@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\HasOrganization;
 use App\Modules\Teams\Models\Team;
 
 class Organization extends Model
 {
-    use SoftDeletes, HasOrganization;
+    use SoftDeletes;
 
     protected $fillable = ['name', 'slug', 'parent_org_id', 'created_by', 'updated_by'];
 

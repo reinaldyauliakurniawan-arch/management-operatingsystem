@@ -1,25 +1,31 @@
-import { useState } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
-import { Label } from '@/Components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/Components/ui/dialog';
-import { Textarea } from '@/Components/ui/textarea';
+import { useState } from "react";
+import { Head, useForm, router } from "@inertiajs/react";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/Components/ui/dialog";
+import { Textarea } from "@/Components/ui/textarea";
 
 export default function Index({ seats, users }: any) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const { data, setData, post, processing, reset } = useForm({
-        title: '',
-        user_id: '',
-        parent_id: '',
+        title: "",
+        user_id: "",
+        parent_id: "",
         responsibilities: [] as string[],
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('accountability.store'), {
+        post(route("accountability.store"), {
             onSuccess: () => {
                 setIsCreateOpen(false);
                 reset();
@@ -29,35 +35,60 @@ export default function Index({ seats, users }: any) {
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">Accountability Chart</h2>}
+            header={
+                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                    Accountability Chart
+                </h2>
+            }
         >
             <Head title="Accountability Chart" />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
                     <div className="flex justify-end">
-                        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                            <DialogTrigger asChild>
-                                <Button>Add New Seat</Button>
-                            </DialogTrigger>
+                        <Dialog
+                            open={isCreateOpen}
+                            onOpenChange={setIsCreateOpen}
+                        >
+                            <DialogTrigger
+                                render={<Button>Add New Seat</Button>}
+                            />
                             <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>Add Seat</DialogTitle>
                                 </DialogHeader>
-                                <form onSubmit={handleSubmit} className="space-y-4">
+                                <form
+                                    onSubmit={handleSubmit}
+                                    className="space-y-4"
+                                >
                                     <div>
                                         <Label>Title</Label>
-                                        <Input value={data.title} onChange={e => setData('title', e.target.value)} required />
+                                        <Input
+                                            value={data.title}
+                                            onChange={(e) =>
+                                                setData("title", e.target.value)
+                                            }
+                                            required
+                                        />
                                     </div>
                                     <div>
                                         <Label>Person</Label>
                                         <select
                                             className="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md"
                                             value={data.user_id}
-                                            onChange={e => setData('user_id', e.target.value)}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "user_id",
+                                                    e.target.value,
+                                                )
+                                            }
                                         >
                                             <option value="">Vacant</option>
-                                            {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                                            {users.map((u: any) => (
+                                                <option key={u.id} value={u.id}>
+                                                    {u.name}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                     <div>
@@ -65,19 +96,43 @@ export default function Index({ seats, users }: any) {
                                         <select
                                             className="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md"
                                             value={data.parent_id}
-                                            onChange={e => setData('parent_id', e.target.value)}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "parent_id",
+                                                    e.target.value,
+                                                )
+                                            }
                                         >
-                                            <option value="">None (Top Level)</option>
-                                            {seats.data.map((s: any) => <option key={s.id} value={s.id}>{s.title}</option>)}
+                                            <option value="">
+                                                None (Top Level)
+                                            </option>
+                                            {seats.data.map((s: any) => (
+                                                <option key={s.id} value={s.id}>
+                                                    {s.title}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                     <div>
-                                        <Label>Responsibilities (One per line)</Label>
+                                        <Label>
+                                            Responsibilities (One per line)
+                                        </Label>
                                         <Textarea
-                                            onChange={e => setData('responsibilities', e.target.value.split('\n'))}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "responsibilities",
+                                                    e.target.value.split("\n"),
+                                                )
+                                            }
                                         />
                                     </div>
-                                    <Button type="submit" disabled={processing} className="w-full">Save Seat</Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={processing}
+                                        className="w-full"
+                                    >
+                                        Save Seat
+                                    </Button>
                                 </form>
                             </DialogContent>
                         </Dialog>
@@ -88,16 +143,33 @@ export default function Index({ seats, users }: any) {
                             <Card key={seat.id}>
                                 <CardHeader>
                                     <CardTitle>{seat.title}</CardTitle>
-                                    <p className="text-sm text-muted-foreground">{seat.user?.name || 'Vacant'}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {seat.user?.name || "Vacant"}
+                                    </p>
                                 </CardHeader>
                                 <CardContent>
                                     <ul className="text-sm list-disc pl-4 space-y-1">
-                                        {seat.responsibilities.map((r: string, idx: number) => (
-                                            <li key={idx}>{r}</li>
-                                        ))}
+                                        {seat.responsibilities.map(
+                                            (r: string, idx: number) => (
+                                                <li key={idx}>{r}</li>
+                                            ),
+                                        )}
                                     </ul>
                                     <div className="mt-4 flex justify-end">
-                                        <Button variant="ghost" size="sm" onClick={() => router.delete(route('accountability.destroy', seat.id))}>Delete</Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                                router.delete(
+                                                    route(
+                                                        "accountability.destroy",
+                                                        seat.id,
+                                                    ),
+                                                )
+                                            }
+                                        >
+                                            Delete
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>

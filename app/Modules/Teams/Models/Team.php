@@ -13,6 +13,7 @@ class Team extends Model
     use SoftDeletes, HasOrganization;
 
     protected $fillable = [
+        'organization_id',
         'team_id',
         'name',
         'type',
