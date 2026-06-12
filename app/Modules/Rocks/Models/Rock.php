@@ -18,6 +18,7 @@ class Rock extends Model
         'owner_id',
         'quarter',
         'year',
+        'due_date',
         'status',
         'created_by',
         'updated_by',

@@ -29,20 +29,31 @@ class LeadershipAssessmentController extends Controller
 
         $cycles = AssessmentCycle::where('team_id', $teamId)->latest()->get();
 
-        // Cycles where current user is assessor dan belum submit semua
+        // Cycles where current user is assessor (ada di assignments sebagai non-assessee)
+        // dan belum submit response untuk setidaknya satu assessee
         $pendingAssessments = AssessmentCycle::where('team_id', $teamId)
             ->where('status', 'open')
-            ->whereHas('assignments', fn($q) => $q->where('user_id', '!=', $userId))
+            ->with('assignments')
             ->get()
             ->filter(function ($cycle) use ($userId) {
-                $assigning = $cycle->assignments->where('user_id', '!=', $userId);
-                foreach ($assigning as $assignment) {
-                    $submitted = AssessmentResponse::where('cycle_id', $cycle->id)
+                // Ambil semua assessee di cycle ini (user yang dinilai, bukan current user)
+                $assesseeIds = $cycle->assignments
+                    ->pluck('user_id')
+                    ->filter(fn($id) => $id !== $userId)
+                    ->values();
+
+                if ($assesseeIds->isEmpty()) return false;
+
+                // Cek apakah ada assessee yang belum di-submit oleh current user
+                foreach ($assesseeIds as $assesseeId) {
+                    $alreadySubmitted = AssessmentResponse::where('cycle_id', $cycle->id)
                         ->where('assessor_id', $userId)
-                        ->where('assessee_id', $assignment->user_id)
-                        ->count();
-                    if ($submitted === 0) return true;
+                        ->where('assessee_id', $assesseeId)
+                        ->exists();
+
+                    if (!$alreadySubmitted) return true;
                 }
+
                 return false;
             });
 
