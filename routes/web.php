@@ -14,7 +14,9 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', \App\Http\Controllers\DashboardController::class)->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', \App\Http\Controllers\DashboardController::class)
+    ->middleware(['auth', 'verified', \App\Http\Middleware\EnsureHasOrganization::class])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -24,7 +26,7 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__.'/auth.php';
 
-Route::middleware(['web', 'auth'])->group(function () {
+Route::middleware(['web', 'auth', \App\Http\Middleware\EnsureHasOrganization::class])->group(function () {
     if (file_exists(base_path('app/Modules/Organization/routes.php'))) {
         require base_path('app/Modules/Organization/routes.php');
     }

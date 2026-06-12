@@ -15,13 +15,18 @@ class VTOController extends Controller
     public function index()
     {
         $teamId = session('active_team_id');
+
+        // withoutGlobalScopes supaya firstOrCreate tidak terkena TeamScope
+        // saat team_id di session belum ter-resolve dengan benar
         $vto = VTOPlan::withoutGlobalScopes()->firstOrCreate(
             ['team_id' => $teamId],
-            ['team_id' => $teamId]
+            ['team_id' => $teamId, 'created_by' => auth()->id()]
         );
 
         return Inertia::render('VTO/Index', [
-            'vto' => new VTOResource($vto),
+            'vto'     => new VTOResource($vto),
+            'canEdit' => auth()->user()->is_org_admin
+                         || auth()->user()->teamMemberships()->where('team_id', $teamId)->value('role') === 'leader',
         ]);
     }
 
@@ -37,6 +42,6 @@ class VTOController extends Controller
 
         $updateVTO->execute($request->validated());
 
-        return back()->with('message', 'VTO updated successfully');
+        return back()->with('message', 'VTO diperbarui.');
     }
 }

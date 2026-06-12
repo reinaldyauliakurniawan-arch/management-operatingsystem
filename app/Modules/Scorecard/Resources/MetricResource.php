@@ -10,14 +10,15 @@ class MetricResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'title' => $this->title,
-            'owner' => [
-                'id' => $this->owner->id,
+            'id'                  => $this->id,
+            'title'               => $this->title,
+            'owner'               => [
+                'id'   => $this->owner->id,
                 'name' => $this->owner->name,
             ],
-            'goal_value' => $this->goal_value,
+            'goal_value'          => $this->goal_value,
             'comparison_operator' => $this->comparison_operator,
+            'frequency'           => $this->frequency ?? 'weekly',
             'scores' => $this->scores->map(fn($s) => [
                 'week_start_date' => $s->week_start_date->format('Y-m-d'),
                 'actual_value' => $s->actual_value,

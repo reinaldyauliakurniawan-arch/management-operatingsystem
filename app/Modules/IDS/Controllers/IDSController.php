@@ -28,16 +28,20 @@ class IDSController extends Controller
 
     public function store(Request $request, CreateIssue $createIssue)
     {
+        $teamId = session('active_team_id');
+
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'priority' => 'required|integer',
-            'owner_id' => 'nullable|exists:users,id',
+            'priority'    => 'nullable|integer|min:0|max:10',
+            'owner_id'    => 'nullable|exists:users,id',
         ]);
 
+        $validated['team_id']    = $teamId;
+        $validated['priority']   = $validated['priority'] ?? 0;
         $createIssue->execute($validated);
 
-        return back()->with('message', 'Issue created');
+        return back()->with('message', 'Issue dibuat.');
     }
 
     public function update(Request $request, Issue $issue)

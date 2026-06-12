@@ -14,24 +14,45 @@ class EventController extends Controller
 {
     public function index()
     {
-        $teamId = session('active_team_id');
+        $teamId  = session('active_team_id');
+        $userId  = Auth::id();
+        $role    = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $isLeader = $role === 'leader';
 
-        $events = Event::with('attendances')
-            ->where('team_id', $teamId)
-            ->orderBy('event_date', 'desc')
-            ->get()
-            ->map(function ($event) {
-                $event->attended_count = $event->attendances->where('attended', true)->count();
-                return $event;
+        $eventsQuery = Event::with(['attendances' => fn($q) => $q->where('user_id', $userId)])
+            ->where('team_id', $teamId);
+
+        // Non-leader hanya lihat event yang di-assign ke role mereka atau ke semua
+        if (!$isLeader) {
+            $eventsQuery->where(function ($q) use ($role) {
+                $q->whereNull('assigned_roles')
+                  ->orWhereJsonContains('assigned_roles', $role);
             });
+        }
 
-        $users = $teamId
+        $events = $eventsQuery->orderBy('event_date', 'desc')->get()->map(function ($event) use ($userId, $isLeader) {
+            $myAttendance = $event->attendances->first();
+            return [
+                'id'             => $event->id,
+                'name'           => $event->name,
+                'type'           => $event->type,
+                'event_date'     => $event->event_date->format('Y-m-d'),
+                'description'    => $event->description,
+                'assigned_roles' => $event->assigned_roles,
+                'attended_count' => $isLeader ? $event->attendances->where('attended', true)->count() : null,
+                'my_attended'    => $myAttendance?->attended ?? false,
+                'is_past'        => $event->event_date->isPast(),
+            ];
+        });
+
+        $users = $isLeader && $teamId
             ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
             : collect();
 
         return Inertia::render('Event/Index', [
-            'events' => $events,
-            'users'  => $users,
+            'events'   => $events,
+            'users'    => $users,
+            'isLeader' => $isLeader,
         ]);
     }
 

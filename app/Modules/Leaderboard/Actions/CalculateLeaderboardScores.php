@@ -120,12 +120,34 @@ class CalculateLeaderboardScores
 
     private function eventsScore(int $userId, int $teamId, float $max): float
     {
-        $totalEvents = Event::withoutGlobalScopes()->where('team_id', $teamId)->count();
+        // Ambil role user di team ini
+        $role = \App\Modules\Teams\Models\TeamMember::where('team_id', $teamId)
+            ->where('user_id', $userId)
+            ->value('role');
+
+        // Hitung total event yang relevan untuk role ini
+        $totalEvents = Event::withoutGlobalScopes()
+            ->where('team_id', $teamId)
+            ->where(function ($q) use ($role) {
+                $q->whereNull('assigned_roles')
+                  ->orWhereJsonContains('assigned_roles', $role);
+            })
+            ->count();
+
         if ($totalEvents === 0) return 0;
-        $attended = EventAttendance::whereHas('event', fn($q) => $q->where('team_id', $teamId))
+
+        $attended = EventAttendance::withoutGlobalScopes()
+            ->whereHas('event', fn($q) => $q->withoutGlobalScopes()
+                ->where('team_id', $teamId)
+                ->where(function ($q2) use ($role) {
+                    $q2->whereNull('assigned_roles')
+                       ->orWhereJsonContains('assigned_roles', $role);
+                })
+            )
             ->where('user_id', $userId)
             ->where('attended', true)
             ->count();
+
         return round(($attended / $totalEvents) * $max, 2);
     }
 

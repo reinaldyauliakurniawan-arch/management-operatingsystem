@@ -17,7 +17,7 @@ class ScorecardController extends Controller
     public function index()
     {
         $teamId = session('active_team_id');
-        $metrics = Metric::with('owner', 'scores')->where('team_id', $teamId)->latest()->get();
+        $metrics = Metric::with(['owner', 'scores' => fn($q) => $q->orderBy('week_start_date', 'desc')])->where('team_id', $teamId)->latest()->get();
         $users = $teamId
             ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
             : User::all(['id', 'name']);
@@ -96,14 +96,30 @@ class ScorecardController extends Controller
 
     public function logScore(Request $request, LogWeeklyScore $logWeeklyScore)
     {
+        $teamId = session('active_team_id');
+        $userId = $request->user()->id;
+        $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
         $validated = $request->validate([
             'metric_id'       => 'required|exists:metrics,id',
             'week_start_date' => 'required|date',
             'actual_value'    => 'required|numeric',
         ]);
 
+        // Verifikasi metric milik team aktif
+        $metric = Metric::withoutGlobalScopes()
+            ->where('id', $validated['metric_id'])
+            ->where('team_id', $teamId)
+            ->firstOrFail();
+
+        // Member/tutor hanya bisa input untuk metric yang di-assign ke mereka
+        if ($role !== 'leader' && $metric->owner_id !== $userId) {
+            abort(403, 'Kamu hanya bisa input score untuk metricmu sendiri.');
+        }
+
+        $validated['created_by'] = $userId;
         $logWeeklyScore->execute($validated);
 
-        return back()->with('message', 'Score updated');
+        return back()->with('message', 'Score diperbarui.');
     }
 }

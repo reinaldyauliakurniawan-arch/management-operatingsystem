@@ -29,15 +29,19 @@ class ToDoController extends Controller
 
     public function store(Request $request, CreateToDo $createToDo)
     {
+        $teamId = session('active_team_id');
+
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'owner_id' => 'required|exists:users,id',
-            'due_date' => 'required|date',
+            'title'      => 'required|string|max:255',
+            'owner_id'   => 'required|exists:users,id',
+            'due_date'   => 'required|date',
+            'meeting_id' => 'nullable|exists:meetings,id',
         ]);
 
+        $validated['team_id'] = $teamId;
         $createToDo->execute($validated);
 
-        return back()->with('message', 'To-Do created');
+        return back()->with('message', 'To-Do dibuat.');
     }
 
     public function toggle(ToDo $todo)
