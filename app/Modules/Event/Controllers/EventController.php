@@ -53,6 +53,8 @@ class EventController extends Controller
             'assigned_roles.*' => 'in:leader,member,tutor',
         ]);
 
+        $validated['team_id']    = $teamId;
+        $validated['created_by'] = Auth::id();
         Event::create($validated);
 
         return back()->with('message', 'Event dibuat.');

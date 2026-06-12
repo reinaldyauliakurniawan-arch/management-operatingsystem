@@ -27,4 +27,9 @@ class Rock extends Model
     {
         return $this->belongsTo(User::class, 'owner_id');
     }
+
+    public function milestones()
+    {
+        return $this->hasMany(RockMilestone::class)->orderBy('sort_order');
+    }
 }

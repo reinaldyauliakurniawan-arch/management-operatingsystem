@@ -3,57 +3,125 @@
 namespace App\Modules\PeopleAnalyzer\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\PeopleAnalyzer\Actions\CreateEvaluation;
 use App\Modules\PeopleAnalyzer\Models\Evaluation;
-use App\Modules\PeopleAnalyzer\Resources\EvaluationResource;
-use App\Modules\VTO\Models\VTOPlan;
+use App\Modules\PeopleAnalyzer\Models\PeopleAnalyzerStandard;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class PeopleAnalyzerController extends Controller
 {
+    private function requireLeader(): void
+    {
+        $teamId = session('active_team_id');
+        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        if ($role !== 'leader') abort(403, 'Hanya leader.');
+    }
+
     public function index()
     {
-        $teamId     = session('active_team_id');
-        $vto        = VTOPlan::withoutGlobalScopes()->where('team_id', $teamId)->first();
-        $coreValues = $vto->core_values ?? [];
-
-        $evaluations = Evaluation::with(['evaluatee', 'evaluator'])
+        $teamId    = session('active_team_id');
+        $standard  = PeopleAnalyzerStandard::where('team_id', $teamId)->first();
+        $evals     = Evaluation::with('evaluator', 'evaluatee')
             ->where('team_id', $teamId)
-            ->get();
+            ->latest()
+            ->get()
+            ->map(function ($e) use ($standard) {
+                $e->seat_fit_computed = $e->computeSeatFit($standard);
+                return $e;
+            });
 
-        $users = $teamId
-            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
-            : User::all(['id', 'name']);
+        $users = User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))
+            ->get(['id', 'name']);
 
         return Inertia::render('PeopleAnalyzer/Index', [
-            'evaluations' => EvaluationResource::collection($evaluations),
+            'evaluations' => $evals,
             'users'       => $users,
-            'coreValues'  => $coreValues,
+            'standard'    => $standard,
         ]);
     }
 
-    public function store(Request $request, CreateEvaluation $createEvaluation)
+    public function store(Request $request)
     {
+        $this->requireLeader();
         $teamId = session('active_team_id');
-        $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
-
-        if ($role !== 'leader') {
-            abort(403, 'Hanya leader yang bisa membuat evaluasi.');
-        }
+        $standard = PeopleAnalyzerStandard::where('team_id', $teamId)->first();
 
         $validated = $request->validate([
             'evaluatee_id'       => 'required|exists:users,id',
-            'core_value_ratings' => 'nullable|array',
-            'gets_it'            => 'required|in:y,n',
-            'wants_it'           => 'required|in:y,n',
-            'capacity'           => 'required|in:y,n',
+            'gwc_get'            => 'required|boolean',
+            'gwc_want'           => 'required|boolean',
+            'gwc_capacity'       => 'required|boolean',
+            'core_values_scores' => 'required|array',
+            'core_values_scores.*.value'  => 'required|string',
+            'core_values_scores.*.symbol' => 'required|in:+,+/-,-',
+            'period'             => 'nullable|string|max:50',
+            'notes'              => 'nullable|string',
         ]);
 
-        $validated['evaluator_id'] = Auth::id();
-        $createEvaluation->execute($validated);
-        return back()->with('message', 'Evaluation saved');
+        $eval = Evaluation::create([
+            ...$validated,
+            'team_id'     => $teamId,
+            'evaluator_id' => Auth::id(),
+            'created_by'  => Auth::id(),
+        ]);
+
+        // Auto-compute and store seat_fit
+        $eval->update(['seat_fit' => $eval->computeSeatFit($standard)]);
+
+        return back()->with('message', 'Evaluasi disimpan.');
+    }
+
+    public function update(Request $request, Evaluation $evaluation)
+    {
+        $this->requireLeader();
+        $teamId   = session('active_team_id');
+        $standard = PeopleAnalyzerStandard::where('team_id', $teamId)->first();
+
+        $validated = $request->validate([
+            'gwc_get'            => 'sometimes|boolean',
+            'gwc_want'           => 'sometimes|boolean',
+            'gwc_capacity'       => 'sometimes|boolean',
+            'core_values_scores' => 'sometimes|array',
+            'period'             => 'nullable|string|max:50',
+            'notes'              => 'nullable|string',
+        ]);
+
+        $evaluation->update([...$validated, 'updated_by' => Auth::id()]);
+        $evaluation->update(['seat_fit' => $evaluation->fresh()->computeSeatFit($standard)]);
+
+        return back()->with('message', 'Evaluasi diperbarui.');
+    }
+
+    public function destroy(Evaluation $evaluation)
+    {
+        $this->requireLeader();
+        $evaluation->delete();
+        return back()->with('message', 'Evaluasi dihapus.');
+    }
+
+    // --- Standard (bare minimum) CRUD ---
+
+    public function upsertStandard(Request $request)
+    {
+        $this->requireLeader();
+        $teamId = session('active_team_id');
+
+        $validated = $request->validate([
+            'min_plus'     => 'required|integer|min:0',
+            'max_plus_minus' => 'required|integer|min:0',
+            'max_minus'    => 'required|integer|min:0',
+            'gwc_get'      => 'required|boolean',
+            'gwc_want'     => 'required|boolean',
+            'gwc_capacity' => 'required|string|in:Y,N',
+        ]);
+
+        PeopleAnalyzerStandard::updateOrCreate(
+            ['team_id' => $teamId],
+            [...$validated, 'updated_by' => Auth::id()]
+        );
+
+        return back()->with('message', 'Standard diperbarui.');
     }
 }

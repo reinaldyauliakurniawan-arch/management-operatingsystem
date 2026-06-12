@@ -3,19 +3,19 @@
 use App\Modules\LeadershipAssessment\Controllers\LeadershipAssessmentController;
 use Illuminate\Support\Facades\Route;
 
-// Cycles
-Route::get('/leadership-assessment', [LeadershipAssessmentController::class, 'index'])->name('leadership.index');
-Route::post('/leadership-assessment/cycles', [LeadershipAssessmentController::class, 'storeCycle'])->name('leadership.cycles.store');
-Route::patch('/leadership-assessment/cycles/{cycle}', [LeadershipAssessmentController::class, 'updateCycle'])->name('leadership.cycles.update');
-Route::post('/leadership-assessment/cycles/{cycle}/close', [LeadershipAssessmentController::class, 'closeCycle'])->name('leadership.cycles.close');
-Route::delete('/leadership-assessment/cycles/{cycle}', [LeadershipAssessmentController::class, 'destroyCycle'])->name('leadership.cycles.destroy');
+Route::prefix('leadership-assessment')->name('leadership-assessment.')->group(function () {
+    Route::get('/', [LeadershipAssessmentController::class, 'index'])->name('index');
 
-// Assignments
-Route::post('/leadership-assessment/assignments', [LeadershipAssessmentController::class, 'storeAssignment'])->name('leadership.assignments.store');
+    // Cycle CRUD (leader only)
+    Route::post('/cycles', [LeadershipAssessmentController::class, 'storeCycle'])->name('cycles.store');
+    Route::post('/cycles/{cycle}/assign', [LeadershipAssessmentController::class, 'assignAssessee'])->name('cycles.assign');
+    Route::post('/cycles/{cycle}/close', [LeadershipAssessmentController::class, 'closeCycle'])->name('cycles.close');
+    Route::delete('/cycles/{cycle}', [LeadershipAssessmentController::class, 'destroyCycle'])->name('cycles.destroy');
 
-// Assessment form & submit
-Route::get('/leadership-assessment/cycles/{cycle}/assess', [LeadershipAssessmentController::class, 'show'])->name('leadership.assess');
-Route::post('/leadership-assessment/responses', [LeadershipAssessmentController::class, 'submitResponse'])->name('leadership.responses.submit');
+    // Assessment form (semua member team)
+    Route::get('/cycles/{cycle}/assess/{assessee}', [LeadershipAssessmentController::class, 'takeAssessment'])->name('take');
+    Route::post('/cycles/{cycle}/assess/{assessee}', [LeadershipAssessmentController::class, 'submitResponse'])->name('submit');
 
-// Results
-Route::get('/leadership-assessment/cycles/{cycle}/results', [LeadershipAssessmentController::class, 'results'])->name('leadership.results');
+    // Results
+    Route::get('/cycles/{cycle}/results/{assessee}', [LeadershipAssessmentController::class, 'results'])->name('results');
+});

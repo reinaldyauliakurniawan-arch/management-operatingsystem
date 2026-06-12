@@ -50,6 +50,45 @@ class RockController extends Controller
         return back()->with('message', 'Rock status updated');
     }
 
+    public function update(Request $request, Rock $rock)
+    {
+        $teamId = session('active_team_id');
+        $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        $validated = $request->validate([
+            'title'       => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'owner_id'    => 'sometimes|exists:users,id',
+            'due_date'    => 'nullable|date',
+        ]);
+
+        // Only leader can change owner/title; user can update own rock's status via updateStatus
+        if ($role !== 'leader' && $rock->owner_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $rock->update([...$validated, 'updated_by' => $request->user()->id]);
+        return back()->with('message', 'Rock diperbarui.');
+    }
+
+    public function storeMilestone(Request $request, Rock $rock)
+    {
+        $validated = $request->validate([
+            'title'      => 'required|string|max:255',
+            'due_date'   => 'nullable|date',
+            'sort_order' => 'nullable|integer',
+        ]);
+
+        $rock->milestones()->create($validated);
+        return back()->with('message', 'Milestone ditambah.');
+    }
+
+    public function toggleMilestone(\App\Modules\Rocks\Models\RockMilestone $milestone)
+    {
+        $milestone->update(['is_done' => !$milestone->is_done]);
+        return back()->with('message', 'Milestone diperbarui.');
+    }
+
     public function destroy(Rock $rock)
     {
         $teamId = session('active_team_id');

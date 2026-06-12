@@ -69,27 +69,6 @@ class ScorecardController extends Controller
         return back()->with('message', 'Metric deleted');
     }
 
-    public function store(Request $request, CreateMetric $createMetric)
-    {
-        $teamId = session('active_team_id');
-        $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
-
-        if ($role !== 'leader') {
-            abort(403, 'Hanya leader yang bisa membuat metric.');
-        }
-
-        $validated = $request->validate([
-            'title'               => 'required|string|max:255',
-            'owner_id'            => 'required|exists:users,id',
-            'goal_value'          => 'required|numeric',
-            'comparison_operator' => 'required|in:>=,<=,==',
-        ]);
-
-        $createMetric->execute($validated);
-
-        return back()->with('message', 'Metric created');
-    }
-
     public function logScore(Request $request, LogWeeklyScore $logWeeklyScore)
     {
         $validated = $request->validate([
@@ -103,16 +82,4 @@ class ScorecardController extends Controller
         return back()->with('message', 'Score updated');
     }
 
-    public function destroy(Metric $metric)
-    {
-        $teamId = session('active_team_id');
-        $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
-
-        if ($role !== 'leader') {
-            abort(403, 'Hanya leader yang bisa menghapus metric.');
-        }
-
-        $metric->delete();
-        return back()->with('message', 'Metric deleted');
     }
-}
