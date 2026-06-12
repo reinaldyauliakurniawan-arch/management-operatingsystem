@@ -12,3 +12,4 @@ Route::delete('/rocks/{rock}', [RockController::class, 'destroy'])->name('rocks.
 // Milestones
 Route::post('/rocks/{rock}/milestones', [RockController::class, 'storeMilestone'])->name('rocks.milestones.store');
 Route::patch('/rocks/milestones/{milestone}/toggle', [RockController::class, 'toggleMilestone'])->name('rocks.milestones.toggle');
+Route::delete('/rocks/milestones/{milestone}', [RockController::class, 'destroyMilestone'])->name('rocks.milestones.destroy');

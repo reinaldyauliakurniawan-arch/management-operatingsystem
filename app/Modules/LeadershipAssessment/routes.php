@@ -9,6 +9,7 @@ Route::prefix('leadership-assessment')->name('leadership-assessment.')->group(fu
     // Cycle CRUD (leader only)
     Route::post('/cycles', [LeadershipAssessmentController::class, 'storeCycle'])->name('cycles.store');
     Route::post('/cycles/{cycle}/assign', [LeadershipAssessmentController::class, 'assignAssessee'])->name('cycles.assign');
+    Route::patch('/cycles/{cycle}', [LeadershipAssessmentController::class, 'updateCycle'])->name('cycles.update');
     Route::post('/cycles/{cycle}/close', [LeadershipAssessmentController::class, 'closeCycle'])->name('cycles.close');
     Route::delete('/cycles/{cycle}', [LeadershipAssessmentController::class, 'destroyCycle'])->name('cycles.destroy');
 

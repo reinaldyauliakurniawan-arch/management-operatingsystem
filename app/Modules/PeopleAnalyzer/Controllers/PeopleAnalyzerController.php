@@ -21,24 +21,33 @@ class PeopleAnalyzerController extends Controller
 
     public function index()
     {
-        $teamId    = session('active_team_id');
-        $standard  = PeopleAnalyzerStandard::where('team_id', $teamId)->first();
-        $evals     = Evaluation::with('evaluator', 'evaluatee')
-            ->where('team_id', $teamId)
-            ->latest()
-            ->get()
-            ->map(function ($e) use ($standard) {
-                $e->seat_fit_computed = $e->computeSeatFit($standard);
-                return $e;
-            });
+        $teamId  = session('active_team_id');
+        $userId  = Auth::id();
+        $role    = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $standard = PeopleAnalyzerStandard::where('team_id', $teamId)->first();
 
-        $users = User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))
-            ->get(['id', 'name']);
+        // Leader lihat semua evaluasi; member/tutor hanya lihat evaluasi diri sendiri
+        $evalsQuery = Evaluation::with('evaluator', 'evaluatee')
+            ->where('team_id', $teamId);
+
+        if ($role !== 'leader') {
+            $evalsQuery->where('evaluatee_id', $userId);
+        }
+
+        $evals = $evalsQuery->latest()->get()->map(function ($e) use ($standard) {
+            $e->seat_fit_computed = $e->computeSeatFit($standard);
+            return $e;
+        });
+
+        $users = $role === 'leader'
+            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
+            : collect();
 
         return Inertia::render('PeopleAnalyzer/Index', [
             'evaluations' => $evals,
             'users'       => $users,
             'standard'    => $standard,
+            'canManage'   => $role === 'leader',
         ]);
     }
 

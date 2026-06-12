@@ -89,6 +89,19 @@ class RockController extends Controller
         return back()->with('message', 'Milestone diperbarui.');
     }
 
+    public function destroyMilestone(\App\Modules\Rocks\Models\RockMilestone $milestone)
+    {
+        $teamId = session('active_team_id');
+        $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if ($role !== 'leader') {
+            abort(403, 'Hanya leader yang bisa menghapus milestone.');
+        }
+
+        $milestone->delete();
+        return back()->with('message', 'Milestone dihapus.');
+    }
+
     public function destroy(Rock $rock)
     {
         $teamId = session('active_team_id');

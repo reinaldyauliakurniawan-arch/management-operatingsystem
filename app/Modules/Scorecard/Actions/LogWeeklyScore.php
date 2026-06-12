@@ -10,11 +10,13 @@ class LogWeeklyScore
     {
         return WeeklyScore::updateOrCreate(
             [
-                'metric_id' => $data['metric_id'],
+                'metric_id'       => $data['metric_id'],
                 'week_start_date' => $data['week_start_date'],
             ],
             [
                 'actual_value' => $data['actual_value'],
+                'created_by'   => $data['created_by'] ?? auth()->id(),
+                'updated_by'   => auth()->id(),
             ]
         );
     }

@@ -112,6 +112,25 @@ class LeadershipAssessmentController extends Controller
         return back()->with('message', 'Assessee ditambahkan.');
     }
 
+    public function updateCycle(Request $request, AssessmentCycle $cycle)
+    {
+        $this->requireLeader();
+
+        if ($cycle->isClosed()) {
+            abort(422, 'Cycle sudah ditutup, tidak bisa diedit.');
+        }
+
+        $validated = $request->validate([
+            'name'          => 'sometimes|string|max:255',
+            'periode_start' => 'nullable|date',
+            'periode_end'   => 'nullable|date|after_or_equal:periode_start',
+        ]);
+
+        $cycle->update($validated);
+
+        return back()->with('message', 'Cycle diperbarui.');
+    }
+
     public function closeCycle(AssessmentCycle $cycle)
     {
         $this->requireLeader();

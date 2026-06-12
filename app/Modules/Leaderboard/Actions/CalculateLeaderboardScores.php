@@ -14,7 +14,7 @@ use App\Modules\Event\Models\Event;
 
 class CalculateLeaderboardScores
 {
-    public function execute(?int $teamId = null): \Illuminate\Support\Collection
+    public function execute(?int $teamId = null, ?string $dateFrom = null, ?string $dateTo = null): \Illuminate\Support\Collection
     {
         $teamId = $teamId ?? session('active_team_id');
         if (!$teamId) return collect();
@@ -41,7 +41,7 @@ class CalculateLeaderboardScores
                 $maxPoints += $param->max_points;
 
                 if ($param->is_automatic) {
-                    $earned = $this->calcAutomatic($param->automatic_source, $userId, $teamId, $param->max_points);
+                    $earned = $this->calcAutomatic($param->automatic_source, $userId, $teamId, $param->max_points, $dateFrom, $dateTo);
                 } else {
                     $earned = LeaderboardEntry::withoutGlobalScopes()
                         ->where('team_id', $teamId)
@@ -74,29 +74,36 @@ class CalculateLeaderboardScores
         return $results->sortByDesc('score')->values();
     }
 
-    private function calcAutomatic(string $source, int $userId, int $teamId, float $maxPoints): float
+    private function calcAutomatic(string $source, int $userId, int $teamId, float $maxPoints, ?string $dateFrom = null, ?string $dateTo = null): float
     {
         return match ($source) {
-            'rocks'      => $this->rocksScore($userId, $teamId, $maxPoints),
-            'scorecard'  => $this->scorecardScore($userId, $teamId, $maxPoints),
-            'todos'      => $this->todosScore($userId, $teamId, $maxPoints),
-            'events'     => $this->eventsScore($userId, $teamId, $maxPoints),
+            'rocks'      => $this->rocksScore($userId, $teamId, $maxPoints, $dateFrom, $dateTo),
+            'scorecard'  => $this->scorecardScore($userId, $teamId, $maxPoints, $dateFrom, $dateTo),
+            'todos'      => $this->todosScore($userId, $teamId, $maxPoints, $dateFrom, $dateTo),
+            'events'     => $this->eventsScore($userId, $teamId, $maxPoints, $dateFrom, $dateTo),
             'leadership' => $this->leadershipScore($userId, $teamId, $maxPoints),
             default      => 0,
         };
     }
 
-    private function rocksScore(int $userId, int $teamId, float $max): float
+    private function rocksScore(int $userId, int $teamId, float $max, ?string $dateFrom = null, ?string $dateTo = null): float
     {
-        $total = Rock::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId)->count();
+        $q = Rock::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId);
+        if ($dateFrom) $q->where('created_at', '>=', $dateFrom);
+        if ($dateTo)   $q->where('created_at', '<=', $dateTo);
+        $total = (clone $q)->count();
         if ($total === 0) return 0;
-        $done = Rock::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId)->where('status', 'done')->count();
+        $done = (clone $q)->where('status', 'done')->count();
         return round(($done / $total) * $max, 2);
     }
 
-    private function scorecardScore(int $userId, int $teamId, float $max): float
+    private function scorecardScore(int $userId, int $teamId, float $max, ?string $dateFrom = null, ?string $dateTo = null): float
     {
-        $metrics = Metric::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId)->with('scores')->get();
+        $metrics = Metric::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId)
+            ->with(['scores' => function ($q) use ($dateFrom, $dateTo) {
+                if ($dateFrom) $q->where('week_start_date', '>=', $dateFrom);
+                if ($dateTo)   $q->where('week_start_date', '<=', $dateTo);
+            }])->get();
         if ($metrics->isEmpty()) return 0;
         $totalScores = 0;
         $greenScores = 0;
@@ -110,30 +117,33 @@ class CalculateLeaderboardScores
         return round(($greenScores / $totalScores) * $max, 2);
     }
 
-    private function todosScore(int $userId, int $teamId, float $max): float
+    private function todosScore(int $userId, int $teamId, float $max, ?string $dateFrom = null, ?string $dateTo = null): float
     {
-        $total = ToDo::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId)->count();
+        $q = ToDo::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId);
+        if ($dateFrom) $q->where('created_at', '>=', $dateFrom);
+        if ($dateTo)   $q->where('created_at', '<=', $dateTo);
+        $total = (clone $q)->count();
         if ($total === 0) return 0;
-        $done = ToDo::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId)->where('is_completed', true)->count();
+        $done = (clone $q)->where('is_completed', true)->count();
         return round(($done / $total) * $max, 2);
     }
 
-    private function eventsScore(int $userId, int $teamId, float $max): float
+    private function eventsScore(int $userId, int $teamId, float $max, ?string $dateFrom = null, ?string $dateTo = null): float
     {
-        // Ambil role user di team ini
         $role = \App\Modules\Teams\Models\TeamMember::where('team_id', $teamId)
             ->where('user_id', $userId)
             ->value('role');
 
-        // Hitung total event yang relevan untuk role ini
-        $totalEvents = Event::withoutGlobalScopes()
+        $eventsQuery = Event::withoutGlobalScopes()
             ->where('team_id', $teamId)
             ->where(function ($q) use ($role) {
                 $q->whereNull('assigned_roles')
                   ->orWhereJsonContains('assigned_roles', $role);
-            })
-            ->count();
+            });
+        if ($dateFrom) $eventsQuery->where('event_date', '>=', $dateFrom);
+        if ($dateTo)   $eventsQuery->where('event_date', '<=', $dateTo);
 
+        $totalEvents = $eventsQuery->count();
         if ($totalEvents === 0) return 0;
 
         $attended = EventAttendance::withoutGlobalScopes()
@@ -143,6 +153,8 @@ class CalculateLeaderboardScores
                     $q2->whereNull('assigned_roles')
                        ->orWhereJsonContains('assigned_roles', $role);
                 })
+                ->when($dateFrom, fn($q3) => $q3->where('event_date', '>=', $dateFrom))
+                ->when($dateTo,   fn($q3) => $q3->where('event_date', '<=', $dateTo))
             )
             ->where('user_id', $userId)
             ->where('attended', true)

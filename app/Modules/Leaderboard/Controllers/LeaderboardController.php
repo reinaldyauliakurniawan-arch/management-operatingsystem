@@ -13,10 +13,13 @@ use Inertia\Inertia;
 
 class LeaderboardController extends Controller
 {
-    public function index(CalculateLeaderboardScores $calculator)
+    public function index(Request $request, CalculateLeaderboardScores $calculator)
     {
         $teamId     = session('active_team_id');
-        $scores     = $calculator->execute($teamId);
+        $dateFrom   = $request->input('date_from');
+        $dateTo     = $request->input('date_to');
+
+        $scores     = $calculator->execute($teamId, $dateFrom, $dateTo);
         $parameters = LeaderboardParameter::withoutGlobalScopes()
             ->where('team_id', $teamId)
             ->get();
@@ -24,6 +27,7 @@ class LeaderboardController extends Controller
         return Inertia::render('Leaderboard/Index', [
             'scores'     => $scores,
             'parameters' => $parameters,
+            'filters'    => ['date_from' => $dateFrom, 'date_to' => $dateTo],
         ]);
     }
 
