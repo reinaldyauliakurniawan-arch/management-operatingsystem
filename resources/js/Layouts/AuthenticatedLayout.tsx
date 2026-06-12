@@ -1,11 +1,6 @@
-import { Link, usePage } from "@inertiajs/react";
-import { PropsWithChildren, ReactNode, useState } from "react";
-
-type NavItem = {
-    label: string;
-    href: string;
-    routeName: string;
-};
+import { Link, usePage, router } from "@inertiajs/react";
+import { PropsWithChildren } from "react";
+import { useState } from "react";
 
 const navGroups = [
     {
@@ -16,7 +11,7 @@ const navGroups = [
             {
                 label: "Accountability Chart",
                 href: "/accountability-chart",
-                routeName: "accountability-chart.index",
+                routeName: "accountability.index",
             },
             {
                 label: "People Analyzer",
@@ -52,56 +47,72 @@ const navGroups = [
     },
 ];
 
-export default function Authenticated({
-    children,
-}: PropsWithChildren<{ header?: ReactNode }>) {
+export default function Authenticated({ children }: PropsWithChildren) {
     const { auth } = usePage().props as any;
     const user = auth.user;
     const userTeams = auth.userTeams ?? [];
     const activeTeamId = auth.activeTeamId;
     const activeTeam = userTeams.find((t: any) => t.id === activeTeamId);
-
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
+    const switchTeam = (teamId: string) => {
+        router.post(
+            "/teams/switch",
+            { team_id: teamId },
+            { preserveScroll: false },
+        );
+    };
+
     return (
-        <div className="flex min-h-screen bg-[#f7f7f6]">
+        <div className="flex min-h-screen" style={{ background: "#f5f5f5" }}>
             {/* Sidebar */}
             <aside
-                className={`flex flex-col border-r border-[#ebebea] bg-[#f7f7f6] transition-all duration-200 ${sidebarOpen ? "w-60" : "w-14"}`}
-                style={{ minHeight: "100vh" }}
+                style={{
+                    width: sidebarOpen ? 240 : 56,
+                    minHeight: "100vh",
+                    background: "#f5f5f5",
+                    borderRight: "1px solid #e4e4e4",
+                    display: "flex",
+                    flexDirection: "column",
+                    transition: "width 200ms ease",
+                    flexShrink: 0,
+                }}
             >
                 {/* Team Switcher */}
-                <div className="border-b border-[#ebebea] px-3 py-3">
+                <div
+                    style={{
+                        borderBottom: "1px solid #e4e4e4",
+                        padding: "12px",
+                    }}
+                >
                     {sidebarOpen ? (
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-500 text-[#9b9b98] uppercase tracking-wider">
-                                    Active Team
-                                </p>
-                                <p className="text-sm font-600 text-[#1a1a19] truncate max-w-[150px]">
-                                    {activeTeam?.name ?? "—"}
-                                </p>
-                            </div>
-                            {userTeams.length > 1 && (
+                        <div>
+                            <p
+                                style={{
+                                    fontSize: 11,
+                                    fontWeight: 500,
+                                    color: "#999999",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.06em",
+                                    marginBottom: 2,
+                                }}
+                            >
+                                Active Team
+                            </p>
+                            {userTeams.length > 1 ? (
                                 <select
-                                    className="text-xs border border-[#ebebea] rounded-lg bg-white px-2 py-1 text-[#6b6b69] focus:outline-none focus:border-[#059669]"
                                     value={activeTeamId ?? ""}
-                                    onChange={(e) => {
-                                        fetch("/teams/switch", {
-                                            method: "POST",
-                                            headers: {
-                                                "Content-Type":
-                                                    "application/json",
-                                                "X-CSRF-TOKEN": (
-                                                    document.querySelector(
-                                                        "meta[name=csrf-token]",
-                                                    ) as HTMLMetaElement
-                                                )?.content,
-                                            },
-                                            body: JSON.stringify({
-                                                team_id: e.target.value,
-                                            }),
-                                        }).then(() => window.location.reload());
+                                    onChange={(e) => switchTeam(e.target.value)}
+                                    style={{
+                                        width: "100%",
+                                        background: "#f0f0f0",
+                                        border: "1px solid #e4e4e4",
+                                        borderRadius: 8,
+                                        padding: "4px 8px",
+                                        fontSize: 13,
+                                        color: "#1a1a1a",
+                                        outline: "none",
+                                        appearance: "none",
                                     }}
                                 >
                                     {userTeams.map((t: any) => (
@@ -110,40 +121,132 @@ export default function Authenticated({
                                         </option>
                                     ))}
                                 </select>
+                            ) : (
+                                <p
+                                    style={{
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                        color: "#1a1a1a",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    {activeTeam?.name ?? "—"}
+                                </p>
                             )}
                         </div>
                     ) : (
-                        <div className="flex justify-center">
-                            <span className="text-lg font-bold text-[#059669]">
-                                J
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <span
+                                style={{
+                                    fontSize: 14,
+                                    fontWeight: 600,
+                                    color: "#1a5c41",
+                                }}
+                            >
+                                {activeTeam?.name?.[0]?.toUpperCase() ?? "J"}
                             </span>
                         </div>
                     )}
                 </div>
 
                 {/* Nav */}
-                <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+                <nav
+                    style={{ flex: 1, overflowY: "auto", padding: "12px 8px" }}
+                >
                     {navGroups.map((group) => (
-                        <div key={group.label}>
+                        <div key={group.label} style={{ marginBottom: 8 }}>
                             {sidebarOpen && (
-                                <p className="px-2 mb-1 text-[11px] font-500 text-[#9b9b98] uppercase tracking-wider">
+                                <p
+                                    style={{
+                                        fontSize: 11,
+                                        fontWeight: 500,
+                                        color: "#999999",
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.06em",
+                                        padding: "0 8px",
+                                        marginBottom: 4,
+                                        marginTop: 12,
+                                    }}
+                                >
                                     {group.label}
                                 </p>
                             )}
-                            <ul className="space-y-0.5">
+                            <ul
+                                style={{
+                                    listStyle: "none",
+                                    margin: 0,
+                                    padding: 0,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 2,
+                                }}
+                            >
                                 {group.items.map((item) => {
-                                    const isActive = route().current(
-                                        item.routeName,
-                                    );
+                                    const isActive =
+                                        typeof route === "function" &&
+                                        route().current(item.routeName);
                                     return (
                                         <li key={item.href}>
                                             <Link
                                                 href={item.href}
-                                                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors ${
-                                                    isActive
-                                                        ? "bg-[#d1fae5] text-[#065f46] border-l-2 border-[#059669] pl-[6px]"
-                                                        : "text-[#6b6b69] hover:bg-[#ebebea] hover:text-[#1a1a19]"
-                                                }`}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 8,
+                                                    padding: isActive
+                                                        ? "6px 8px 6px 6px"
+                                                        : "6px 8px",
+                                                    borderRadius: 8,
+                                                    fontSize: 13,
+                                                    fontWeight: isActive
+                                                        ? 500
+                                                        : 400,
+                                                    color: isActive
+                                                        ? "#1a5c41"
+                                                        : "#6b6b6b",
+                                                    background: isActive
+                                                        ? "#e8f0ec"
+                                                        : "transparent",
+                                                    borderLeft: isActive
+                                                        ? "2px solid #1a5c41"
+                                                        : "2px solid transparent",
+                                                    textDecoration: "none",
+                                                    transition:
+                                                        "background 100ms, color 100ms",
+                                                    whiteSpace: "nowrap",
+                                                    overflow: "hidden",
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    if (!isActive) {
+                                                        (
+                                                            e.currentTarget as HTMLElement
+                                                        ).style.background =
+                                                            "#e8e8e8";
+                                                        (
+                                                            e.currentTarget as HTMLElement
+                                                        ).style.color =
+                                                            "#1a1a1a";
+                                                    }
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (!isActive) {
+                                                        (
+                                                            e.currentTarget as HTMLElement
+                                                        ).style.background =
+                                                            "transparent";
+                                                        (
+                                                            e.currentTarget as HTMLElement
+                                                        ).style.color =
+                                                            "#6b6b6b";
+                                                    }
+                                                }}
                                             >
                                                 {sidebarOpen && (
                                                     <span>{item.label}</span>
@@ -158,14 +261,40 @@ export default function Authenticated({
                 </nav>
 
                 {/* User Menu */}
-                <div className="border-t border-[#ebebea] px-3 py-3">
+                <div
+                    style={{ borderTop: "1px solid #e4e4e4", padding: "12px" }}
+                >
                     {sidebarOpen ? (
-                        <div className="flex items-center justify-between gap-2">
-                            <div className="min-w-0">
-                                <p className="text-sm font-500 text-[#1a1a19] truncate">
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 8,
+                            }}
+                        >
+                            <div style={{ minWidth: 0 }}>
+                                <p
+                                    style={{
+                                        fontSize: 13,
+                                        fontWeight: 500,
+                                        color: "#1a1a1a",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
                                     {user.name}
                                 </p>
-                                <p className="text-xs text-[#9b9b98] truncate">
+                                <p
+                                    style={{
+                                        fontSize: 11,
+                                        color: "#999999",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
                                     {user.email}
                                 </p>
                             </div>
@@ -173,15 +302,50 @@ export default function Authenticated({
                                 href={route("logout")}
                                 method="post"
                                 as="button"
-                                className="text-xs text-[#9b9b98] hover:text-[#dc2626] transition-colors whitespace-nowrap"
+                                style={{
+                                    fontSize: 11,
+                                    color: "#999999",
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    whiteSpace: "nowrap",
+                                    transition: "color 150ms",
+                                }}
+                                onMouseEnter={(e) =>
+                                    (e.currentTarget.style.color = "#991b1b")
+                                }
+                                onMouseLeave={(e) =>
+                                    (e.currentTarget.style.color = "#999999")
+                                }
                             >
                                 Logout
                             </Link>
                         </div>
                     ) : (
-                        <div className="flex justify-center">
-                            <div className="w-7 h-7 rounded-full bg-[#d1fae5] flex items-center justify-center">
-                                <span className="text-xs font-600 text-[#065f46]">
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: "50%",
+                                    background: "#e8f0ec",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        fontSize: 11,
+                                        fontWeight: 600,
+                                        color: "#1a5c41",
+                                    }}
+                                >
                                     {user.name?.[0]?.toUpperCase()}
                                 </span>
                             </div>
@@ -190,13 +354,47 @@ export default function Authenticated({
                 </div>
             </aside>
 
-            {/* Main content */}
-            <div className="flex flex-col flex-1 min-w-0">
+            {/* Main */}
+            <div
+                style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    minWidth: 0,
+                }}
+            >
                 {/* Topbar */}
-                <header className="h-12 border-b border-[#ebebea] bg-white flex items-center px-6 gap-3">
+                <header
+                    style={{
+                        height: 48,
+                        borderBottom: "1px solid #e4e4e4",
+                        background: "#ffffff",
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "0 24px",
+                        gap: 12,
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                        flexShrink: 0,
+                    }}
+                >
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
-                        className="text-[#9b9b98] hover:text-[#1a1a19] transition-colors"
+                        style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "#999999",
+                            padding: 4,
+                            display: "flex",
+                            alignItems: "center",
+                            transition: "color 150ms",
+                        }}
+                        onMouseEnter={(e) =>
+                            (e.currentTarget.style.color = "#1a1a1a")
+                        }
+                        onMouseLeave={(e) =>
+                            (e.currentTarget.style.color = "#999999")
+                        }
                     >
                         <svg
                             width="16"
@@ -227,13 +425,21 @@ export default function Authenticated({
                             />
                         </svg>
                     </button>
-                    <span className="text-sm text-[#9b9b98]">
+                    <span style={{ fontSize: 13, color: "#999999" }}>
                         {activeTeam?.name}
                     </span>
                 </header>
 
-                {/* Page content */}
-                <main className="flex-1 p-6 max-w-[1280px] w-full mx-auto">
+                {/* Content */}
+                <main
+                    style={{
+                        flex: 1,
+                        padding: 24,
+                        maxWidth: 1280,
+                        width: "100%",
+                        margin: "0 auto",
+                    }}
+                >
                     {children}
                 </main>
             </div>
