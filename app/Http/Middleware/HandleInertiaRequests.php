@@ -42,6 +42,15 @@ class HandleInertiaRequests extends Middleware
                     ];
                 }) : [],
                 'activeTeamId' => session('active_team_id'),
+                'teamRole' => $request->user() ? (function() use ($request) {
+                    $activeTeamId = session('active_team_id');
+                    if (!$activeTeamId) return null;
+                    $membership = $request->user()->teamMemberships()
+                        ->where('team_id', $activeTeamId)
+                        ->first();
+                    return $membership?->role;
+                })() : null,
+                'isOrgAdmin' => $request->user()?->is_org_admin ?? false,
             ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),

@@ -14,8 +14,11 @@ class IDSController extends Controller
 {
     public function index()
     {
+        $teamId = session('active_team_id');
         $issues = Issue::with('owner')->orderBy('priority', 'desc')->get();
-        $users = User::all(['id', 'name']);
+        $users = $teamId
+            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
+            : User::all(['id', 'name']);
 
         return Inertia::render('IDS/Index', [
             'issues' => IssueResource::collection($issues),

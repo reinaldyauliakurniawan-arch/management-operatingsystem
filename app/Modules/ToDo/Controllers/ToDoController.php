@@ -15,8 +15,11 @@ class ToDoController extends Controller
 {
     public function index()
     {
+        $teamId = session('active_team_id');
         $todos = ToDo::with('owner')->orderBy('due_date')->get();
-        $users = User::all(['id', 'name']);
+        $users = $teamId
+            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
+            : User::all(['id', 'name']);
 
         return Inertia::render('ToDo/Index', [
             'todos' => ToDoResource::collection($todos),

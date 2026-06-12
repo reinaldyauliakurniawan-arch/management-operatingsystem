@@ -16,8 +16,11 @@ class RockController extends Controller
 {
     public function index()
     {
+        $teamId = session('active_team_id');
         $rocks = Rock::with('owner')->latest()->get();
-        $users = User::all(['id', 'name']);
+        $users = $teamId
+            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
+            : User::all(['id', 'name']);
 
         return Inertia::render('Rocks/Index', [
             'rocks' => RockResource::collection($rocks),
@@ -27,6 +30,13 @@ class RockController extends Controller
 
     public function store(CreateRockRequest $request, CreateRock $createRock)
     {
+        $teamId = session('active_team_id');
+        $role = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if ($role !== 'leader') {
+            abort(403, 'Hanya leader yang bisa membuat Rock.');
+        }
+
         $createRock->execute($request->validated());
 
         return back()->with('message', 'Rock created successfully');
@@ -42,6 +52,13 @@ class RockController extends Controller
 
     public function destroy(Rock $rock)
     {
+        $teamId = session('active_team_id');
+        $role = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if ($role !== 'leader') {
+            abort(403, 'Hanya leader yang bisa menghapus Rock.');
+        }
+
         $rock->delete();
         return back()->with('message', 'Rock deleted');
     }

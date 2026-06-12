@@ -14,9 +14,11 @@ class VTOController extends Controller
 {
     public function index()
     {
-        $vto = VTOPlan::firstOrCreate([
-            'team_id' => Auth::user()->team_id,
-        ]);
+        $teamId = session('active_team_id');
+        $vto = VTOPlan::withoutGlobalScopes()->firstOrCreate(
+            ['team_id' => $teamId],
+            ['team_id' => $teamId]
+        );
 
         return Inertia::render('VTO/Index', [
             'vto' => new VTOResource($vto),

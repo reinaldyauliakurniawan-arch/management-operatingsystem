@@ -14,9 +14,7 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', \App\Http\Controllers\DashboardController::class)->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -56,5 +54,11 @@ Route::middleware(['web', 'auth'])->group(function () {
     }
     if (file_exists(base_path('app/Modules/PeopleAnalyzer/routes.php'))) {
         require base_path('app/Modules/PeopleAnalyzer/routes.php');
+    }
+    if (file_exists(base_path('app/Modules/Event/routes.php'))) {
+        require base_path('app/Modules/Event/routes.php');
+    }
+    if (file_exists(base_path('app/Modules/Leaderboard/routes.php'))) {
+        require base_path('app/Modules/Leaderboard/routes.php');
     }
 });

@@ -16,8 +16,11 @@ class ScorecardController extends Controller
 {
     public function index()
     {
+        $teamId = session('active_team_id');
         $metrics = Metric::with('owner', 'scores')->latest()->get();
-        $users = User::all(['id', 'name']);
+        $users = $teamId
+            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
+            : User::all(['id', 'name']);
 
         // Generate last 13 weeks
         $weeks = [];
