@@ -1,179 +1,242 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
-import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import { Link, usePage } from "@inertiajs/react";
+import { PropsWithChildren, ReactNode, useState } from "react";
+
+type NavItem = {
+    label: string;
+    href: string;
+    routeName: string;
+};
+
+const navGroups = [
+    {
+        label: "EOS Core",
+        items: [
+            { label: "Dashboard", href: "/dashboard", routeName: "dashboard" },
+            { label: "VTO", href: "/vto", routeName: "vto.index" },
+            {
+                label: "Accountability Chart",
+                href: "/accountability-chart",
+                routeName: "accountability-chart.index",
+            },
+            {
+                label: "People Analyzer",
+                href: "/people-analyzer",
+                routeName: "people-analyzer.index",
+            },
+            {
+                label: "Scorecard",
+                href: "/scorecard",
+                routeName: "scorecard.index",
+            },
+            { label: "Issues / IDS", href: "/ids", routeName: "ids.index" },
+            { label: "Rocks", href: "/rocks", routeName: "rocks.index" },
+            { label: "To-Do", href: "/todos", routeName: "todos.index" },
+            { label: "L10 Meeting", href: "/l10", routeName: "l10.index" },
+        ],
+    },
+    {
+        label: "Proprietary",
+        items: [
+            {
+                label: "Leadership Assessment",
+                href: "/leadership-assessment",
+                routeName: "leadership-assessment.index",
+            },
+            { label: "Events", href: "/events", routeName: "events.index" },
+            {
+                label: "Leaderboard",
+                href: "/leaderboard",
+                routeName: "leaderboard.index",
+            },
+        ],
+    },
+];
 
 export default function Authenticated({
-    header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const user = usePage().props.auth.user;
+    const { auth } = usePage().props as any;
+    const user = auth.user;
+    const userTeams = auth.userTeams ?? [];
+    const activeTeamId = auth.activeTeamId;
+    const activeTeam = userTeams.find((t: any) => t.id === activeTeamId);
 
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-            <nav className="border-b border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
-                        <div className="flex">
-                            <div className="flex shrink-0 items-center">
-                                <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
-                                </Link>
+        <div className="flex min-h-screen bg-[#f7f7f6]">
+            {/* Sidebar */}
+            <aside
+                className={`flex flex-col border-r border-[#ebebea] bg-[#f7f7f6] transition-all duration-200 ${sidebarOpen ? "w-60" : "w-14"}`}
+                style={{ minHeight: "100vh" }}
+            >
+                {/* Team Switcher */}
+                <div className="border-b border-[#ebebea] px-3 py-3">
+                    {sidebarOpen ? (
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs font-500 text-[#9b9b98] uppercase tracking-wider">
+                                    Active Team
+                                </p>
+                                <p className="text-sm font-600 text-[#1a1a19] truncate max-w-[150px]">
+                                    {activeTeam?.name ?? "—"}
+                                </p>
                             </div>
-
-                            <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
+                            {userTeams.length > 1 && (
+                                <select
+                                    className="text-xs border border-[#ebebea] rounded-lg bg-white px-2 py-1 text-[#6b6b69] focus:outline-none focus:border-[#059669]"
+                                    value={activeTeamId ?? ""}
+                                    onChange={(e) => {
+                                        fetch("/teams/switch", {
+                                            method: "POST",
+                                            headers: {
+                                                "Content-Type":
+                                                    "application/json",
+                                                "X-CSRF-TOKEN": (
+                                                    document.querySelector(
+                                                        "meta[name=csrf-token]",
+                                                    ) as HTMLMetaElement
+                                                )?.content,
+                                            },
+                                            body: JSON.stringify({
+                                                team_id: e.target.value,
+                                            }),
+                                        }).then(() => window.location.reload());
+                                    }}
                                 >
-                                    Dashboard
-                                </NavLink>
-                            </div>
+                                    {userTeams.map((t: any) => (
+                                        <option key={t.id} value={t.id}>
+                                            {t.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
+                    ) : (
+                        <div className="flex justify-center">
+                            <span className="text-lg font-bold text-[#059669]">
+                                J
+                            </span>
+                        </div>
+                    )}
+                </div>
 
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
-                            <div className="relative ms-3">
-                                <Dropdown>
-                                    <Dropdown.Trigger>
-                                        <span className="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
+                {/* Nav */}
+                <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+                    {navGroups.map((group) => (
+                        <div key={group.label}>
+                            {sidebarOpen && (
+                                <p className="px-2 mb-1 text-[11px] font-500 text-[#9b9b98] uppercase tracking-wider">
+                                    {group.label}
+                                </p>
+                            )}
+                            <ul className="space-y-0.5">
+                                {group.items.map((item) => {
+                                    const isActive = route().current(
+                                        item.routeName,
+                                    );
+                                    return (
+                                        <li key={item.href}>
+                                            <Link
+                                                href={item.href}
+                                                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors ${
+                                                    isActive
+                                                        ? "bg-[#d1fae5] text-[#065f46] border-l-2 border-[#059669] pl-[6px]"
+                                                        : "text-[#6b6b69] hover:bg-[#ebebea] hover:text-[#1a1a19]"
+                                                }`}
                                             >
-                                                {user.name}
-
-                                                <svg
-                                                    className="-me-0.5 ms-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </Dropdown.Trigger>
-
-                                    <Dropdown.Content>
-                                        <Dropdown.Link
-                                            href={route('profile.edit')}
-                                        >
-                                            Profile
-                                        </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href={route('logout')}
-                                            method="post"
-                                            as="button"
-                                        >
-                                            Log Out
-                                        </Dropdown.Link>
-                                    </Dropdown.Content>
-                                </Dropdown>
-                            </div>
+                                                {sidebarOpen && (
+                                                    <span>{item.label}</span>
+                                                )}
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
                         </div>
+                    ))}
+                </nav>
 
-                        <div className="-me-2 flex items-center sm:hidden">
-                            <button
-                                onClick={() =>
-                                    setShowingNavigationDropdown(
-                                        (previousState) => !previousState,
-                                    )
-                                }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none dark:text-gray-500 dark:hover:bg-gray-900 dark:hover:text-gray-400 dark:focus:bg-gray-900 dark:focus:text-gray-400"
-                            >
-                                <svg
-                                    className="h-6 w-6"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        className={
-                                            !showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        className={
-                                            showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div
-                    className={
-                        (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
-                    }
-                >
-                    <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
-                        >
-                            Dashboard
-                        </ResponsiveNavLink>
-                    </div>
-
-                    <div className="border-t border-gray-200 pb-1 pt-4 dark:border-gray-600">
-                        <div className="px-4">
-                            <div className="text-base font-medium text-gray-800 dark:text-gray-200">
-                                {user.name}
+                {/* User Menu */}
+                <div className="border-t border-[#ebebea] px-3 py-3">
+                    {sidebarOpen ? (
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                                <p className="text-sm font-500 text-[#1a1a19] truncate">
+                                    {user.name}
+                                </p>
+                                <p className="text-xs text-[#9b9b98] truncate">
+                                    {user.email}
+                                </p>
                             </div>
-                            <div className="text-sm font-medium text-gray-500">
-                                {user.email}
-                            </div>
-                        </div>
-
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('profile.edit')}>
-                                Profile
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
+                            <Link
+                                href={route("logout")}
                                 method="post"
-                                href={route('logout')}
                                 as="button"
+                                className="text-xs text-[#9b9b98] hover:text-[#dc2626] transition-colors whitespace-nowrap"
                             >
-                                Log Out
-                            </ResponsiveNavLink>
+                                Logout
+                            </Link>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="flex justify-center">
+                            <div className="w-7 h-7 rounded-full bg-[#d1fae5] flex items-center justify-center">
+                                <span className="text-xs font-600 text-[#065f46]">
+                                    {user.name?.[0]?.toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            </nav>
+            </aside>
 
-            {header && (
-                <header className="bg-white shadow dark:bg-gray-800">
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                        {header}
-                    </div>
+            {/* Main content */}
+            <div className="flex flex-col flex-1 min-w-0">
+                {/* Topbar */}
+                <header className="h-12 border-b border-[#ebebea] bg-white flex items-center px-6 gap-3">
+                    <button
+                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                        className="text-[#9b9b98] hover:text-[#1a1a19] transition-colors"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                        >
+                            <rect
+                                y="2"
+                                width="16"
+                                height="1.5"
+                                rx="0.75"
+                                fill="currentColor"
+                            />
+                            <rect
+                                y="7.25"
+                                width="16"
+                                height="1.5"
+                                rx="0.75"
+                                fill="currentColor"
+                            />
+                            <rect
+                                y="12.5"
+                                width="16"
+                                height="1.5"
+                                rx="0.75"
+                                fill="currentColor"
+                            />
+                        </svg>
+                    </button>
+                    <span className="text-sm text-[#9b9b98]">
+                        {activeTeam?.name}
+                    </span>
                 </header>
-            )}
 
-            <main>{children}</main>
+                {/* Page content */}
+                <main className="flex-1 p-6 max-w-[1280px] w-full mx-auto">
+                    {children}
+                </main>
+            </div>
         </div>
     );
 }

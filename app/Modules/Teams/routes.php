@@ -5,4 +5,5 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/teams/switch', [TeamSwitchController::class, 'store'])->name('teams.switch');
+    Route::get('/team/pick', [TeamSwitchController::class, 'pick'])->name('team.pick');
 });

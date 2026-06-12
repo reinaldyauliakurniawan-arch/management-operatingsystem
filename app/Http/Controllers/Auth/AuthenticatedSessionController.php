@@ -33,7 +33,21 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = $request->user();
+$teams = $user->teams()->get();
+
+if ($teams->count() > 1) {
+    return redirect()->route('team.pick');
+}
+
+if ($teams->count() === 1) {
+    session([
+        'active_team_id' => $teams->first()->id,
+        'active_organization_id' => $teams->first()->organization_id,
+    ]);
+}
+
+return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**

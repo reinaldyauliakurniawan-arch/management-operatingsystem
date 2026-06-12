@@ -5,10 +5,24 @@ namespace App\Modules\Teams\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class TeamSwitchController extends Controller
 {
-    public function store(Request $request)
+    public function pick()
+{
+    $teams = Auth::user()->teams()->get()->map(function($team) {
+        return [
+            'id' => $team->id,
+            'name' => $team->name,
+            'role' => $team->pivot->role,
+        ];
+    });
+
+    return Inertia::render('Teams/Pick', ['teams' => $teams]);
+}
+
+public function store(Request $request)
     {
         $request->validate([
             'team_id' => 'required|exists:teams,id',
