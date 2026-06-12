@@ -1,5 +1,5 @@
 import { Link, usePage, router } from "@inertiajs/react";
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, ReactNode } from "react";
 import { useState } from "react";
 
 const navGroups = [
@@ -47,7 +47,10 @@ const navGroups = [
     },
 ];
 
-export default function Authenticated({ children }: PropsWithChildren) {
+export default function Authenticated({
+    children,
+    header,
+}: PropsWithChildren<{ header?: ReactNode }>) {
     const { auth } = usePage().props as any;
     const user = auth.user;
     const userTeams = auth.userTeams ?? [];
@@ -440,6 +443,7 @@ export default function Authenticated({ children }: PropsWithChildren) {
                         margin: "0 auto",
                     }}
                 >
+                    {header}
                     {children}
                 </main>
             </div>

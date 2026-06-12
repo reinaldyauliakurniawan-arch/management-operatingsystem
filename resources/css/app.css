@@ -61,6 +61,44 @@
     --spacing-2xl: 32px;
     --spacing-3xl: 48px;
     --spacing-4xl: 64px;
+
+    --color-background: var(--color-surface);
+    --color-foreground: var(--color-text-primary);
+    --color-card: var(--color-surface);
+    --color-card-foreground: var(--color-text-primary);
+    --color-popover: var(--color-surface);
+    --color-popover-foreground: var(--color-text-primary);
+    --color-primary-foreground: var(--color-text-inverse);
+    --color-secondary: var(--color-surface-raised);
+    --color-secondary-foreground: var(--color-text-primary);
+    --color-muted: var(--color-surface-subtle);
+    --color-muted-foreground: var(--color-text-secondary);
+    --color-accent: var(--color-surface-overlay);
+    --color-accent-foreground: var(--color-text-primary);
+    --color-destructive: var(--color-error);
+    --color-destructive-foreground: var(--color-error-text);
+    --color-input: var(--color-border);
+    --color-ring: var(--color-primary);
+
+    /* shadcn ui/* component mappings — keep in sync with DESIGN.md tokens above.
+       Do not introduce new colors here; only alias to existing tokens. */
+    --color-background: var(--color-surface);
+    --color-foreground: var(--color-text-primary);
+    --color-card: var(--color-surface);
+    --color-card-foreground: var(--color-text-primary);
+    --color-popover: var(--color-surface);
+    --color-popover-foreground: var(--color-text-primary);
+    --color-primary-foreground: var(--color-text-inverse);
+    --color-secondary: var(--color-surface-raised);
+    --color-secondary-foreground: var(--color-text-primary);
+    --color-muted: var(--color-surface-subtle);
+    --color-muted-foreground: var(--color-text-secondary);
+    --color-accent: var(--color-surface-overlay);
+    --color-accent-foreground: var(--color-text-primary);
+    --color-destructive: var(--color-error);
+    --color-destructive-foreground: var(--color-error-text);
+    --color-input: var(--color-border);
+    --color-ring: var(--color-primary);
 }
 
 @layer base {
