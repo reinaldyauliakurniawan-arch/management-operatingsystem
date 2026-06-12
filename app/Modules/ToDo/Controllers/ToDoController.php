@@ -16,7 +16,7 @@ class ToDoController extends Controller
     public function index()
     {
         $teamId = session('active_team_id');
-        $todos = ToDo::with('owner')->orderBy('due_date')->get();
+        $todos = ToDo::with('owner')->where('team_id', $teamId)->orderBy('due_date')->get();
         $users = $teamId
             ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
             : User::all(['id', 'name']);
@@ -54,7 +54,16 @@ class ToDoController extends Controller
 
     public function destroy(ToDo $todo)
     {
+        $teamId = session('active_team_id');
+        $userId = request()->user()->id;
+        $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        // User bisa hapus to-do miliknya sendiri; leader bisa hapus semua
+        if ($role !== 'leader' && $todo->owner_id !== $userId) {
+            abort(403, 'Kamu hanya bisa menghapus to-do milikmu sendiri.');
+        }
+
         $todo->delete();
-        return back();
+        return back()->with('message', 'To-Do deleted');
     }
 }

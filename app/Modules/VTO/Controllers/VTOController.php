@@ -27,6 +27,14 @@ class VTOController extends Controller
 
     public function update(UpdateVTORequest $request, UpdateVTO $updateVTO)
     {
+        $teamId = session('active_team_id');
+        $user   = $request->user();
+        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if (!$user->is_org_admin && $role !== 'leader') {
+            abort(403, 'Hanya org admin atau leader yang bisa mengubah VTO.');
+        }
+
         $updateVTO->execute($request->validated());
 
         return back()->with('message', 'VTO updated successfully');

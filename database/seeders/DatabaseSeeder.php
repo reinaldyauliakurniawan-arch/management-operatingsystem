@@ -146,5 +146,7 @@ class DatabaseSeeder extends Seeder
             'owner_id' => $bob->id,
             'due_date' => Carbon::now()->addDays(5),
         ]);
+
+        $this->call(LeadershipDataSeeder::class);
     }
 }

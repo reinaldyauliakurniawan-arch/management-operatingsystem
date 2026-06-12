@@ -61,4 +61,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     if (file_exists(base_path('app/Modules/Leaderboard/routes.php'))) {
         require base_path('app/Modules/Leaderboard/routes.php');
     }
+    if (file_exists(base_path('app/Modules/LeadershipAssessment/routes.php'))) {
+        require base_path('app/Modules/LeadershipAssessment/routes.php');
+    }
 });

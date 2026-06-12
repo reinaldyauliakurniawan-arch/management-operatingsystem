@@ -25,6 +25,9 @@ class Evaluation extends Model
 
     protected $casts = [
         'core_value_ratings' => 'array',
+        'gets_it'  => 'string',
+        'wants_it' => 'string',
+        'capacity' => 'string',
     ];
 
     public function evaluatee()

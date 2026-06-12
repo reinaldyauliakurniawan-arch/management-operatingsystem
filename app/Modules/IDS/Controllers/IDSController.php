@@ -42,13 +42,27 @@ class IDSController extends Controller
 
     public function resolve(Issue $issue)
     {
+        $teamId = session('active_team_id');
+        $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if (!in_array($role, ['leader', 'member'])) {
+            abort(403, 'Tutor tidak bisa meresolve issue.');
+        }
+
         $issue->update(['status' => 'resolved']);
-        return back();
+        return back()->with('message', 'Issue resolved');
     }
 
     public function destroy(Issue $issue)
     {
+        $teamId = session('active_team_id');
+        $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if ($role !== 'leader') {
+            abort(403, 'Hanya leader yang bisa menghapus issue.');
+        }
+
         $issue->delete();
-        return back();
+        return back()->with('message', 'Issue deleted');
     }
 }

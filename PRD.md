@@ -99,13 +99,13 @@ Upcoming events yang di-assign ke dirinya
 
 ## MODULE 4 — PEOPLE ANALYZER / GWC
 
-**Deskripsi:** Evaluasi per user berdasarkan 3 kriteria: Get it, Want it, Capacity to do it (GWC). Plus Core Values fit. Scope: per team.
+**Deskripsi:** Evaluasi per user berdasarkan 3 kriteria: Get it, Want it, Capacity to do it (GWC). Plus Core Values fit. Core values dinilai menggunakan simbol +, +/-, -. Scope: per team. harus ada bare minimum kelulusan untuk menentukan right person in the right seat. misal: 3+, 2+/-, 0 - dan GWC Y/Y/N. jika tidak begini maka di flag apakah wrong person in the right seat, atau right person in the wrong seat, atau wrong person in the wrong seat, atau right person in the right seat. bare minimum sangat tergantung pada kebutuhan perusahaan (customizable)
 
 **CRUD:**
-- **Create:** Leader buat evaluasi GWC per user per periode di team-nya
+- **Create:** Leader buat evaluasi GWC per user per periode di team-nya atau calon team baru dan bare minimum
 - **Read:** Leader lihat semua evaluasi team-nya, user lihat evaluasi diri sendiri
-- **Update:** Leader update evaluasi
-- **Delete:** Leader hapus evaluasi (soft delete)
+- **Update:** Leader update evaluasi dan bare minimum standard
+- **Delete:** Leader hapus evaluasi (soft delete) dan bare minimum yg tadi disebutkan
 
 ---
 
