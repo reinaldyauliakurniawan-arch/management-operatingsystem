@@ -77,11 +77,12 @@ class CalculateLeaderboardScores
     private function calcAutomatic(string $source, int $userId, int $teamId, float $maxPoints): float
     {
         return match ($source) {
-            'rocks' => $this->rocksScore($userId, $teamId, $maxPoints),
-            'scorecard' => $this->scorecardScore($userId, $teamId, $maxPoints),
-            'todos' => $this->todosScore($userId, $teamId, $maxPoints),
-            'events' => $this->eventsScore($userId, $teamId, $maxPoints),
-            default => 0,
+            'rocks'      => $this->rocksScore($userId, $teamId, $maxPoints),
+            'scorecard'  => $this->scorecardScore($userId, $teamId, $maxPoints),
+            'todos'      => $this->todosScore($userId, $teamId, $maxPoints),
+            'events'     => $this->eventsScore($userId, $teamId, $maxPoints),
+            'leadership' => $this->leadershipScore($userId, $teamId, $maxPoints),
+            default      => 0,
         };
     }
 
@@ -126,5 +127,27 @@ class CalculateLeaderboardScores
             ->where('attended', true)
             ->count();
         return round(($attended / $totalEvents) * $max, 2);
+    }
+
+    private function leadershipScore(int $userId, int $teamId, float $max): float
+    {
+        // Get the latest closed cycle for this team
+        $latestCycle = \App\Modules\LeadershipAssessment\Models\AssessmentCycle::withoutGlobalScopes()
+            ->where('team_id', $teamId)
+            ->where('status', 'closed')
+            ->latest()
+            ->first();
+
+        if (!$latestCycle) return 0;
+
+        $responses = \App\Modules\LeadershipAssessment\Models\AssessmentResponse::where('cycle_id', $latestCycle->id)
+            ->where('assessee_id', $userId)
+            ->get();
+
+        if ($responses->isEmpty()) return 0;
+
+        // Scale: avg rubric level (1-5) → normalized to max_points
+        $avgLevel = $responses->avg('rubric_level'); // 1.0–5.0
+        return round((($avgLevel - 1) / 4) * $max, 2); // 0 at level 1, max at level 5
     }
 }

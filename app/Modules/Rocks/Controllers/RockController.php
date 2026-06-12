@@ -17,7 +17,7 @@ class RockController extends Controller
     public function index()
     {
         $teamId = session('active_team_id');
-        $rocks = Rock::with('owner')->latest()->get();
+        $rocks = Rock::with('owner')->where('team_id', $teamId)->latest()->get();
         $users = $teamId
             ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
             : User::all(['id', 'name']);

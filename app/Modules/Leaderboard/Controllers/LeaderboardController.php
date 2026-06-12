@@ -42,6 +42,7 @@ class LeaderboardController extends Controller
             'automatic_source' => 'nullable|string|in:rocks,scorecard,todos,events,leadership',
         ]);
 
+        $validated['team_id'] = session('active_team_id');
         LeaderboardParameter::create($validated);
 
         return back()->with('message', 'Parameter ditambah.');

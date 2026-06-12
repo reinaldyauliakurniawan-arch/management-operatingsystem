@@ -17,6 +17,7 @@ class EventController extends Controller
         $teamId = session('active_team_id');
 
         $events = Event::with('attendances')
+            ->where('team_id', $teamId)
             ->orderBy('event_date', 'desc')
             ->get()
             ->map(function ($event) {
