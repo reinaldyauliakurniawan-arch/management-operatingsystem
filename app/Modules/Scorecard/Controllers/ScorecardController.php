@@ -49,11 +49,36 @@ class ScorecardController extends Controller
             'owner_id'            => 'required|exists:users,id',
             'goal_value'          => 'required|numeric',
             'comparison_operator' => 'required|in:>=,<=,==',
+            'frequency'           => 'nullable|in:weekly,monthly',
         ]);
 
+        // HasTeam trait auto-injects team_id via session, tapi explicit lebih aman
+        $validated['team_id'] = $teamId;
         $createMetric->execute($validated);
 
-        return back()->with('message', 'Metric created');
+        return back()->with('message', 'Metric dibuat.');
+    }
+
+    public function update(Request $request, Metric $metric)
+    {
+        $teamId = session('active_team_id');
+        $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if ($role !== 'leader') {
+            abort(403, 'Hanya leader yang bisa mengedit metric.');
+        }
+
+        $validated = $request->validate([
+            'title'               => 'sometimes|string|max:255',
+            'owner_id'            => 'sometimes|exists:users,id',
+            'goal_value'          => 'sometimes|numeric',
+            'comparison_operator' => 'sometimes|in:>=,<=,==',
+            'frequency'           => 'nullable|in:weekly,monthly',
+        ]);
+
+        $metric->update($validated);
+
+        return back()->with('message', 'Metric diperbarui.');
     }
 
     public function destroy(Metric $metric)
@@ -81,5 +106,4 @@ class ScorecardController extends Controller
 
         return back()->with('message', 'Score updated');
     }
-
-    }
+}

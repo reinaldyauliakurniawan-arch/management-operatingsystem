@@ -15,6 +15,7 @@ class ToDo extends Model
 
     protected $fillable = [
         'team_id',
+        'meeting_id',
         'title',
         'owner_id',
         'due_date',

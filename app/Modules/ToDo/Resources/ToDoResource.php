@@ -10,14 +10,16 @@ class ToDoResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'title' => $this->title,
-            'owner' => [
-                'id' => $this->owner->id,
+            'id'           => $this->id,
+            'title'        => $this->title,
+            'owner'        => [
+                'id'   => $this->owner->id,
                 'name' => $this->owner->name,
             ],
-            'due_date' => $this->due_date->format('Y-m-d'),
+            'due_date'     => $this->due_date->format('Y-m-d'),
             'is_completed' => $this->is_completed,
+            'is_overdue'   => !$this->is_completed && $this->due_date->isPast(),
+            'meeting_id'   => $this->meeting_id,
         ];
     }
 }

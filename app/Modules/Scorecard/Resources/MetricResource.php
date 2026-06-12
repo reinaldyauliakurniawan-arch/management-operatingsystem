@@ -26,14 +26,26 @@ class MetricResource extends JsonResource
         ];
     }
 
-    private function calculateStatus($actual)
+    private function calculateStatus($actual): string
     {
-        $goal = $this->goal_value;
-        return match ($this->comparison_operator) {
-            '>=' => $actual >= $goal ? 'green' : 'red',
-            '<=' => $actual <= $goal ? 'green' : 'red',
-            '==' => $actual == $goal ? 'green' : 'red',
-            default => 'red',
+        $goal = (float) $this->goal_value;
+        $actual = (float) $actual;
+        $op   = $this->comparison_operator;
+
+        $meets = match ($op) {
+            '>='    => $actual >= $goal,
+            '<='    => $actual <= $goal,
+            '=='    => abs($actual - $goal) < 0.001,
+            default => false,
         };
+
+        if ($meets) return 'green';
+
+        if ($goal != 0) {
+            $pctOff = abs($actual - $goal) / abs($goal);
+            if ($pctOff <= 0.10) return 'yellow';
+        }
+
+        return 'red';
     }
 }

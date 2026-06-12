@@ -14,11 +14,12 @@ class CreateRockRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
+            'title'       => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'owner_id' => ['required', 'exists:users,id'],
-            'quarter' => ['required', 'string'],
-            'year' => ['required', 'integer'],
+            'owner_id'    => ['required', 'exists:users,id'],
+            'quarter'     => ['required', 'string'],
+            'year'        => ['required', 'integer'],
+            'due_date'    => ['nullable', 'date'],
         ];
     }
 }

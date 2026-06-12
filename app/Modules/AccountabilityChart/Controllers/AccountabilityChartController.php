@@ -14,8 +14,23 @@ class AccountabilityChartController extends Controller
 {
     public function index()
     {
-        $seats = Seat::with('user', 'children')->orderBy('id')->get();
-        $users = User::all(['id', 'name']);
+        $teamId = session('active_team_id');
+
+        // Ambil semua seat team ini (HasTeam global scope sudah filter otomatis)
+        // Tapi kita juga mau lihat parent chart (team_id null = org-level seat)
+        $seats = Seat::withoutGlobalScopes()
+            ->with(['user', 'children'])
+            ->where(function ($q) use ($teamId) {
+                $q->where('team_id', $teamId)
+                  ->orWhereNull('team_id'); // org-level seats tetap tampil
+            })
+            ->orderBy('parent_id')
+            ->orderBy('id')
+            ->get();
+
+        $users = $teamId
+            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
+            : User::all(['id', 'name']);
 
         return Inertia::render('AccountabilityChart/Index', [
             'seats' => SeatResource::collection($seats),

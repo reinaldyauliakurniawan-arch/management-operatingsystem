@@ -40,6 +40,27 @@ class IDSController extends Controller
         return back()->with('message', 'Issue created');
     }
 
+    public function update(Request $request, Issue $issue)
+    {
+        $teamId = session('active_team_id');
+        $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if (!in_array($role, ['leader', 'member'])) {
+            abort(403, 'Tutor tidak bisa mengedit issue.');
+        }
+
+        $validated = $request->validate([
+            'title'       => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'priority'    => 'sometimes|integer|min:0|max:10',
+            'owner_id'    => 'nullable|exists:users,id',
+        ]);
+
+        $issue->update([...$validated, 'updated_by' => $request->user()->id]);
+
+        return back()->with('message', 'Issue diperbarui.');
+    }
+
     public function resolve(Issue $issue)
     {
         $teamId = session('active_team_id');
