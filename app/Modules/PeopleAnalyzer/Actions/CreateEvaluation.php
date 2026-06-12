@@ -3,7 +3,6 @@
 namespace App\Modules\PeopleAnalyzer\Actions;
 
 use App\Modules\PeopleAnalyzer\Models\Evaluation;
-use Illuminate\Support\Facades\Auth;
 
 class CreateEvaluation
 {
@@ -11,8 +10,8 @@ class CreateEvaluation
     {
         return Evaluation::updateOrCreate(
             [
-                'team_id' => Auth::user()->team_id,
-                'user_id' => $data['user_id'],
+                'team_id' => session('active_team_id'),
+                'evaluatee_id' => $data['evaluatee_id'],
             ],
             $data
         );
