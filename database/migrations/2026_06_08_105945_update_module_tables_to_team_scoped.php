@@ -11,18 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        \$tables = ['seats', 'vto_plans', 'rocks', 'metrics', 'issues', 'to_dos', 'meetings'];
+        $tables = ['seats', 'vto_plans', 'rocks', 'metrics', 'issues', 'to_dos', 'meetings'];
 
-        foreach (\$tables as \$table) {
-            Schema::table(\$table, function (Blueprint \$table) {
-                \$table->foreignId('team_id')->after('id')->constrained('teams')->onDelete('cascade');
-                \$table->dropConstrainedForeignId('organization_id');
+        foreach ($tables as $table) {
+            Schema::table($table, function (Blueprint $table) {
+                $table->foreignId('team_id')->after('id')->constrained('teams')->onDelete('cascade');
+                $table->dropConstrainedForeignId('organization_id');
             });
         }
 
         // VTO Plan should be unique per team
-        Schema::table('vto_plans', function (Blueprint \$table) {
-            \$table->unique('team_id');
+        Schema::table('vto_plans', function (Blueprint $table) {
+            $table->unique('team_id');
         });
     }
 
@@ -31,17 +31,17 @@ return new class extends Migration
      */
     public function down(): void
     {
-        \$tables = ['seats', 'vto_plans', 'rocks', 'metrics', 'issues', 'to_dos', 'meetings'];
+        $tables = ['seats', 'vto_plans', 'rocks', 'metrics', 'issues', 'to_dos', 'meetings'];
 
-        foreach (\$tables as \$table) {
-            Schema::table(\$table, function (Blueprint \$table) {
-                \$table->foreignId('organization_id')->after('id')->constrained('organizations')->onDelete('cascade');
-                \$table->dropConstrainedForeignId('team_id');
+        foreach ($tables as $table) {
+            Schema::table($table, function (Blueprint $table) {
+                $table->foreignId('organization_id')->after('id')->constrained('organizations')->onDelete('cascade');
+                $table->dropConstrainedForeignId('team_id');
             });
         }
 
-        Schema::table('vto_plans', function (Blueprint \$table) {
-            \$table->dropUnique(['team_id']);
+        Schema::table('vto_plans', function (Blueprint $table) {
+            $table->dropUnique(['team_id']);
         });
     }
 };

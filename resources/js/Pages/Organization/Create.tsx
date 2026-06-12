@@ -20,14 +20,14 @@ export default function Create() {
         <GuestLayout>
             <Head title="Create Organization" />
 
-            <Card className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="w-full max-w-md mx-auto">
-                <Card className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass"Header>
-                    <Card className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass"Title>Create Organization</CardTitle>
-                    <Card className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass"Description>
+            <Card className="w-full max-w-md mx-auto">
+                <CardHeader>
+                    <CardTitle>Create Organization</CardTitle>
+                    <CardDescription>
                         To get started with Harmonic System, please create an organization for your team.
                     </CardDescription>
                 </CardHeader>
-                <Card className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass" className="glass"Content>
+                <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="name">Organization Name</Label>
