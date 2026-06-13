@@ -1,4 +1,4 @@
-import { Head, usePage, useForm } from "@inertiajs/react";
+import { Head, useForm } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
 import { Button } from "@/Components/ui/button";
