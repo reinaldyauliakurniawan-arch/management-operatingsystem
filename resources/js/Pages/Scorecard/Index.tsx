@@ -1,7 +1,34 @@
 import { useState } from "react";
 import { useForm, Head, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { PageHeader } from "@/Components/ui/page-header";
+import { Button } from "@/Components/ui/button";
+import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableHead,
+    TableRow,
+    TableCell,
+} from "@/Components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogBody,
+    DialogFooter,
+} from "@/Components/ui/dialog";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
+import { Select } from "@/Components/ui/select";
+import { EmptyState } from "@/Components/ui/empty-state";
+import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
 
+interface User {
+    id: number;
+    name: string;
+}
 interface Metric {
     id: number;
     title: string;
@@ -16,165 +43,54 @@ interface Metric {
     }[];
 }
 
-const S: Record<string, any> = {
-    label: {
-        fontSize: 12,
-        fontWeight: 500,
-        color: "#6b6b6b",
-        marginBottom: 6,
-        letterSpacing: "0.02em",
-    },
-    input: {
-        width: "100%",
-        background: "#f0f0f0",
-        border: "1px solid #e4e4e4",
-        borderRadius: 8,
-        padding: "8px 12px",
-        fontSize: 14,
-        color: "#1a1a1a",
-        outline: "none",
-    },
-    select: {
-        width: "100%",
-        background: "#f0f0f0",
-        border: "1px solid #e4e4e4",
-        borderRadius: 8,
-        padding: "8px 12px",
-        fontSize: 14,
-        color: "#1a1a1a",
-        outline: "none",
-        appearance: "none" as const,
-    },
-    btnPrimary: {
-        background: "#1a5c41",
-        color: "#ffffff",
-        border: "none",
-        borderRadius: 9999,
-        padding: "8px 20px",
-        fontSize: 14,
-        fontWeight: 500,
-        cursor: "pointer",
-    },
-    btnSecondary: {
-        background: "#f0f0f0",
-        color: "#1a1a1a",
-        border: "1px solid #e4e4e4",
-        borderRadius: 8,
-        padding: "8px 16px",
-        fontSize: 14,
-        cursor: "pointer",
-    },
-    btnGhost: {
-        background: "none",
-        border: "none",
-        fontSize: 12,
-        color: "#6b6b6b",
-        cursor: "pointer",
-        padding: "4px 8px",
-        borderRadius: 8,
-    },
-    btnDanger: {
-        background: "#fef2f2",
-        color: "#991b1b",
-        border: "none",
-        borderRadius: 8,
-        padding: "4px 10px",
-        fontSize: 12,
-        cursor: "pointer",
-    },
-};
-
-function Modal({ open, onClose, title, children }: any) {
-    if (!open) return null;
-    return (
-        <div
-            style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 50,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-            }}
-            onClick={onClose}
-        >
-            <div
-                style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "rgba(0,0,0,0.4)",
-                }}
-            />
-            <div
-                style={{
-                    position: "relative",
-                    background: "#fff",
-                    borderRadius: 18,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-                    width: "100%",
-                    maxWidth: 520,
-                    margin: 24,
-                }}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div
-                    style={{
-                        padding: "20px 24px",
-                        borderBottom: "1px solid #e4e4e4",
-                    }}
-                >
-                    <h2
-                        style={{
-                            fontSize: 16,
-                            fontWeight: 600,
-                            color: "#1a1a1a",
-                            margin: 0,
-                            letterSpacing: "-0.01em",
-                        }}
-                    >
-                        {title}
-                    </h2>
-                </div>
-                <div style={{ padding: 24 }}>{children}</div>
-            </div>
-        </div>
-    );
-}
-
 function StatusDot({ status }: { status: string }) {
-    const cfg: Record<string, [string, string]> = {
-        green: ["#1a5c41", "#e8f0ec"],
-        yellow: ["#78350f", "#fef3c7"],
-        red: ["#991b1b", "#fef2f2"],
+    const cls: Record<string, string> = {
+        green: "bg-[#1a5c41]",
+        yellow: "bg-[#78350f]",
+        red: "bg-[#991b1b]",
     };
-    const [color, bg] = cfg[status] ?? ["#999999", "#f0f0f0"];
     return (
         <span
-            style={{
-                display: "inline-block",
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: color,
-            }}
+            className={`inline-block size-2 rounded-full ${cls[status] ?? "bg-text-muted"}`}
             title={status}
         />
     );
+}
+
+function statusCellClass(status?: string) {
+    if (status === "green") return "bg-success-subtle";
+    if (status === "red") return "bg-error-subtle";
+    if (status === "yellow") return "bg-warning-subtle";
+    return "";
 }
 
 export default function ScorecardIndex({
     metrics,
     users,
     weeks,
+    filters,
 }: {
     metrics: { data: Metric[] };
-    users: any[];
+    users: User[];
     weeks: string[];
+    filters: { year: number; quarter: number };
 }) {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
     const userId = auth.user.id;
     const [createOpen, setCreateOpen] = useState(false);
+    const [deleteMetricId, setDeleteMetricId] = useState<number | null>(null);
+
+    const goToPeriod = (year: number, quarter: number) => {
+        router.get(
+            route("scorecard.index"),
+            { year, quarter },
+            { preserveState: true },
+        );
+    };
+
+    const yearOptions = [filters.year - 1, filters.year, filters.year + 1];
+
     const { data, setData, post, processing, reset, errors } = useForm({
         title: "",
         owner_id: users[0]?.id || "",
@@ -203,12 +119,13 @@ export default function ScorecardIndex({
     };
 
     const deleteMetric = (id: number) => {
-        if (!confirm("Hapus metric ini?")) return;
-        router.delete(route("scorecard.destroy", id), { preserveScroll: true });
+        router.delete(route("scorecard.destroy", id), {
+            preserveScroll: true,
+            onSuccess: () => setDeleteMetricId(null),
+        });
     };
 
-    // Tampilkan 8 minggu terbaru
-    const visibleWeeks = weeks.slice(0, 8);
+    const quarterWeeks = weeks;
 
     const formatWeek = (w: string) => {
         const d = new Date(w + "T00:00:00");
@@ -222,473 +139,300 @@ export default function ScorecardIndex({
     const canInputMetric = (metric: Metric) =>
         isLeader || metric.owner.id === userId;
 
+    const metricList = metrics.data;
+
     return (
         <AuthenticatedLayout>
             <Head title="Scorecard" />
-            <style>{`@keyframes modalIn{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:scale(1)}}`}</style>
 
-            {/* Header */}
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    justifyContent: "space-between",
-                    borderBottom: "1px solid #e4e4e4",
-                    paddingBottom: 24,
-                    marginBottom: 24,
-                }}
-            >
-                <div>
-                    <h1
-                        style={{
-                            fontSize: 24,
-                            fontWeight: 600,
-                            color: "#1a1a1a",
-                            margin: 0,
-                            letterSpacing: "-0.02em",
-                        }}
-                    >
-                        Scorecard
-                    </h1>
-                    <p
-                        style={{
-                            fontSize: 14,
-                            color: "#6b6b6b",
-                            margin: "4px 0 0",
-                        }}
-                    >
-                        Weekly measurables tim
-                    </p>
-                </div>
-                {isLeader && (
-                    <button
-                        onClick={() => setCreateOpen(true)}
-                        style={S.btnPrimary}
-                    >
-                        + Tambah Metric
-                    </button>
-                )}
-            </div>
-
-            {/* Table — horizontal scroll */}
-            <div
-                style={{
-                    background: "#ffffff",
-                    border: "1px solid #e4e4e4",
-                    borderRadius: 18,
-                    overflow: "hidden",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-                }}
-            >
-                <div style={{ overflowX: "auto" }}>
-                    <table
-                        style={{
-                            width: "100%",
-                            borderCollapse: "collapse",
-                            minWidth: 700,
-                        }}
-                    >
-                        <thead>
-                            <tr style={{ background: "#f5f5f5" }}>
-                                <th
-                                    style={{
-                                        padding: "12px 16px",
-                                        textAlign: "left",
-                                        fontSize: 12,
-                                        fontWeight: 500,
-                                        color: "#6b6b6b",
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.04em",
-                                        position: "sticky",
-                                        left: 0,
-                                        background: "#f5f5f5",
-                                        whiteSpace: "nowrap",
-                                        minWidth: 180,
-                                    }}
-                                >
-                                    Metric
-                                </th>
-                                <th
-                                    style={{
-                                        padding: "12px 16px",
-                                        textAlign: "left",
-                                        fontSize: 12,
-                                        fontWeight: 500,
-                                        color: "#6b6b6b",
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.04em",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    Owner
-                                </th>
-                                <th
-                                    style={{
-                                        padding: "12px 16px",
-                                        textAlign: "left",
-                                        fontSize: 12,
-                                        fontWeight: 500,
-                                        color: "#6b6b6b",
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.04em",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    Goal
-                                </th>
-                                {visibleWeeks.map((w) => (
-                                    <th
-                                        key={w}
-                                        style={{
-                                            padding: "12px 8px",
-                                            textAlign: "center",
-                                            fontSize: 12,
-                                            fontWeight: 500,
-                                            color: "#6b6b6b",
-                                            textTransform: "uppercase",
-                                            letterSpacing: "0.04em",
-                                            whiteSpace: "nowrap",
-                                            minWidth: 90,
-                                        }}
-                                    >
-                                        {formatWeek(w)}
-                                    </th>
-                                ))}
-                                {isLeader && (
-                                    <th
-                                        style={{
-                                            padding: "12px 16px",
-                                            width: 60,
-                                        }}
-                                    />
-                                )}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {metrics.data.length === 0 && (
-                                <tr>
-                                    <td
-                                        colSpan={4 + visibleWeeks.length}
-                                        style={{
-                                            padding: "48px 16px",
-                                            textAlign: "center",
-                                            color: "#999999",
-                                            fontSize: 14,
-                                        }}
-                                    >
-                                        Belum ada metric.{" "}
-                                        {isLeader && "Tambah metric pertama."}
-                                    </td>
-                                </tr>
-                            )}
-                            {metrics.data.map((metric, i) => (
-                                <tr
-                                    key={metric.id}
-                                    style={{
-                                        borderTop:
-                                            i === 0
-                                                ? "none"
-                                                : "1px solid #e4e4e4",
-                                    }}
-                                >
-                                    <td
-                                        style={{
-                                            padding: "12px 16px",
-                                            position: "sticky",
-                                            left: 0,
-                                            background: "#fff",
-                                        }}
-                                    >
-                                        <p
-                                            style={{
-                                                fontSize: 13,
-                                                fontWeight: 500,
-                                                color: "#1a1a1a",
-                                                margin: 0,
-                                            }}
-                                        >
-                                            {metric.title}
-                                        </p>
-                                        <p
-                                            style={{
-                                                fontSize: 11,
-                                                color: "#999999",
-                                                margin: "2px 0 0",
-                                                textTransform: "capitalize",
-                                            }}
-                                        >
-                                            {metric.frequency}
-                                        </p>
-                                    </td>
-                                    <td
-                                        style={{
-                                            padding: "12px 16px",
-                                            fontSize: 13,
-                                            color: "#6b6b6b",
-                                            whiteSpace: "nowrap",
-                                        }}
-                                    >
-                                        {metric.owner.name}
-                                    </td>
-                                    <td
-                                        style={{
-                                            padding: "12px 16px",
-                                            fontSize: 13,
-                                            color: "#6b6b6b",
-                                            whiteSpace: "nowrap",
-                                        }}
-                                    >
-                                        {metric.comparison_operator}{" "}
-                                        {metric.goal_value}
-                                    </td>
-                                    {visibleWeeks.map((w) => {
-                                        const score = metric.scores.find(
-                                            (s) => s.week_start_date === w,
-                                        );
-                                        const canInput = canInputMetric(metric);
-                                        const statusBg =
-                                            score?.status === "green"
-                                                ? "#e8f0ec"
-                                                : score?.status === "red"
-                                                  ? "#fef2f2"
-                                                  : score?.status === "yellow"
-                                                    ? "#fef3c7"
-                                                    : "transparent";
-                                        return (
-                                            <td
-                                                key={w}
-                                                style={{
-                                                    padding: "8px 6px",
-                                                    textAlign: "center",
-                                                }}
-                                            >
-                                                {canInput ? (
-                                                    <input
-                                                        type="number"
-                                                        defaultValue={
-                                                            score?.actual_value ??
-                                                            ""
-                                                        }
-                                                        onBlur={(e) =>
-                                                            logScore(
-                                                                metric.id,
-                                                                w,
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        style={{
-                                                            width: 76,
-                                                            textAlign: "center",
-                                                            background:
-                                                                statusBg ||
-                                                                "#f0f0f0",
-                                                            border: "1px solid #e4e4e4",
-                                                            borderRadius: 6,
-                                                            padding: "5px 6px",
-                                                            fontSize: 13,
-                                                            color: "#1a1a1a",
-                                                            outline: "none",
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <span
-                                                        style={{
-                                                            display:
-                                                                "inline-flex",
-                                                            alignItems:
-                                                                "center",
-                                                            gap: 4,
-                                                            fontSize: 13,
-                                                            color: "#1a1a1a",
-                                                            background:
-                                                                statusBg,
-                                                            padding: "4px 8px",
-                                                            borderRadius: 6,
-                                                        }}
-                                                    >
-                                                        {score ? (
-                                                            <>
-                                                                <StatusDot
-                                                                    status={
-                                                                        score.status
-                                                                    }
-                                                                />{" "}
-                                                                {
-                                                                    score.actual_value
-                                                                }
-                                                            </>
-                                                        ) : (
-                                                            <span
-                                                                style={{
-                                                                    color: "#cccccc",
-                                                                }}
-                                                            >
-                                                                —
-                                                            </span>
-                                                        )}
-                                                    </span>
-                                                )}
-                                            </td>
-                                        );
-                                    })}
-                                    {isLeader && (
-                                        <td style={{ padding: "12px 16px" }}>
-                                            <button
-                                                onClick={() =>
-                                                    deleteMetric(metric.id)
-                                                }
-                                                style={S.btnDanger}
-                                            >
-                                                Hapus
-                                            </button>
-                                        </td>
-                                    )}
-                                </tr>
+            <PageHeader
+                title="Scorecard"
+                subtitle="Weekly measurables tim"
+                action={
+                    <div className="flex items-center gap-sm">
+                        <Select
+                            value={filters.quarter}
+                            onChange={(e) =>
+                                goToPeriod(
+                                    filters.year,
+                                    parseInt(e.target.value),
+                                )
+                            }
+                            className="h-9 w-auto"
+                        >
+                            <option value={1}>Q1</option>
+                            <option value={2}>Q2</option>
+                            <option value={3}>Q3</option>
+                            <option value={4}>Q4</option>
+                        </Select>
+                        <Select
+                            value={filters.year}
+                            onChange={(e) =>
+                                goToPeriod(
+                                    parseInt(e.target.value),
+                                    filters.quarter,
+                                )
+                            }
+                            className="h-9 w-auto"
+                        >
+                            {yearOptions.map((y) => (
+                                <option key={y} value={y}>
+                                    {y}
+                                </option>
                             ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Create Modal */}
-            <Modal
-                open={createOpen}
-                onClose={() => setCreateOpen(false)}
-                title="Tambah Metric"
-            >
-                <form
-                    onSubmit={submit}
-                    style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 16,
-                    }}
-                >
-                    <div>
-                        <p style={S.label}>Nama Metric *</p>
-                        <input
-                            value={data.title}
-                            onChange={(e) => setData("title", e.target.value)}
-                            placeholder="Contoh: Weekly Revenue"
-                            style={S.input}
-                            required
-                        />
-                        {errors.title && (
-                            <p
-                                style={{
-                                    fontSize: 12,
-                                    color: "#991b1b",
-                                    marginTop: 4,
-                                }}
-                            >
-                                {errors.title}
-                            </p>
+                        </Select>
+                        {isLeader && (
+                            <Button onClick={() => setCreateOpen(true)}>
+                                + Tambah Metric
+                            </Button>
                         )}
                     </div>
-                    <div
-                        style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr",
-                            gap: 12,
-                        }}
-                    >
-                        <div>
-                            <p style={S.label}>Goal Value *</p>
-                            <input
-                                type="number"
-                                value={data.goal_value}
-                                onChange={(e) =>
-                                    setData("goal_value", e.target.value)
-                                }
-                                placeholder="50000"
-                                style={S.input}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <p style={S.label}>Operator *</p>
-                            <select
-                                value={data.comparison_operator}
-                                onChange={(e) =>
-                                    setData(
-                                        "comparison_operator",
-                                        e.target.value,
-                                    )
-                                }
-                                style={S.select}
+                }
+            />
+
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="sticky left-0 z-10 min-w-[180px] bg-surface-subtle whitespace-nowrap">
+                            Metric
+                        </TableHead>
+                        <TableHead className="whitespace-nowrap">
+                            Owner
+                        </TableHead>
+                        <TableHead className="whitespace-nowrap">
+                            Goal
+                        </TableHead>
+                        {quarterWeeks.map((w) => (
+                            <TableHead
+                                key={w}
+                                className="min-w-[90px] whitespace-nowrap text-center"
                             >
-                                <option value=">=">≥ (min)</option>
-                                <option value="<=">≤ (maks)</option>
-                                <option value="==">= (tepat)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div
-                        style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr",
-                            gap: 12,
-                        }}
-                    >
-                        <div>
-                            <p style={S.label}>Owner *</p>
-                            <select
-                                value={data.owner_id}
-                                onChange={(e) =>
-                                    setData("owner_id", e.target.value)
+                                {formatWeek(w)}
+                            </TableHead>
+                        ))}
+                        {isLeader && <TableHead className="w-[60px]" />}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {metricList.length === 0 && (
+                        <TableRow>
+                            <TableCell
+                                colSpan={
+                                    3 + quarterWeeks.length + (isLeader ? 1 : 0)
                                 }
-                                style={S.select}
                             >
-                                {users.map((u) => (
-                                    <option key={u.id} value={u.id}>
-                                        {u.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <p style={S.label}>Frekuensi</p>
-                            <select
-                                value={data.frequency}
-                                onChange={(e) =>
-                                    setData("frequency", e.target.value)
-                                }
-                                style={S.select}
-                            >
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div
-                        style={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            gap: 8,
-                            paddingTop: 8,
-                            borderTop: "1px solid #e4e4e4",
-                        }}
-                    >
-                        <button
-                            type="button"
+                                <EmptyState
+                                    title="Belum ada metric"
+                                    description={
+                                        isLeader
+                                            ? "Tambah metric pertama untuk team ini."
+                                            : "Belum ada metric yang ditambahkan untuk team ini."
+                                    }
+                                />
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {metricList.map((metric) => (
+                        <TableRow key={metric.id}>
+                            <TableCell className="sticky left-0 z-10 bg-surface">
+                                <p className="text-[13px] font-medium text-text-primary">
+                                    {metric.title}
+                                </p>
+                                <p className="mt-0.5 text-[11px] text-text-muted capitalize">
+                                    {metric.frequency}
+                                </p>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-text-secondary">
+                                {metric.owner.name}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-text-secondary">
+                                {metric.comparison_operator} {metric.goal_value}
+                            </TableCell>
+                            {quarterWeeks.map((w) => {
+                                const score = metric.scores.find(
+                                    (s) => s.week_start_date === w,
+                                );
+                                const canInput = canInputMetric(metric);
+                                return (
+                                    <TableCell key={w} className="text-center">
+                                        {canInput ? (
+                                            <input
+                                                type="number"
+                                                defaultValue={
+                                                    score?.actual_value ?? ""
+                                                }
+                                                onBlur={(e) =>
+                                                    logScore(
+                                                        metric.id,
+                                                        w,
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className={`h-8 w-20 rounded-sm border border-border text-center text-sm text-text-primary outline-none transition-colors focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-primary/12 ${statusCellClass(score?.status) || "bg-surface-raised"}`}
+                                            />
+                                        ) : score ? (
+                                            <span
+                                                className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-sm text-text-primary ${statusCellClass(score.status)}`}
+                                            >
+                                                <StatusDot
+                                                    status={score.status}
+                                                />{" "}
+                                                {score.actual_value}
+                                            </span>
+                                        ) : (
+                                            <span className="text-border-strong">
+                                                —
+                                            </span>
+                                        )}
+                                    </TableCell>
+                                );
+                            })}
+                            {isLeader && (
+                                <TableCell>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() =>
+                                            setDeleteMetricId(metric.id)
+                                        }
+                                    >
+                                        Hapus
+                                    </Button>
+                                </TableCell>
+                            )}
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+
+            {/* Create Modal */}
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                <DialogContent size="md">
+                    <DialogHeader>
+                        <DialogTitle>Tambah Metric</DialogTitle>
+                    </DialogHeader>
+                    <DialogBody>
+                        <form
+                            onSubmit={submit}
+                            className="flex flex-col gap-lg"
+                        >
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="metric-title">
+                                    Nama Metric *
+                                </Label>
+                                <Input
+                                    id="metric-title"
+                                    value={data.title}
+                                    onChange={(e) =>
+                                        setData("title", e.target.value)
+                                    }
+                                    placeholder="Contoh: Weekly Revenue"
+                                    aria-invalid={!!errors.title}
+                                    required
+                                />
+                                {errors.title && (
+                                    <p className="text-[12px] text-error-text">
+                                        {errors.title}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-md">
+                                <div className="flex flex-col gap-xs">
+                                    <Label htmlFor="metric-goal">
+                                        Goal Value *
+                                    </Label>
+                                    <Input
+                                        id="metric-goal"
+                                        type="number"
+                                        value={data.goal_value}
+                                        onChange={(e) =>
+                                            setData(
+                                                "goal_value",
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="50000"
+                                        required
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-xs">
+                                    <Label htmlFor="metric-operator">
+                                        Operator *
+                                    </Label>
+                                    <Select
+                                        id="metric-operator"
+                                        value={data.comparison_operator}
+                                        onChange={(e) =>
+                                            setData(
+                                                "comparison_operator",
+                                                e.target.value,
+                                            )
+                                        }
+                                    >
+                                        <option value=">=">≥ (min)</option>
+                                        <option value="<=">≤ (maks)</option>
+                                        <option value="==">= (tepat)</option>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-md">
+                                <div className="flex flex-col gap-xs">
+                                    <Label htmlFor="metric-owner">
+                                        Owner *
+                                    </Label>
+                                    <Select
+                                        id="metric-owner"
+                                        value={data.owner_id}
+                                        onChange={(e) =>
+                                            setData("owner_id", e.target.value)
+                                        }
+                                    >
+                                        {users.map((u) => (
+                                            <option key={u.id} value={u.id}>
+                                                {u.name}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </div>
+                                <div className="flex flex-col gap-xs">
+                                    <Label htmlFor="metric-frequency">
+                                        Frekuensi
+                                    </Label>
+                                    <Select
+                                        id="metric-frequency"
+                                        value={data.frequency}
+                                        onChange={(e) =>
+                                            setData("frequency", e.target.value)
+                                        }
+                                    >
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </Select>
+                                </div>
+                            </div>
+                        </form>
+                    </DialogBody>
+                    <DialogFooter>
+                        <Button
+                            variant="secondary"
                             onClick={() => setCreateOpen(false)}
-                            style={S.btnSecondary}
                         >
                             Batal
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            style={{
-                                ...S.btnPrimary,
-                                opacity: processing ? 0.6 : 1,
-                            }}
-                        >
+                        </Button>
+                        <Button onClick={submit} disabled={processing}>
                             {processing ? "Menyimpan…" : "Simpan Metric"}
-                        </button>
-                    </div>
-                </form>
-            </Modal>
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <ConfirmDialog
+                open={deleteMetricId !== null}
+                onOpenChange={(open) => !open && setDeleteMetricId(null)}
+                title="Hapus Metric"
+                description="Metric ini akan dihapus/archived. Data historis tetap tersimpan."
+                onConfirm={() => deleteMetricId && deleteMetric(deleteMetricId)}
+            />
         </AuthenticatedLayout>
     );
 }

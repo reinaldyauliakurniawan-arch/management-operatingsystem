@@ -14,7 +14,7 @@ use Carbon\Carbon;
 
 class ScorecardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $teamId = session('active_team_id');
         $metrics = Metric::with(['owner', 'scores' => fn($q) => $q->orderBy('week_start_date', 'desc')])->where('team_id', $teamId)->latest()->get();
@@ -22,16 +22,32 @@ class ScorecardController extends Controller
             ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
             : User::all(['id', 'name']);
 
-        // Generate last 13 weeks
+        $now = Carbon::now();
+        $year = (int) $request->query('year', $now->year);
+        $quarter = (int) $request->query('quarter', intdiv($now->month - 1, 3) + 1);
+        $quarter = max(1, min(4, $quarter));
+
+        // Bulan awal quarter (Q1=Jan, Q2=Apr, Q3=Jul, Q4=Okt)
+        $startMonth = (($quarter - 1) * 3) + 1;
+        $quarterStart = Carbon::create($year, $startMonth, 1)->startOfWeek();
+        $quarterEnd = $quarterStart->copy()->addMonths(3)->subDay();
+
+        // Generate semua minggu dalam quarter tersebut, urutan kronologis (lama -> baru)
         $weeks = [];
-        for ($i = 0; $i < 13; $i++) {
-            $weeks[] = Carbon::now()->startOfWeek()->subWeeks($i)->format('Y-m-d');
+        $cursor = $quarterStart->copy();
+        while ($cursor->lte($quarterEnd)) {
+            $weeks[] = $cursor->format('Y-m-d');
+            $cursor->addWeek();
         }
 
         return Inertia::render('Scorecard/Index', [
             'metrics' => MetricResource::collection($metrics),
             'users' => $users,
             'weeks' => $weeks,
+            'filters' => [
+                'year' => $year,
+                'quarter' => $quarter,
+            ],
         ]);
     }
 

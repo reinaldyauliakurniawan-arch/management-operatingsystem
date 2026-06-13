@@ -111,7 +111,7 @@ Upcoming events yang di-assign ke dirinya
 
 ## MODULE 5 — DATA / SCORECARD
 
-**Deskripsi:** Weekly measurables per user/seat. Tiap metric punya goal, actual, status (green/yellow/red). Scope: per team.
+**Deskripsi:** Weekly measurables per user/seat. Tiap metric punya goal, actual, status (green/yellow/red). Scope: per team. toggle: quarterly. bisa pilih year and quarter, logic nya ada dua: the more the better atau the less the better. misal untuk sales: the more the better kan logic nya. tapi untuk HR, semakin sedikit complain per minggu semakin bagus. ini pake logic the less the better.
 
 **CRUD:**
 - **Create:** Leader buat metric baru, assign ke user/seat, set goal & frekuensi
@@ -159,7 +159,7 @@ Upcoming events yang di-assign ke dirinya
 
 ## MODULE 9 — TRACTION / L10 MEETING
 
-**Deskripsi:** Weekly meeting structure (90 menit): Segue, Scorecard review, Rock review, Headlines, To-Do review, IDS, Conclude. Scope: per team.
+**Deskripsi:** Weekly meeting structure (90 menit): Segue, Scorecard review, Rock review, Headlines, To-Do review, IDS, Conclude. Scope: per team. ada tanggal meeting dan jam meeting juga.
 
 **CRUD:**
 - **Create:** Leader buat meeting, set jadwal, assign peserta
