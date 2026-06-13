@@ -33,7 +33,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 });
 
 Route::middleware(['web', 'auth', \App\Http\Middleware\EnsureHasOrganization::class])->group(function () {
-    if (file_exists(base_path('app/Modules/Teams/routes.php'))) {
+
     if (file_exists(base_path('app/Modules/Teams/routes.php'))) {
         require base_path('app/Modules/Teams/routes.php');
     }
