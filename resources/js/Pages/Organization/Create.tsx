@@ -1,52 +1,60 @@
-import { Link, useForm } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
-import { Input } from '@/Components/ui/input';
-import { Label } from '@/Components/ui/label';
-import { Button } from '@/Components/ui/button';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head } from '@inertiajs/react';
+import { Head, useForm } from "@inertiajs/react";
+import GuestLayout from "@/Layouts/GuestLayout";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
 
-export default function Create() {
+export default function OrganizationCreate() {
     const { data, setData, post, processing, errors } = useForm({
-        name: '',
+        name: "",
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('organization.store'));
+        post(route("organization.store"));
     };
 
     return (
         <GuestLayout>
-            <Head title="Create Organization" />
+            <Head title="Buat Organization" />
 
-            <Card className="w-full max-w-md mx-auto">
-                <CardHeader>
-                    <CardTitle>Create Organization</CardTitle>
-                    <CardDescription>
-                        To get started with Harmonic System, please create an organization for your team.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Organization Name</Label>
-                            <Input
-                                id="name"
-                                value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
-                                placeholder="Acme Corp"
-                                required
-                            />
-                            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-                        </div>
+            <div className="mx-auto w-full max-w-md">
+                <div className="mb-xl">
+                    <h1 className="text-[24px] font-semibold tracking-tight text-text-primary">
+                        Buat Organization
+                    </h1>
+                    <p className="mt-xs text-[14px] text-text-secondary">
+                        Mulai dengan membuat organization untuk tim kamu.
+                    </p>
+                </div>
 
-                        <Button type="submit" className="w-full" disabled={processing}>
-                            Create Organization
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
+                <form onSubmit={submit} className="flex flex-col gap-lg">
+                    <div className="flex flex-col gap-xs">
+                        <Label htmlFor="org-name">Nama Organization *</Label>
+                        <Input
+                            id="org-name"
+                            value={data.name}
+                            onChange={(e) => setData("name", e.target.value)}
+                            placeholder="Misal: Just Speak English"
+                            aria-invalid={!!errors.name}
+                            required
+                        />
+                        {errors.name && (
+                            <p className="text-[12px] text-error-text">
+                                {errors.name}
+                            </p>
+                        )}
+                    </div>
+
+                    <Button
+                        type="submit"
+                        disabled={processing}
+                        className="w-full"
+                    >
+                        {processing ? "Membuat…" : "Buat Organization"}
+                    </Button>
+                </form>
+            </div>
         </GuestLayout>
     );
 }
