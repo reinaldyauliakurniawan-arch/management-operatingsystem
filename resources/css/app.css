@@ -53,14 +53,14 @@
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
 
     /* Spacing */
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 12px;
-    --spacing-lg: 16px;
-    --spacing-xl: 24px;
-    --spacing-2xl: 32px;
-    --spacing-3xl: 48px;
-    --spacing-4xl: 64px;
+    --sz-xs: 4px;
+    --sz-sm: 8px;
+    --sz-md: 12px;
+    --sz-lg: 16px;
+    --sz-xl: 24px;
+    --sz-2xl: 32px;
+    --sz-3xl: 48px;
+    --sz-4xl: 64px;
 
     --color-background: var(--color-surface);
     --color-foreground: var(--color-text-primary);
