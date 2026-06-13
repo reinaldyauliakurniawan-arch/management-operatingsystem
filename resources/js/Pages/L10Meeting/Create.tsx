@@ -1,52 +1,136 @@
-import { Link, useForm } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
-import { Input } from '@/Components/ui/input';
-import { Label } from '@/Components/ui/label';
-import { Button } from '@/Components/ui/button';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage, useForm } from "@inertiajs/react";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { PageHeader } from "@/Components/ui/page-header";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
+import { Select } from "@/Components/ui/select";
+import { Card, CardContent } from "@/Components/ui/card";
 
-export default function Create() {
+interface User {
+    id: number;
+    name: string;
+}
+
+export default function L10Create({ members }: { members: User[] }) {
     const { data, setData, post, processing, errors } = useForm({
-        name: '',
+        title: "",
+        scheduled_at: "",
+        attendee_ids: [] as number[],
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const toggleAttendee = (id: number) => {
+        setData(
+            "attendee_ids",
+            data.attendee_ids.includes(id)
+                ? data.attendee_ids.filter((x) => x !== id)
+                : [...data.attendee_ids, id],
+        );
+    };
+
+    const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('organization.store'));
+        post(route("l10.store"));
     };
 
     return (
-        <GuestLayout>
-            <Head title="Create Organization" />
+        <AuthenticatedLayout>
+            <Head title="Buat L10 Meeting" />
 
-            <Card className="w-full max-w-md mx-auto">
-                <CardHeader>
-                    <CardTitle>Create Organization</CardTitle>
-                    <CardDescription>
-                        To get started with Harmonic System, please create an organization for your team.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Organization Name</Label>
-                            <Input
-                                id="name"
-                                value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
-                                placeholder="Acme Corp"
-                                required
-                            />
-                            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-                        </div>
+            <PageHeader
+                title="Buat L10 Meeting"
+                subtitle="Jadwalkan meeting mingguan tim kamu"
+            />
 
-                        <Button type="submit" className="w-full" disabled={processing}>
-                            Create Organization
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
-        </GuestLayout>
+            <div className="max-w-xl">
+                <Card>
+                    <CardContent className="pt-xl">
+                        <form
+                            onSubmit={submit}
+                            className="flex flex-col gap-lg"
+                        >
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="l10-title">
+                                    Judul (opsional)
+                                </Label>
+                                <Input
+                                    id="l10-title"
+                                    value={data.title}
+                                    onChange={(e) =>
+                                        setData("title", e.target.value)
+                                    }
+                                    placeholder="Misal: Weekly L10 — Agustus W3"
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="l10-scheduled">
+                                    Tanggal & Jam Meeting *
+                                </Label>
+                                <Input
+                                    id="l10-scheduled"
+                                    type="datetime-local"
+                                    value={data.scheduled_at}
+                                    onChange={(e) =>
+                                        setData("scheduled_at", e.target.value)
+                                    }
+                                    aria-invalid={!!errors.scheduled_at}
+                                />
+                                {errors.scheduled_at && (
+                                    <p className="text-[12px] text-error-text">
+                                        {errors.scheduled_at}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col gap-xs">
+                                <Label>Peserta</Label>
+                                <div className="flex flex-col gap-xs rounded-lg border border-border bg-surface-raised p-md">
+                                    {members.length === 0 ? (
+                                        <p className="text-[13px] text-text-muted">
+                                            Belum ada anggota tim.
+                                        </p>
+                                    ) : (
+                                        members.map((m) => (
+                                            <label
+                                                key={m.id}
+                                                className="flex cursor-pointer items-center gap-sm"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={data.attendee_ids.includes(
+                                                        m.id,
+                                                    )}
+                                                    onChange={() =>
+                                                        toggleAttendee(m.id)
+                                                    }
+                                                    className="h-4 w-4 rounded accent-primary"
+                                                />
+                                                <span className="text-[13px] text-text-primary">
+                                                    {m.name}
+                                                </span>
+                                            </label>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-sm pt-sm">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => history.back()}
+                                >
+                                    Batal
+                                </Button>
+                                <Button type="submit" disabled={processing}>
+                                    {processing ? "Menyimpan…" : "Buat Meeting"}
+                                </Button>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
+        </AuthenticatedLayout>
     );
 }

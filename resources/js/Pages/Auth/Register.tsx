@@ -1,120 +1,119 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { Head, Link, useForm } from "@inertiajs/react";
+import { FormEventHandler } from "react";
+import GuestLayout from "@/Layouts/GuestLayout";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
+        name: "",
+        email: "",
+        password: "",
+        password_confirmation: "",
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-
-        post(route('register'), {
-            onFinish: () => reset('password', 'password_confirmation'),
+        post(route("register"), {
+            onFinish: () => reset("password", "password_confirmation"),
         });
     };
 
     return (
         <GuestLayout>
-            <Head title="Register" />
+            <Head title="Daftar" />
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="name" value="Name" />
-
-                    <TextInput
+            <form onSubmit={submit} className="flex flex-col gap-lg">
+                <div className="flex flex-col gap-xs">
+                    <Label htmlFor="name">Nama Lengkap</Label>
+                    <Input
                         id="name"
-                        name="name"
                         value={data.name}
-                        className="mt-1 block w-full"
+                        onChange={(e) => setData("name", e.target.value)}
                         autoComplete="name"
-                        isFocused={true}
-                        onChange={(e) => setData('name', e.target.value)}
+                        autoFocus
                         required
+                        aria-invalid={!!errors.name}
                     />
-
-                    <InputError message={errors.name} className="mt-2" />
+                    {errors.name && (
+                        <p className="text-[12px] text-error-text">
+                            {errors.name}
+                        </p>
+                    )}
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
+                <div className="flex flex-col gap-xs">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
                         id="email"
                         type="email"
-                        name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        onChange={(e) => setData("email", e.target.value)}
                         autoComplete="username"
-                        onChange={(e) => setData('email', e.target.value)}
                         required
+                        aria-invalid={!!errors.email}
                     />
-
-                    <InputError message={errors.email} className="mt-2" />
+                    {errors.email && (
+                        <p className="text-[12px] text-error-text">
+                            {errors.email}
+                        </p>
+                    )}
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
+                <div className="flex flex-col gap-xs">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
                         id="password"
                         type="password"
-                        name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
+                        onChange={(e) => setData("password", e.target.value)}
                         autoComplete="new-password"
-                        onChange={(e) => setData('password', e.target.value)}
                         required
+                        aria-invalid={!!errors.password}
                     />
-
-                    <InputError message={errors.password} className="mt-2" />
+                    {errors.password && (
+                        <p className="text-[12px] text-error-text">
+                            {errors.password}
+                        </p>
+                    )}
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
-
-                    <TextInput
+                <div className="flex flex-col gap-xs">
+                    <Label htmlFor="password_confirmation">
+                        Konfirmasi Password
+                    </Label>
+                    <Input
                         id="password_confirmation"
                         type="password"
-                        name="password_confirmation"
                         value={data.password_confirmation}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
                         onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
+                            setData("password_confirmation", e.target.value)
                         }
+                        autoComplete="new-password"
                         required
+                        aria-invalid={!!errors.password_confirmation}
                     />
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
+                    {errors.password_confirmation && (
+                        <p className="text-[12px] text-error-text">
+                            {errors.password_confirmation}
+                        </p>
+                    )}
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
+                <Button type="submit" disabled={processing} className="w-full">
+                    {processing ? "Mendaftar…" : "Daftar"}
+                </Button>
+
+                <p className="text-center text-[13px] text-text-muted">
+                    Sudah punya akun?{" "}
                     <Link
-                        href={route('login')}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
+                        href={route("login")}
+                        className="text-primary-text hover:underline"
                     >
-                        Already registered?
+                        Masuk
                     </Link>
-
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Register
-                    </PrimaryButton>
-                </div>
+                </p>
             </form>
         </GuestLayout>
     );

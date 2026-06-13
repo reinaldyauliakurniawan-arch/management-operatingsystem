@@ -377,27 +377,6 @@ function MemberBottomSection({
         scheduled_at: string;
     } | null;
 }) {
-    const fmt = (s: string) =>
-        new Date(s).toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-        });
-    const fmtDatetime = (s: string) =>
-        new Date(s).toLocaleString("id-ID", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    const countdown = (s: string) => {
-        const diff = Math.ceil((new Date(s).getTime() - Date.now()) / 86400000);
-        if (diff <= 0) return "Hari ini";
-        if (diff === 1) return "Besok";
-        return `${diff} hari lagi`;
-    };
-
     return (
         <div className="grid grid-cols-2 gap-lg">
             <Card>

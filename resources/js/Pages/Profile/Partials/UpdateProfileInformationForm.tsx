@@ -1,22 +1,19 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import { Transition } from '@headlessui/react';
-import { Link, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { Link, useForm, usePage } from "@inertiajs/react";
+import { FormEventHandler } from "react";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
 
-export default function UpdateProfileInformation({
+export default function UpdateProfileInformationForm({
     mustVerifyEmail,
     status,
-    className = '',
+    className = "",
 }: {
     mustVerifyEmail: boolean;
     status?: string;
     className?: string;
 }) {
     const user = usePage().props.auth.user;
-
     const { data, setData, patch, errors, processing, recentlySuccessful } =
         useForm({
             name: user.name,
@@ -25,92 +22,82 @@ export default function UpdateProfileInformation({
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-
-        patch(route('profile.update'));
+        patch(route("profile.update"));
     };
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    Profile Information
-                </h2>
+            <h2 className="mb-xs text-[14px] font-semibold tracking-tight text-text-primary">
+                Informasi Profil
+            </h2>
+            <p className="mb-lg text-[13px] text-text-secondary">
+                Perbarui nama dan alamat email akun kamu.
+            </p>
 
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Update your account's profile information and email address.
-                </p>
-            </header>
-
-            <form onSubmit={submit} className="mt-6 space-y-6">
-                <div>
-                    <InputLabel htmlFor="name" value="Name" />
-
-                    <TextInput
+            <form onSubmit={submit} className="flex flex-col gap-lg">
+                <div className="flex flex-col gap-xs">
+                    <Label htmlFor="name">Nama</Label>
+                    <Input
                         id="name"
-                        className="mt-1 block w-full"
                         value={data.name}
-                        onChange={(e) => setData('name', e.target.value)}
-                        required
-                        isFocused
+                        onChange={(e) => setData("name", e.target.value)}
                         autoComplete="name"
+                        required
+                        aria-invalid={!!errors.name}
                     />
-
-                    <InputError className="mt-2" message={errors.name} />
+                    {errors.name && (
+                        <p className="text-[12px] text-error-text">
+                            {errors.name}
+                        </p>
+                    )}
                 </div>
 
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
+                <div className="flex flex-col gap-xs">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
                         id="email"
                         type="email"
-                        className="mt-1 block w-full"
                         value={data.email}
-                        onChange={(e) => setData('email', e.target.value)}
-                        required
+                        onChange={(e) => setData("email", e.target.value)}
                         autoComplete="username"
+                        required
+                        aria-invalid={!!errors.email}
                     />
-
-                    <InputError className="mt-2" message={errors.email} />
+                    {errors.email && (
+                        <p className="text-[12px] text-error-text">
+                            {errors.email}
+                        </p>
+                    )}
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div>
-                        <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
-                            Your email address is unverified.
+                        <p className="text-[13px] text-text-secondary">
+                            Email belum diverifikasi.{" "}
                             <Link
-                                href={route('verification.send')}
+                                href={route("verification.send")}
                                 method="post"
                                 as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
+                                className="text-primary-text hover:underline"
                             >
-                                Click here to re-send the verification email.
+                                Kirim ulang verifikasi.
                             </Link>
                         </p>
-
-                        {status === 'verification-link-sent' && (
-                            <div className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-                                A new verification link has been sent to your
-                                email address.
-                            </div>
+                        {status === "verification-link-sent" && (
+                            <p className="mt-sm text-[13px] font-medium text-[#1a5c41]">
+                                Link verifikasi baru sudah dikirim.
+                            </p>
                         )}
                     </div>
                 )}
 
-                <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
-
-                    <Transition
-                        show={recentlySuccessful}
-                        enter="transition ease-in-out"
-                        enterFrom="opacity-0"
-                        leave="transition ease-in-out"
-                        leaveTo="opacity-0"
-                    >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Saved.
-                        </p>
-                    </Transition>
+                <div className="flex items-center gap-md">
+                    <Button type="submit" disabled={processing}>
+                        Simpan
+                    </Button>
+                    {recentlySuccessful && (
+                        <p className="text-[13px] text-[#1a5c41]">Tersimpan.</p>
+                    )}
                 </div>
             </form>
         </section>

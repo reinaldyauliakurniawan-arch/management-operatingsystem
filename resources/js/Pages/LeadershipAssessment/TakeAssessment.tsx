@@ -1,55 +1,134 @@
-import { Head, useForm } from '@inertiajs/react';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
-import { Button } from '@/Components/ui/button';
-import { Label } from '@/Components/ui/label';
+import { Head, useForm } from "@inertiajs/react";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { PageHeader } from "@/Components/ui/page-header";
+import { Button } from "@/Components/ui/button";
+import { Card, CardContent } from "@/Components/ui/card";
+import { Badge } from "@/Components/ui/badge";
 
-export default function TakeAssessment({ cycle, assessee, type }: any) {
+interface Rubric {
+    id: number;
+    level: number;
+    description: string;
+}
+interface Item {
+    id: number;
+    title: string;
+    rubrics: Rubric[];
+}
+interface LeadershipType {
+    id: number;
+    name: string;
+    items: Item[];
+}
+interface User {
+    id: number;
+    name: string;
+}
+interface Cycle {
+    id: number;
+    name: string;
+}
+
+export default function TakeAssessment({
+    cycle,
+    assessee,
+    type,
+}: {
+    cycle: Cycle;
+    assessee: User;
+    type: LeadershipType;
+}) {
     const { data, setData, post, processing } = useForm({
         cycle_id: cycle.id,
         assessee_id: assessee.id,
-        responses: {} as any
+        responses: {} as Record<number, number>,
     });
 
-    const submit = (e: any) => {
+    const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('leadership.submit'));
+        post(route("leadership.submit"));
     };
 
+    const answered = Object.keys(data.responses).length;
+    const total = type.items.length;
+    const complete = answered === total;
+
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold leading-tight">Assess: {assessee.name}</h2>}>
-            <Head title="Take Assessment" />
-            <div className="py-12 max-w-3xl mx-auto space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{type.name}</CardTitle>
-                        <CardDescription>Select the rubric level that best describes {assessee.name} for each item.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={submit} className="space-y-8">
-                            {type.items.map((item: any) => (
-                                <div key={item.id} className="space-y-4">
-                                    <h3 className="font-bold">{item.title}</h3>
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {item.rubrics.sort((a:any, b:any) => a.level - b.level).map((rubric: any) => (
-                                            <div
-                                                key={rubric.id}
-                                                onClick={() => setData('responses', { ...data.responses, [item.id]: rubric.level })}
-                                                className={`p-4 border rounded cursor-pointer ${data.responses[item.id] === rubric.level ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                                            >
-                                                <div className="font-bold">Level {rubric.level}</div>
-                                                <div className="text-sm opacity-90">{rubric.description}</div>
-                                            </div>
-                                        ))}
-                                    </div>
+        <AuthenticatedLayout>
+            <Head title={`Assessment — ${assessee.name}`} />
+
+            <PageHeader
+                title={`Nilai: ${assessee.name}`}
+                subtitle={`${cycle.name} · ${type.name}`}
+                action={
+                    <Badge variant={complete ? "success" : "warning"}>
+                        {answered}/{total} dijawab
+                    </Badge>
+                }
+            />
+
+            <div className="max-w-2xl">
+                <form onSubmit={submit} className="flex flex-col gap-xl">
+                    {type.items.map((item) => (
+                        <Card key={item.id}>
+                            <CardContent className="pt-xl">
+                                <p className="mb-lg text-[14px] font-semibold tracking-tight text-text-primary">
+                                    {item.title}
+                                </p>
+                                <div className="flex flex-col gap-sm">
+                                    {[...item.rubrics]
+                                        .sort((a, b) => a.level - b.level)
+                                        .map((rubric) => {
+                                            const selected =
+                                                data.responses[item.id] ===
+                                                rubric.level;
+                                            return (
+                                                <button
+                                                    key={rubric.id}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setData("responses", {
+                                                            ...data.responses,
+                                                            [item.id]:
+                                                                rubric.level,
+                                                        })
+                                                    }
+                                                    className={`w-full rounded-lg border px-lg py-md text-left transition-colors ${
+                                                        selected
+                                                            ? "border-primary bg-primary-subtle"
+                                                            : "border-border bg-surface hover:bg-surface-overlay"
+                                                    }`}
+                                                >
+                                                    <p
+                                                        className={`text-[12px] font-semibold uppercase tracking-wider mb-xs ${selected ? "text-primary-text" : "text-text-muted"}`}
+                                                    >
+                                                        Level {rubric.level}
+                                                    </p>
+                                                    <p
+                                                        className={`text-[13px] leading-relaxed ${selected ? "text-primary-text" : "text-text-secondary"}`}
+                                                    >
+                                                        {rubric.description}
+                                                    </p>
+                                                </button>
+                                            );
+                                        })}
                                 </div>
-                            ))}
-                            <Button size="lg" className="w-full" disabled={processing || Object.keys(data.responses).length !== type.items.length}>
-                                Submit Anonymous Assessment
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    ))}
+
+                    <div className="flex justify-end pb-xl">
+                        <Button
+                            type="submit"
+                            size="lg"
+                            disabled={processing || !complete}
+                        >
+                            {processing
+                                ? "Mengirim…"
+                                : "Submit Assessment Anonim"}
+                        </Button>
+                    </div>
+                </form>
             </div>
         </AuthenticatedLayout>
     );

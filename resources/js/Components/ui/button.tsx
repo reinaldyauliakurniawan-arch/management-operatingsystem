@@ -17,6 +17,7 @@ const buttonVariants = cva(
                 ghost: "rounded-sm text-text-secondary hover:bg-surface-overlay hover:text-text-primary",
                 destructive:
                     "rounded-sm bg-error-subtle text-error-text hover:bg-error-subtle/70",
+                danger: "rounded-sm bg-error-subtle text-error-text hover:bg-error-subtle/70",
                 link: "text-primary underline-offset-4 hover:underline",
             },
             size: {

@@ -1,55 +1,49 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { Head, useForm } from "@inertiajs/react";
+import { FormEventHandler } from "react";
+import GuestLayout from "@/Layouts/GuestLayout";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
 
 export default function ConfirmPassword() {
     const { data, setData, post, processing, errors, reset } = useForm({
-        password: '',
+        password: "",
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-
-        post(route('password.confirm'), {
-            onFinish: () => reset('password'),
-        });
+        post(route("password.confirm"), { onFinish: () => reset("password") });
     };
 
     return (
         <GuestLayout>
-            <Head title="Confirm Password" />
+            <Head title="Konfirmasi Password" />
 
-            <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                This is a secure area of the application. Please confirm your
-                password before continuing.
-            </div>
+            <p className="mb-lg text-[13px] text-text-secondary">
+                Area aman. Konfirmasi password kamu untuk melanjutkan.
+            </p>
 
-            <form onSubmit={submit}>
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
+            <form onSubmit={submit} className="flex flex-col gap-lg">
+                <div className="flex flex-col gap-xs">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
                         id="password"
                         type="password"
-                        name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
-                        isFocused={true}
-                        onChange={(e) => setData('password', e.target.value)}
+                        onChange={(e) => setData("password", e.target.value)}
+                        autoFocus
+                        aria-invalid={!!errors.password}
                     />
-
-                    <InputError message={errors.password} className="mt-2" />
+                    {errors.password && (
+                        <p className="text-[12px] text-error-text">
+                            {errors.password}
+                        </p>
+                    )}
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Confirm
-                    </PrimaryButton>
-                </div>
+                <Button type="submit" disabled={processing} className="w-full">
+                    {processing ? "Memverifikasi…" : "Konfirmasi"}
+                </Button>
             </form>
         </GuestLayout>
     );

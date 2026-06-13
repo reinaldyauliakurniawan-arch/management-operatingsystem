@@ -1,11 +1,9 @@
-import Checkbox from '@/Components/Checkbox';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { Head, Link, useForm } from "@inertiajs/react";
+import { FormEventHandler } from "react";
+import GuestLayout from "@/Layouts/GuestLayout";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
 
 export default function Login({
     status,
@@ -15,95 +13,89 @@ export default function Login({
     canResetPassword: boolean;
 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
-        email: '',
-        password: '',
+        email: "",
+        password: "",
         remember: false as boolean,
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-
-        post(route('login'), {
-            onFinish: () => reset('password'),
-        });
+        post(route("login"), { onFinish: () => reset("password") });
     };
 
     return (
         <GuestLayout>
-            <Head title="Log in" />
+            <Head title="Masuk" />
 
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
+                <p className="mb-lg text-[13px] font-medium text-[#1a5c41]">
                     {status}
-                </div>
+                </p>
             )}
 
-            <form onSubmit={submit}>
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
+            <form onSubmit={submit} className="flex flex-col gap-lg">
+                <div className="flex flex-col gap-xs">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
                         id="email"
                         type="email"
-                        name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        onChange={(e) => setData("email", e.target.value)}
                         autoComplete="username"
-                        isFocused={true}
-                        onChange={(e) => setData('email', e.target.value)}
+                        autoFocus
+                        aria-invalid={!!errors.email}
                     />
-
-                    <InputError message={errors.email} className="mt-2" />
+                    {errors.email && (
+                        <p className="text-[12px] text-error-text">
+                            {errors.email}
+                        </p>
+                    )}
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
+                <div className="flex flex-col gap-xs">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="password">Password</Label>
+                        {canResetPassword && (
+                            <Link
+                                href={route("password.request")}
+                                className="text-[12px] text-text-muted hover:text-primary-text transition-colors"
+                            >
+                                Lupa password?
+                            </Link>
+                        )}
+                    </div>
+                    <Input
                         id="password"
                         type="password"
-                        name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
+                        onChange={(e) => setData("password", e.target.value)}
                         autoComplete="current-password"
-                        onChange={(e) => setData('password', e.target.value)}
+                        aria-invalid={!!errors.password}
                     />
-
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4 block">
-                    <label className="flex items-center">
-                        <Checkbox
-                            name="remember"
-                            checked={data.remember}
-                            onChange={(e) =>
-                                setData(
-                                    'remember',
-                                    (e.target.checked || false) as false,
-                                )
-                            }
-                        />
-                        <span className="ms-2 text-sm text-gray-600 dark:text-gray-400">
-                            Remember me
-                        </span>
-                    </label>
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
-                        >
-                            Forgot your password?
-                        </Link>
+                    {errors.password && (
+                        <p className="text-[12px] text-error-text">
+                            {errors.password}
+                        </p>
                     )}
-
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
-                    </PrimaryButton>
                 </div>
+
+                <label className="flex cursor-pointer items-center gap-sm">
+                    <input
+                        type="checkbox"
+                        checked={data.remember}
+                        onChange={(e) =>
+                            setData("remember", e.target.checked as false)
+                        }
+                        className="h-4 w-4 rounded accent-primary"
+                    />
+                    <span className="text-[13px] text-text-secondary">
+                        Ingat saya
+                    </span>
+                </label>
+
+                <Button type="submit" disabled={processing} className="w-full">
+                    {processing ? "Masuk…" : "Masuk"}
+                </Button>
             </form>
         </GuestLayout>
     );
