@@ -33,6 +33,7 @@ interface Todo {
     assignee: string;
     due_date: string | null;
     done: boolean;
+    owner_id?: number;
 }
 interface Issue {
     id: number;
@@ -120,15 +121,18 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
     const todoForm = useForm({ title: "", assignee_id: "", due_date: "" });
 
     const startMeeting = () =>
-        router.patch(
+        router.post(
             route("l10.start", meeting.id),
             {},
             { preserveScroll: true },
         );
     const endMeeting = () =>
-        router.patch(
-            route("l10.end", meeting.id),
-            {},
+        router.post(
+            route("l10.finish", meeting.id),
+            {
+                conclude_notes: concludeForm.data.conclude_notes,
+                rating: concludeForm.data.rating || null,
+            },
             { preserveScroll: true },
         );
 
@@ -143,7 +147,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
 
     const addIssue = (e: React.FormEvent) => {
         e.preventDefault();
-        issueForm.post(route("l10.issue", meeting.id), {
+        issueForm.post(route("l10.issues.store", meeting.id), {
             preserveScroll: true,
             onSuccess: () => issueForm.reset(),
         });
@@ -151,18 +155,14 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
 
     const addTodo = (e: React.FormEvent) => {
         e.preventDefault();
-        todoForm.post(route("l10.todo", meeting.id), {
+        todoForm.post(route("l10.todos.store", meeting.id), {
             preserveScroll: true,
             onSuccess: () => todoForm.reset(),
         });
     };
 
-    const toggleTodo = (id: number, done: boolean) =>
-        router.patch(
-            route("todos.update", id),
-            { done: !done },
-            { preserveScroll: true },
-        );
+    const toggleTodo = (id: number) =>
+        router.patch(route("todos.toggle", id), {}, { preserveScroll: true });
 
     return (
         <AuthenticatedLayout>
@@ -372,7 +372,13 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                 </p>
                             ) : (
                                 <div className="flex flex-col divide-y divide-border">
-                                    {meeting.todos.map((t) => (
+                                    {meeting.todos.map((t) => {
+                                        const canToggle =
+                                            !isReadOnly &&
+                                            (isLeader ||
+                                                t.owner_id === auth.user.id);
+
+                                        return (
                                         <div
                                             key={t.id}
                                             className="flex items-center gap-md py-md"
@@ -381,10 +387,9 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                                 type="checkbox"
                                                 checked={t.done}
                                                 onChange={() =>
-                                                    !isReadOnly &&
-                                                    toggleTodo(t.id, t.done)
+                                                    canToggle && toggleTodo(t.id)
                                                 }
-                                                disabled={isReadOnly}
+                                                disabled={!canToggle}
                                                 className="h-4 w-4 rounded accent-primary"
                                             />
                                             <div className="flex-1">
@@ -399,7 +404,8 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                                 </p>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </CardContent>

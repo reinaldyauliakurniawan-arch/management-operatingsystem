@@ -51,24 +51,45 @@ class Evaluation extends Model
     {
         $standard = $standard ?? PeopleAnalyzerStandard::where('team_id', $this->team_id)->first();
 
-        $gwcPass = $this->gwc_get && $this->gwc_want; // capacity flexible per PRD
+        $gwcPass = $this->gwcPasses($standard);
 
         $scores  = $this->core_values_scores ?? [];
-        $plus    = count(array_filter($scores, fn($s) => $s['symbol'] === '+'));
-        $plusMin = count(array_filter($scores, fn($s) => $s['symbol'] === '+/-'));
-        $minus   = count(array_filter($scores, fn($s) => $s['symbol'] === '-'));
+        $plus    = count(array_filter($scores, fn ($s) => $s['symbol'] === '+'));
+        $plusMin = count(array_filter($scores, fn ($s) => $s['symbol'] === '+/-'));
+        $minus   = count(array_filter($scores, fn ($s) => $s['symbol'] === '-'));
 
-        $minPlus    = $standard?->min_plus    ?? 3;
+        $minPlus      = $standard?->min_plus ?? 3;
         $maxPlusMinus = $standard?->max_plus_minus ?? 2;
-        $maxMinus   = $standard?->max_minus   ?? 0;
+        $maxMinus     = $standard?->max_minus ?? 0;
 
         $cvPass = $plus >= $minPlus && $plusMin <= $maxPlusMinus && $minus <= $maxMinus;
 
         return match (true) {
-            $gwcPass  && $cvPass  => 'right_person_right_seat',
-            $gwcPass  && !$cvPass => 'wrong_person_right_seat',
-            !$gwcPass && $cvPass  => 'right_person_wrong_seat',
+            $gwcPass && $cvPass   => 'right_person_right_seat',
+            $gwcPass && ! $cvPass => 'wrong_person_right_seat',
+            ! $gwcPass && $cvPass => 'right_person_wrong_seat',
             default               => 'wrong_person_wrong_seat',
         };
+    }
+
+    private function gwcPasses(?PeopleAnalyzerStandard $standard): bool
+    {
+        $requireGet      = $standard?->gwc_get ?? true;
+        $requireWant     = $standard?->gwc_want ?? true;
+        $requireCapacity = ($standard?->gwc_capacity ?? 'Y') === 'Y';
+
+        if ($requireGet && ! $this->gwc_get) {
+            return false;
+        }
+
+        if ($requireWant && ! $this->gwc_want) {
+            return false;
+        }
+
+        if ($requireCapacity && ! $this->gwc_capacity) {
+            return false;
+        }
+
+        return true;
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\L10Meeting\Actions\CreateMeeting;
 use App\Modules\L10Meeting\Models\Meeting;
 use App\Modules\L10Meeting\Resources\MeetingResource;
+use App\Modules\L10Meeting\Resources\MeetingWorkspaceResource;
 use App\Modules\Rocks\Models\Rock;
 use App\Modules\Scorecard\Models\Metric;
 use App\Modules\ToDo\Models\ToDo;
@@ -68,15 +69,32 @@ class L10MeetingController extends Controller
     {
         $teamId = session('active_team_id');
 
-        // Pastikan meeting milik team aktif
         abort_unless($meeting->team_id === (int) $teamId, 403);
 
+        $meeting->load('attendees');
+
+        $rocks = Rock::with('owner')
+            ->where('team_id', $teamId)
+            ->where('status', '!=', 'done')
+            ->get();
+
+        $metrics = Metric::with(['owner', 'latestScore'])
+            ->where('team_id', $teamId)
+            ->get();
+
+        $todos = ToDo::with('owner')
+            ->where('team_id', $teamId)
+            ->where('is_completed', false)
+            ->orderBy('due_date')
+            ->get();
+
+        $issues = Issue::where('team_id', $teamId)
+            ->where('status', 'open')
+            ->orderBy('priority', 'desc')
+            ->get();
+
         return Inertia::render('L10Meeting/Workspace', [
-            'meeting' => new MeetingResource($meeting->load('attendees')),
-            'rocks'   => Rock::with('owner')->where('team_id', $teamId)->get(),
-            'metrics' => Metric::with(['owner', 'scores' => fn($q) => $q->latest()->limit(1)])->where('team_id', $teamId)->get(),
-            'todos'   => ToDo::with('owner')->where('team_id', $teamId)->where('is_completed', false)->orderBy('due_date')->get(),
-            'issues'  => Issue::with('owner')->where('team_id', $teamId)->where('status', 'open')->orderBy('priority', 'desc')->get(),
+            'meeting' => new MeetingWorkspaceResource($meeting, $rocks, $metrics, $todos, $issues),
         ]);
     }
 
@@ -93,6 +111,43 @@ class L10MeetingController extends Controller
         return back()->with('message', 'Meeting dimulai.');
     }
 
+    public function updateSegue(Request $request, Meeting $meeting)
+    {
+        $teamId = session('active_team_id');
+        abort_unless($meeting->team_id === (int) $teamId, 403);
+        abort_if($meeting->ended_at !== null, 422, 'Meeting sudah selesai.');
+
+        $validated = $request->validate([
+            'segue_notes' => 'nullable|string',
+        ]);
+
+        $meeting->update([
+            ...$validated,
+            'updated_by' => Auth::id(),
+        ]);
+
+        return back()->with('message', 'Catatan segue disimpan.');
+    }
+
+    public function updateConclude(Request $request, Meeting $meeting)
+    {
+        $teamId = session('active_team_id');
+        abort_unless($meeting->team_id === (int) $teamId, 403);
+        abort_if($meeting->ended_at !== null, 422, 'Meeting sudah selesai.');
+
+        $validated = $request->validate([
+            'conclude_notes' => 'nullable|string',
+            'rating'         => 'nullable|numeric|min:1|max:10',
+        ]);
+
+        $meeting->update([
+            ...$validated,
+            'updated_by' => Auth::id(),
+        ]);
+
+        return back()->with('message', 'Catatan penutup disimpan.');
+    }
+
     /**
      * Generate To-Do dari dalam L10 meeting.
      */
@@ -103,12 +158,15 @@ class L10MeetingController extends Controller
 
         $validated = $request->validate([
             'title'    => 'required|string|max:255',
-            'owner_id' => 'required|exists:users,id',
+            'owner_id' => 'required_without:assignee_id|exists:users,id',
+            'assignee_id' => 'required_without:owner_id|exists:users,id',
             'due_date' => 'required|date',
         ]);
 
         ToDo::create([
-            ...$validated,
+            'title'      => $validated['title'],
+            'owner_id'   => $validated['owner_id'] ?? $validated['assignee_id'],
+            'due_date'   => $validated['due_date'],
             'team_id'    => $teamId,
             'meeting_id' => $meeting->id,
             'created_by' => Auth::id(),
@@ -128,15 +186,19 @@ class L10MeetingController extends Controller
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'priority'    => 'nullable|integer|min:0|max:10',
+            'priority'    => 'nullable',
             'owner_id'    => 'nullable|exists:users,id',
         ]);
 
+        $priority = $this->normalizePriority($validated['priority'] ?? null);
+
         Issue::create([
-            ...$validated,
-            'team_id'    => $teamId,
-            'priority'   => $validated['priority'] ?? 0,
-            'created_by' => Auth::id(),
+            'title'       => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'priority'    => $priority,
+            'owner_id'    => $validated['owner_id'] ?? Auth::id(),
+            'team_id'     => $teamId,
+            'created_by'  => Auth::id(),
         ]);
 
         return back()->with('message', 'Issue diangkat dari meeting.');
@@ -148,13 +210,15 @@ class L10MeetingController extends Controller
         abort_unless($meeting->team_id === (int) session('active_team_id'), 403);
 
         $request->validate([
-            'rating' => 'nullable|numeric|min:1|max:10',
+            'rating'         => 'nullable|numeric|min:1|max:10',
+            'conclude_notes' => 'nullable|string',
         ]);
 
         $meeting->update([
-            'ended_at'   => now(),
-            'rating'     => $request->rating,
-            'updated_by' => Auth::id(),
+            'ended_at'       => now(),
+            'rating'         => $request->input('rating', $meeting->rating),
+            'conclude_notes' => $request->input('conclude_notes', $meeting->conclude_notes),
+            'updated_by'     => Auth::id(),
         ]);
 
         return redirect()->route('l10.index');
@@ -167,5 +231,19 @@ class L10MeetingController extends Controller
 
         $meeting->delete();
         return back()->with('message', 'Meeting dihapus.');
+    }
+
+    private function normalizePriority(mixed $priority): int
+    {
+        if (is_numeric($priority)) {
+            return max(0, min(10, (int) $priority));
+        }
+
+        return match (strtolower((string) $priority)) {
+            'high'   => 8,
+            'medium' => 5,
+            'low'    => 2,
+            default  => 0,
+        };
     }
 }

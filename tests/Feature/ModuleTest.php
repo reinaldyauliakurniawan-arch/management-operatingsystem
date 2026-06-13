@@ -36,7 +36,11 @@ class ModuleTest extends TestCase
 
     public function test_vto_accessible()
     {
-        $response = $this->actingAs($this->setupUser())->withSession(['active_team_id' => 1])->get('/vto');
+        $user = $this->setupUser();
+        $response = $this->actingAs($user)->withSession([
+            'active_team_id' => session('active_team_id'),
+            'active_organization_id' => session('active_organization_id'),
+        ])->get('/vto');
         $response->assertStatus(200);
     }
 

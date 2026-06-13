@@ -46,12 +46,16 @@ class ToDoController extends Controller
 
     public function toggle(ToDo $todo)
     {
-        // FIX: hanya owner to-do yang boleh toggle status-nya
-        if ($todo->owner_id !== request()->user()->id) {
+        $teamId = session('active_team_id');
+        $user   = request()->user();
+        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if ($role !== 'leader' && $todo->owner_id !== $user->id) {
             abort(403, 'Kamu hanya bisa mengubah status to-do milikmu sendiri.');
         }
 
-        $todo->update(['is_completed' => !$todo->is_completed]);
+        $todo->update(['is_completed' => ! $todo->is_completed]);
+
         return back();
     }
 

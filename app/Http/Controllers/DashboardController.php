@@ -18,30 +18,9 @@ class DashboardController extends Controller
             ? auth()->user()->teamMemberships()->where('team_id', $teamId)->value('role')
             : null;
 
-        $stats = $teamId ? [
-            'rocks_total'     => Rock::where('team_id', $teamId)->count(),
-            'rocks_on_track'  => Rock::where('team_id', $teamId)->where('status', 'on_track')->count(),
-            'rocks_off_track' => Rock::where('team_id', $teamId)->where('status', 'off_track')->count(),
-            'rocks_done'      => Rock::where('team_id', $teamId)->where('status', 'done')->count(),
-            'issues_open'     => Issue::where('team_id', $teamId)->where('status', 'open')->count(),
-            'todos_overdue'   => ToDo::where('team_id', $teamId)
-                                     ->where('is_completed', false)
-                                     ->where('due_date', '<', now()->toDateString())
-                                     ->count(),
-            'scorecard_red'   => (function() use ($teamId) {
-                // FIX: subquery ROW_NUMBER untuk ambil 1 score terbaru per metric
-                $metrics = \App\Modules\Scorecard\Models\Metric::where('team_id', $teamId)
-                    ->with(['latestScore'])
-                    ->get();
+        $stats = $teamId ? $this->buildStats($teamId, $userId, $role) : [];
 
-                return $metrics->filter(function($metric) {
-                    $latestScore = $metric->latestScore;
-                    return $latestScore && $latestScore->status === 'red';
-                })->count();
-            })(),
-        ] : [];
-
-        $upcomingMeeting = $teamId
+        $upcomingMeeting = $teamId && $role === 'leader'
             ? \App\Modules\L10Meeting\Models\Meeting::where('team_id', $teamId)
                 ->whereNull('started_at')
                 ->whereNotNull('scheduled_at')
@@ -55,7 +34,10 @@ class DashboardController extends Controller
                 ->where('event_date', '>=', now()->toDateString())
                 ->where('event_date', '<=', now()->addDays(7)->toDateString())
                 ->orderBy('event_date')
-                ->get(['id', 'name', 'type', 'event_date'])
+                ->get(['id', 'name', 'type', 'event_date', 'assigned_roles'])
+                ->filter(fn ($event) => $this->eventVisibleToRole($event, $role))
+                ->map(fn ($event) => $event->only(['id', 'name', 'type', 'event_date']))
+                ->values()
             : collect();
 
         $leaderboardTop3 = [];
@@ -94,5 +76,58 @@ class DashboardController extends Controller
             'leaderboardTop3' => $leaderboardTop3,
             'selfLeaderboard' => $selfLeaderboard,
         ]);
+    }
+
+    private function buildStats(int $teamId, int $userId, ?string $role): array
+    {
+        $rocksQuery = Rock::where('team_id', $teamId);
+        $todosQuery = ToDo::where('team_id', $teamId)->where('is_completed', false);
+
+        if ($role !== 'leader') {
+            $rocksQuery->where('owner_id', $userId);
+            $todosQuery->where('owner_id', $userId);
+        }
+
+        $metrics = \App\Modules\Scorecard\Models\Metric::where('team_id', $teamId)
+            ->with(['latestScore'])
+            ->get();
+
+        $scorecardRed = $metrics->filter(function ($metric) {
+            $latestScore = $metric->latestScore;
+
+            return $latestScore && $latestScore->status === 'red';
+        })->count();
+
+        return [
+            'rocks_total'     => (clone $rocksQuery)->count(),
+            'rocks_on_track'  => (clone $rocksQuery)->where('status', 'on_track')->count(),
+            'rocks_off_track' => (clone $rocksQuery)->where('status', 'off_track')->count(),
+            'rocks_done'      => (clone $rocksQuery)->where('status', 'done')->count(),
+            'issues_open'     => $role === 'leader'
+                ? Issue::where('team_id', $teamId)->where('status', 'open')->count()
+                : 0,
+            'todos_overdue'   => (clone $todosQuery)
+                ->whereDate('due_date', '<', today())
+                ->count(),
+            'todos_due_today' => (clone $todosQuery)
+                ->whereDate('due_date', today())
+                ->count(),
+            'scorecard_red'   => $role === 'leader' ? $scorecardRed : 0,
+        ];
+    }
+
+    private function eventVisibleToRole(\App\Modules\Event\Models\Event $event, ?string $role): bool
+    {
+        if ($role === 'leader') {
+            return true;
+        }
+
+        $assignedRoles = $event->assigned_roles ?? [];
+
+        if (empty($assignedRoles)) {
+            return true;
+        }
+
+        return $role !== null && in_array($role, $assignedRoles, true);
     }
 }

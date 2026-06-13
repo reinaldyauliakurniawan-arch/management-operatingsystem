@@ -19,6 +19,8 @@ class Meeting extends Model
         'started_at',
         'ended_at',
         'rating',
+        'segue_notes',
+        'conclude_notes',
         'created_by',
         'updated_by',
     ];
