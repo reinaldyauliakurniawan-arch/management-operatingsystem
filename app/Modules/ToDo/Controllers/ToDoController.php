@@ -46,6 +46,11 @@ class ToDoController extends Controller
 
     public function toggle(ToDo $todo)
     {
+        // FIX: hanya owner to-do yang boleh toggle status-nya
+        if ($todo->owner_id !== request()->user()->id) {
+            abort(403, 'Kamu hanya bisa mengubah status to-do milikmu sendiri.');
+        }
+
         $todo->update(['is_completed' => !$todo->is_completed]);
         return back();
     }
@@ -62,7 +67,6 @@ class ToDoController extends Controller
         $userId = request()->user()->id;
         $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        // User bisa hapus to-do miliknya sendiri; leader bisa hapus semua
         if ($role !== 'leader' && $todo->owner_id !== $userId) {
             abort(403, 'Kamu hanya bisa menghapus to-do milikmu sendiri.');
         }

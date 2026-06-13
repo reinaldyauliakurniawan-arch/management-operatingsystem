@@ -30,4 +30,10 @@ class Metric extends Model
     {
         return $this->hasMany(WeeklyScore::class);
     }
+
+    // FIX: relasi latestOfMany — 1 score terbaru per metric, benar di eager loading
+    public function latestScore()
+    {
+        return $this->hasOne(WeeklyScore::class)->latestOfMany('week_start_date');
+    }
 }

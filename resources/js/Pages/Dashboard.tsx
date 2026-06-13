@@ -33,7 +33,11 @@ interface DashboardProps {
         role: string;
         score: number;
     }[];
-    selfLeaderboard: { score: number; rank: number; total: number } | null;
+    selfLeaderboard: {
+        score: number;
+        rank: number | null;
+        total: number;
+    } | null;
 }
 
 const fmt = (s: string) =>
@@ -79,7 +83,7 @@ function StatCard({
                     {label}
                 </p>
                 <p
-                    className={`text-[36px] font-semibold leading-none tracking-tight ${valueColor}`}
+                    className={`text-[24px] font-semibold leading-none tracking-tight ${valueColor}`}
                 >
                     {value}
                 </p>
@@ -141,7 +145,7 @@ export default function Dashboard({
                         <StatCard
                             label="On Track"
                             value={stats.rocks_on_track}
-                            valueColor="text-[#1a5c41]"
+                            valueColor="text-primary"
                             href="/rocks"
                         />
                         <StatCard
@@ -149,7 +153,7 @@ export default function Dashboard({
                             value={stats.rocks_off_track}
                             valueColor={
                                 stats.rocks_off_track > 0
-                                    ? "text-[#991b1b]"
+                                    ? "text-error-text"
                                     : "text-text-primary"
                             }
                             href="/rocks"
@@ -169,8 +173,8 @@ export default function Dashboard({
                             value={stats.scorecard_red}
                             valueColor={
                                 stats.scorecard_red > 0
-                                    ? "text-[#991b1b]"
-                                    : "text-[#1a5c41]"
+                                    ? "text-error-text"
+                                    : "text-primary"
                             }
                             href="/scorecard"
                         />
@@ -179,8 +183,8 @@ export default function Dashboard({
                             value={stats.issues_open}
                             valueColor={
                                 stats.issues_open > 0
-                                    ? "text-[#92400e]"
-                                    : "text-[#1a5c41]"
+                                    ? "text-warning-text"
+                                    : "text-primary"
                             }
                             href="/ids"
                         />
@@ -189,8 +193,8 @@ export default function Dashboard({
                             value={stats.todos_overdue}
                             valueColor={
                                 stats.todos_overdue > 0
-                                    ? "text-[#991b1b]"
-                                    : "text-[#1a5c41]"
+                                    ? "text-error-text"
+                                    : "text-primary"
                             }
                             href="/todos"
                         />
@@ -205,7 +209,7 @@ export default function Dashboard({
                                 </p>
                                 {upcomingMeeting ? (
                                     <div>
-                                        <p className="text-[15px] font-semibold tracking-tight text-text-primary">
+                                        <p className="text-[16px] font-semibold tracking-tight text-text-primary">
                                             {upcomingMeeting.title ??
                                                 "L10 Meeting"}
                                         </p>
@@ -246,14 +250,14 @@ export default function Dashboard({
                                                 className="flex items-center gap-md"
                                             >
                                                 <span
-                                                    className={`w-5 text-[13px] font-semibold ${idx === 0 ? "text-[#92400e]" : "text-text-muted"}`}
+                                                    className={`w-5 text-[13px] font-semibold ${idx === 0 ? "text-warning-text" : "text-text-muted"}`}
                                                 >
                                                     #{idx + 1}
                                                 </span>
                                                 <span className="flex-1 text-[13px] text-text-primary">
                                                     {e.name}
                                                 </span>
-                                                <span className="text-[13px] font-semibold text-primary-text">
+                                                <span className="text-[13px] font-semibold text-primary">
                                                     {e.score}%
                                                 </span>
                                             </div>
@@ -312,7 +316,7 @@ export default function Dashboard({
                         <StatCard
                             label="Rocks Saya (On Track)"
                             value={stats.rocks_on_track}
-                            valueColor="text-[#1a5c41]"
+                            valueColor="text-primary"
                             href="/rocks"
                         />
                         <StatCard
@@ -320,8 +324,8 @@ export default function Dashboard({
                             value={stats.todos_overdue}
                             valueColor={
                                 stats.todos_overdue > 0
-                                    ? "text-[#991b1b]"
-                                    : "text-[#1a5c41]"
+                                    ? "text-error-text"
+                                    : "text-primary"
                             }
                             href="/todos"
                         />
@@ -343,8 +347,8 @@ export default function Dashboard({
                             value={stats.todos_overdue}
                             valueColor={
                                 stats.todos_overdue > 0
-                                    ? "text-[#991b1b]"
-                                    : "text-[#1a5c41]"
+                                    ? "text-error-text"
+                                    : "text-primary"
                             }
                             href="/todos"
                         />
@@ -365,7 +369,11 @@ function MemberBottomSection({
     upcomingEvents,
     upcomingMeeting,
 }: {
-    selfLeaderboard: { score: number; rank: number; total: number } | null;
+    selfLeaderboard: {
+        score: number;
+        rank: number | null;
+        total: number;
+    } | null;
     upcomingEvents: {
         id: number;
         name: string;
@@ -387,12 +395,13 @@ function MemberBottomSection({
                     </p>
                     {selfLeaderboard ? (
                         <>
-                            <p className="text-[36px] font-semibold leading-none tracking-tight text-primary-text">
+                            <p className="text-[24px] font-semibold leading-none tracking-tight text-primary">
                                 {selfLeaderboard.score}%
                             </p>
                             <p className="mt-sm text-[13px] text-text-secondary">
-                                Rank #{selfLeaderboard.rank} dari{" "}
-                                {selfLeaderboard.total}
+                                {selfLeaderboard.rank !== null
+                                    ? `Rank #${selfLeaderboard.rank} dari ${selfLeaderboard.total}`
+                                    : `Dari ${selfLeaderboard.total} peserta`}
                             </p>
                         </>
                     ) : (
@@ -447,7 +456,7 @@ function MemberBottomSection({
                         <p className="mb-sm text-[12px] font-medium uppercase tracking-wider text-text-muted">
                             L10 Terdekat
                         </p>
-                        <p className="text-[15px] font-semibold tracking-tight text-text-primary">
+                        <p className="text-[16px] font-semibold tracking-tight text-text-primary">
                             {upcomingMeeting.title ?? "L10 Meeting"}
                         </p>
                         <p className="mt-xs text-[13px] text-text-secondary">

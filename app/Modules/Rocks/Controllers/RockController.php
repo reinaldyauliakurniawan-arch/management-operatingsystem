@@ -44,6 +44,14 @@ class RockController extends Controller
 
     public function updateStatus(Request $request, Rock $rock, UpdateRockStatus $updateRockStatus)
     {
+        // FIX: hanya leader yang boleh update status rock (PRD: "leader update status")
+        $teamId = session('active_team_id');
+        $role = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if ($role !== 'leader') {
+            abort(403, 'Hanya leader yang bisa mengubah status Rock.');
+        }
+
         $request->validate(['status' => 'required|string']);
         $updateRockStatus->execute($rock, $request->status);
 
@@ -62,9 +70,13 @@ class RockController extends Controller
             'due_date'    => 'nullable|date',
         ]);
 
-        // Only leader can change owner/title; user can update own rock's status via updateStatus
         if ($role !== 'leader' && $rock->owner_id !== $request->user()->id) {
             abort(403);
+        }
+
+        // FIX: non-leader tidak boleh ubah owner_id (pindah tangan rock)
+        if ($role !== 'leader') {
+            unset($validated['owner_id']);
         }
 
         $rock->update([...$validated, 'updated_by' => $request->user()->id]);
@@ -73,6 +85,14 @@ class RockController extends Controller
 
     public function storeMilestone(Request $request, Rock $rock)
     {
+        // FIX: hanya owner rock atau leader yang boleh tambah milestone
+        $teamId = session('active_team_id');
+        $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if ($role !== 'leader' && $rock->owner_id !== $request->user()->id) {
+            abort(403, 'Hanya owner rock atau leader yang bisa menambah milestone.');
+        }
+
         $validated = $request->validate([
             'title'      => 'required|string|max:255',
             'due_date'   => 'nullable|date',
@@ -85,6 +105,20 @@ class RockController extends Controller
 
     public function toggleMilestone(\App\Modules\Rocks\Models\RockMilestone $milestone)
     {
+        // FIX: cek ownership via relasi rock, bukan implicit binding langsung ke milestone
+        $teamId = session('active_team_id');
+        $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $rock   = $milestone->rock;
+
+        // Pastikan milestone ini milik rock di team aktif
+        if ($rock->team_id !== $teamId) {
+            abort(403);
+        }
+
+        if ($role !== 'leader' && $rock->owner_id !== request()->user()->id) {
+            abort(403, 'Hanya owner rock atau leader yang bisa mengubah milestone.');
+        }
+
         $milestone->update(['is_done' => !$milestone->is_done]);
         return back()->with('message', 'Milestone diperbarui.');
     }
@@ -93,6 +127,11 @@ class RockController extends Controller
     {
         $teamId = session('active_team_id');
         $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        // FIX: cek team ownership sebelum cek role
+        if ($milestone->rock->team_id !== $teamId) {
+            abort(403);
+        }
 
         if ($role !== 'leader') {
             abort(403, 'Hanya leader yang bisa menghapus milestone.');
