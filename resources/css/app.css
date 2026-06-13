@@ -1,0 +1,189 @@
+@import "@fontsource-variable/inter";
+@import "tailwindcss";
+/* stylelint-disable at-rule-no-unknown */
+@theme {
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+    /* Surface */
+    --color-surface: #ffffff;
+    --color-surface-subtle: #f5f5f5;
+    --color-surface-raised: #f0f0f0;
+    --color-surface-overlay: #e8e8e8;
+
+    /* Border */
+    --color-border: #e4e4e4;
+    --color-border-strong: #cccccc;
+
+    /* Text */
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #6b6b6b;
+    --color-text-muted: #999999;
+    --color-text-inverse: #ffffff;
+
+    /* Primary — Dark Emerald */
+    --color-primary: #1a5c41;
+    --color-primary-hover: #134d36;
+    --color-primary-subtle: #e8f0ec;
+    --color-primary-text: #1a5c41;
+
+    /* Status */
+    --color-success: #1a5c41;
+    --color-success-subtle: #e8f0ec;
+    --color-success-text: #1a5c41;
+    --color-warning: #92400e;
+    --color-warning-subtle: #fef3c7;
+    --color-warning-text: #78350f;
+    --color-error: #991b1b;
+    --color-error-subtle: #fef2f2;
+    --color-error-text: #991b1b;
+    --color-info: #1e3a5f;
+    --color-info-subtle: #eff6ff;
+    --color-info-text: #1e3a5f;
+
+    /* Radius */
+    --radius-xs: 4px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-pill: 9999px;
+
+    /* Shadow */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+
+    /* Spacing */
+    --sz-xs: 4px;
+    --sz-sm: 8px;
+    --sz-md: 12px;
+    --sz-lg: 16px;
+    --sz-xl: 24px;
+    --sz-2xl: 32px;
+    --sz-3xl: 48px;
+    --sz-4xl: 64px;
+
+    --spacing-gap-xs: 4px;
+    --spacing-gap-sm: 8px;
+    --spacing-gap-md: 12px;
+    --spacing-gap-lg: 16px;
+    --spacing-gap-xl: 24px;
+    --spacing-gap-2xl: 32px;
+    --spacing-gap-3xl: 48px;
+    --spacing-gap-4xl: 64px;
+
+    --color-background: var(--color-surface);
+    --color-foreground: var(--color-text-primary);
+    --color-card: var(--color-surface);
+    --color-card-foreground: var(--color-text-primary);
+    --color-popover: var(--color-surface);
+    --color-popover-foreground: var(--color-text-primary);
+    --color-primary-foreground: var(--color-text-inverse);
+    --color-secondary: var(--color-surface-raised);
+    --color-secondary-foreground: var(--color-text-primary);
+    --color-muted: var(--color-surface-subtle);
+    --color-muted-foreground: var(--color-text-secondary);
+    --color-accent: var(--color-surface-overlay);
+    --color-accent-foreground: var(--color-text-primary);
+    --color-destructive: var(--color-error);
+    --color-destructive-foreground: var(--color-error-text);
+    --color-input: var(--color-border);
+    --color-ring: var(--color-primary);
+
+    /* shadcn ui/* component mappings — keep in sync with DESIGN.md tokens above.
+       Do not introduce new colors here; only alias to existing tokens. */
+    --color-background: var(--color-surface);
+    --color-foreground: var(--color-text-primary);
+    --color-card: var(--color-surface);
+    --color-card-foreground: var(--color-text-primary);
+    --color-popover: var(--color-surface);
+    --color-popover-foreground: var(--color-text-primary);
+    --color-primary-foreground: var(--color-text-inverse);
+    --color-secondary: var(--color-surface-raised);
+    --color-secondary-foreground: var(--color-text-primary);
+    --color-muted: var(--color-surface-subtle);
+    --color-muted-foreground: var(--color-text-secondary);
+    --color-accent: var(--color-surface-overlay);
+    --color-accent-foreground: var(--color-text-primary);
+    --color-destructive: var(--color-error);
+    --color-destructive-foreground: var(--color-error-text);
+    --color-input: var(--color-border);
+    --color-ring: var(--color-primary);
+}
+
+@utility gap-xs { gap: var(--spacing-gap-xs); }
+@utility gap-sm { gap: var(--spacing-gap-sm); }
+@utility gap-md { gap: var(--spacing-gap-md); }
+@utility gap-lg { gap: var(--spacing-gap-lg); }
+@utility gap-xl { gap: var(--spacing-gap-xl); }
+@utility gap-2xl { gap: var(--spacing-gap-2xl); }
+
+@utility p-xs { padding: var(--spacing-gap-xs); }
+@utility p-sm { padding: var(--spacing-gap-sm); }
+@utility p-md { padding: var(--spacing-gap-md); }
+@utility p-lg { padding: var(--spacing-gap-lg); }
+@utility p-xl { padding: var(--spacing-gap-xl); }
+@utility p-2xl { padding: var(--spacing-gap-2xl); }
+
+@utility px-xs { padding-inline: var(--spacing-gap-xs); }
+@utility px-sm { padding-inline: var(--spacing-gap-sm); }
+@utility px-md { padding-inline: var(--spacing-gap-md); }
+@utility px-lg { padding-inline: var(--spacing-gap-lg); }
+@utility px-xl { padding-inline: var(--spacing-gap-xl); }
+@utility px-2xl { padding-inline: var(--spacing-gap-2xl); }
+
+@utility py-xs { padding-block: var(--spacing-gap-xs); }
+@utility py-sm { padding-block: var(--spacing-gap-sm); }
+@utility py-md { padding-block: var(--spacing-gap-md); }
+@utility py-lg { padding-block: var(--spacing-gap-lg); }
+@utility py-xl { padding-block: var(--spacing-gap-xl); }
+@utility py-2xl { padding-block: var(--spacing-gap-2xl); }
+
+@utility mb-xs { margin-bottom: var(--spacing-gap-xs); }
+@utility mb-sm { margin-bottom: var(--spacing-gap-sm); }
+@utility mb-md { margin-bottom: var(--spacing-gap-md); }
+@utility mb-lg { margin-bottom: var(--spacing-gap-lg); }
+@utility mb-xl { margin-bottom: var(--spacing-gap-xl); }
+@utility mb-2xl { margin-bottom: var(--spacing-gap-2xl); }
+
+@utility mt-xs { margin-top: var(--spacing-gap-xs); }
+@utility mt-sm { margin-top: var(--spacing-gap-sm); }
+@utility mt-md { margin-top: var(--spacing-gap-md); }
+@utility mt-lg { margin-top: var(--spacing-gap-lg); }
+@utility mt-xl { margin-top: var(--spacing-gap-xl); }
+@utility mt-2xl { margin-top: var(--spacing-gap-2xl); }
+
+@layer base {
+    * {
+        box-sizing: border-box;
+    }
+    body {
+        background-color: #f5f5f5;
+        color: #1a1a1a;
+        font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+    }
+}
+
+@keyframes dialog-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes dialog-out {
+    from {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.97);
+    }
+}
