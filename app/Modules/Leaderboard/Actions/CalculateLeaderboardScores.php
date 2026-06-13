@@ -71,7 +71,10 @@ class CalculateLeaderboardScores
             ];
         });
 
-        return $results->sortByDesc('score')->values();
+        return $results->sortBy([
+            ['score', 'desc'],
+            ['user_id', 'asc'],
+        ])->values();
     }
 
     private function calcAutomatic(string $source, int $userId, int $teamId, float $maxPoints, ?string $dateFrom = null, ?string $dateTo = null): float
