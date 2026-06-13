@@ -25,7 +25,7 @@ class CalculateLeaderboardScores
         $members  = TeamMember::with('user')->where('team_id', $teamId)->get();
         $params   = LeaderboardParameter::withoutGlobalScopes()->where('team_id', $teamId)->get();
 
-        $results = $members->map(function ($member) use ($params, $teamId) {
+        $results = $members->map(function ($member) use ($params, $teamId, $dateFrom, $dateTo) {
             $user       = $member->user;
             $role       = $member->role;
             $userId     = $user->id;

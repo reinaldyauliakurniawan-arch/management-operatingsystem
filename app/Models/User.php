@@ -57,6 +57,7 @@ class User extends Authenticatable
 
     public function teams()
     {
-        return $this->belongsToMany(Team::class, 'team_members');
+        return $this->belongsToMany(Team::class, 'team_members')
+            ->withPivot('role', 'is_integrator');
     }
 }

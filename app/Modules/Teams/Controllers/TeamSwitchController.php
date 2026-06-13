@@ -42,6 +42,6 @@ public function store(Request $request)
             'active_organization_id' => $team->organization_id,
         ]);
 
-        return back();
+        return redirect()->route('dashboard');
     }
 }
