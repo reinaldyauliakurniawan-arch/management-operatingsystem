@@ -93,7 +93,7 @@ export default function ScorecardIndex({
 
     const { data, setData, post, processing, reset, errors } = useForm({
         title: "",
-        owner_id: users[0]?.id || "",
+        owner_id: users[0]?.id ? String(users[0].id) : "",
         goal_value: "",
         comparison_operator: ">=",
         frequency: "weekly",
@@ -151,7 +151,7 @@ export default function ScorecardIndex({
                 action={
                     <div className="flex items-center gap-sm">
                         <Select
-                            value={filters.quarter}
+                            value={String(filters.quarter)}
                             onChange={(e) =>
                                 goToPeriod(
                                     filters.year,
@@ -166,7 +166,7 @@ export default function ScorecardIndex({
                             <option value={4}>Q4</option>
                         </Select>
                         <Select
-                            value={filters.year}
+                            value={String(filters.year)}
                             onChange={(e) =>
                                 goToPeriod(
                                     parseInt(e.target.value),
@@ -388,7 +388,10 @@ export default function ScorecardIndex({
                                         }
                                     >
                                         {users.map((u) => (
-                                            <option key={u.id} value={u.id}>
+                                            <option
+                                                key={u.id}
+                                                value={String(u.id)}
+                                            >
                                                 {u.name}
                                             </option>
                                         ))}
@@ -419,7 +422,10 @@ export default function ScorecardIndex({
                         >
                             Batal
                         </Button>
-                        <Button onClick={submit} disabled={processing}>
+                        <Button
+                            onClick={submit}
+                            disabled={processing || users.length === 0}
+                        >
                             {processing ? "Menyimpan…" : "Simpan Metric"}
                         </Button>
                     </DialogFooter>

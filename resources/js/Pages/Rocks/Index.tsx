@@ -424,7 +424,10 @@ export default function RocksIndex({
                         >
                             Batal
                         </Button>
-                        <Button onClick={submit} disabled={processing}>
+                        <Button
+                            onClick={submit}
+                            disabled={processing || users.length === 0}
+                        >
                             {processing ? "Menyimpan…" : "Simpan Rock"}
                         </Button>
                     </DialogFooter>

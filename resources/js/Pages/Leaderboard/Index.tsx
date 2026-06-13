@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
 import { useForm, Head, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
@@ -81,6 +82,7 @@ export default function LeaderboardIndex({
     const [pointOpen, setPointOpen] = useState(false);
     const [dateFrom, setDateFrom] = useState(filters.date_from ?? "");
     const [dateTo, setDateTo] = useState(filters.date_to ?? "");
+    const [deleteParamId, setDeleteParamId] = useState<number | null>(null);
 
     const paramForm = useForm({
         name: "",
@@ -114,9 +116,14 @@ export default function LeaderboardIndex({
     };
 
     const deleteParam = (id: number) => {
-        if (!confirm("Hapus parameter ini?")) return;
-        router.delete(route("leaderboard.parameters.destroy", id), {
+        setDeleteParamId(id);
+    };
+
+    const confirmDeleteParam = () => {
+        if (!deleteParamId) return;
+        router.delete(route("leaderboard.parameters.destroy", deleteParamId), {
             preserveScroll: true,
+            onFinish: () => setDeleteParamId(null),
         });
     };
 
@@ -647,6 +654,15 @@ export default function LeaderboardIndex({
                     </form>
                 </DialogContent>
             </Dialog>
+            <ConfirmDialog
+                open={deleteParamId !== null}
+                onOpenChange={(open) => {
+                    if (!open) setDeleteParamId(null);
+                }}
+                title="Hapus Parameter"
+                description="Parameter ini akan dihapus permanen. Lanjutkan?"
+                onConfirm={confirmDeleteParam}
+            />
         </AuthenticatedLayout>
     );
 }
