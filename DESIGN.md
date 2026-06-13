@@ -1,6 +1,6 @@
 # DESIGN.md — Management Operating System
 ## Just Speak English Course
-### Stack: React + Tailwind v4 | Style: Apple-inspired + Dark Emerald
+### Stack: React + Tailwind v4 | Style: Apple-inspired + Dark Emerald -> check and use the reusable components
 
 ---
 
