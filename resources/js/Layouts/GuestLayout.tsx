@@ -3,7 +3,7 @@ import { PropsWithChildren } from "react";
 
 export default function GuestLayout({ children }: PropsWithChildren) {
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5f5f5] px-lg">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-surface-subtle px-lg">
             <div className="mb-xl text-center">
                 <p className="text-[12px] font-medium uppercase tracking-widest text-text-muted">
                     Just Speak English Course

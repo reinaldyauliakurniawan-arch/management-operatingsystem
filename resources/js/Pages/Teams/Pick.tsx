@@ -36,7 +36,7 @@ export default function Pick({ teams }: { teams: TeamOption[] }) {
                             key={team.id}
                             type="button"
                             onClick={() => selectTeam(team.id)}
-                            className="flex w-full items-center justify-between rounded-lg border border-border bg-surface px-lg py-md text-left transition-colors hover:border-primary hover:bg-[#e8f0ec]"
+                            className="flex w-full items-center justify-between rounded-lg border border-border bg-surface px-lg py-md text-left transition-colors hover:border-primary hover:bg-primary-subtle"
                         >
                             <span className="text-[14px] font-medium text-text-primary">
                                 {team.name}

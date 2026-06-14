@@ -60,7 +60,7 @@ function SeatCard({
             {depth > 0 && <div className="h-lg w-px bg-border" />}
             <div
                 className="w-56 rounded-lg border border-border bg-surface p-md shadow-xs"
-                style={{ minWidth: 200 }}
+                className="min-w-[200px]"
             >
                 <p className="text-[13px] font-semibold tracking-tight text-text-primary">
                     {seat.title}

@@ -85,7 +85,7 @@ export default function L10Index({
 
             {/* Ongoing alert */}
             {ongoing && (
-                <div className="mb-xl flex items-center justify-between rounded-lg border border-[#f59e0b] bg-warning-subtle px-xl py-md">
+                <div className="mb-xl flex items-center justify-between rounded-lg border border-warning bg-warning-subtle px-xl py-md">
                     <div>
                         <p className="text-[13px] font-semibold text-warning-text">
                             Meeting sedang berlangsung
