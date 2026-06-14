@@ -58,7 +58,7 @@ export default function DeleteUserForm({
                 kamu sudah mengunduh data yang diperlukan.
             </p>
 
-            <Button variant="destructive" onClick={() => setOpen(true)}>
+            <Button variant="danger" onClick={() => setOpen(true)}>
                 Hapus Akun
             </Button>
 
