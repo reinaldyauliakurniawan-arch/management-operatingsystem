@@ -6,7 +6,7 @@ export default function Welcome({ auth }: PageProps) {
     return (
         <>
             <Head title="Just Speak English — Management OS" />
-            <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5f5f5]">
+            <div className="flex min-h-screen flex-col items-center justify-center bg-surface-subtle">
                 <div className="text-center">
                     <p className="text-[12px] font-medium uppercase tracking-widest text-text-muted">
                         Just Speak English Course

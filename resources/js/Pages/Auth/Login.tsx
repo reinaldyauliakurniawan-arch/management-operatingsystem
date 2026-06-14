@@ -28,7 +28,7 @@ export default function Login({
             <Head title="Masuk" />
 
             {status && (
-                <p className="mb-lg text-[13px] font-medium text-[#1a5c41]">
+                <p className="mb-lg text-[13px] font-medium text-primary">
                     {status}
                 </p>
             )}

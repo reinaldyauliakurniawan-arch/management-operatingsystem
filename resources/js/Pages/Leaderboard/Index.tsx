@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
 import { useForm, Head, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
@@ -240,8 +240,8 @@ export default function LeaderboardIndex({
                                     </TableHeader>
                                     <TableBody>
                                         {group.entries.map((entry, idx) => (
-                                            <>
-                                                <TableRow key={entry.user_id}>
+                                            <React.Fragment key={entry.user_id}>
+                                                <TableRow>
                                                     <TableCell className="text-text-secondary">
                                                         {idx + 1}
                                                     </TableCell>
@@ -276,10 +276,8 @@ export default function LeaderboardIndex({
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>
-                                                {expanded === entry.user_id && (
-                                                    <TableRow
-                                                        key={`${entry.user_id}-detail`}
-                                                    >
+                                                </React.Fragment>
+                                        ))}
                                                         <TableCell
                                                             colSpan={4}
                                                             className="bg-surface-subtle"

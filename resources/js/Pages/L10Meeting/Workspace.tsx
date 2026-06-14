@@ -7,7 +7,9 @@ import { Badge } from "@/Components/ui/badge";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
+import { Select } from "@/Components/ui/select";
 import { Textarea } from "@/Components/ui/textarea";
+import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
 
 interface Attendee {
     id: number;
@@ -49,6 +51,7 @@ interface Meeting {
     ended_at: string | null;
     rating: number | null;
     segue_notes: string | null;
+    headlines_notes: string | null;
     conclude_notes: string | null;
     attendees: Attendee[];
     rocks: Rock[];
@@ -68,31 +71,31 @@ const SECTIONS = [
 ] as const;
 type Section = (typeof SECTIONS)[number];
 
-const statusBadge = (s: string) => {
-    if (s === "on_track" || s === "done" || s === "green")
+function StatusBadge({ status }: { status: string }) {
+    if (status === "on_track" || status === "done" || status === "green")
         return (
             <Badge variant="success">
-                {s === "on_track"
+                {status === "on_track"
                     ? "On Track"
-                    : s === "done"
+                    : status === "done"
                       ? "Done"
                       : "Green"}
             </Badge>
         );
-    if (s === "at_risk" || s === "yellow")
+    if (status === "at_risk" || status === "yellow")
         return (
             <Badge variant="warning">
-                {s === "at_risk" ? "At Risk" : "Yellow"}
+                {status === "at_risk" ? "At Risk" : "Yellow"}
             </Badge>
         );
-    if (s === "off_track" || s === "red")
+    if (status === "off_track" || status === "red")
         return (
             <Badge variant="error">
-                {s === "off_track" ? "Off Track" : "Red"}
+                {status === "off_track" ? "Off Track" : "Red"}
             </Badge>
         );
-    return <Badge variant="neutral">{s}</Badge>;
-};
+    return <Badge variant="neutral">{status}</Badge>;
+}
 
 const fmt = (s: string | null) =>
     s
@@ -111,8 +114,12 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
     const isReadOnly = !!meeting.ended_at;
 
     const [activeSection, setActiveSection] = useState<Section>("Segue");
+    const [endConfirmOpen, setEndConfirmOpen] = useState(false);
 
     const segueForm = useForm({ segue_notes: meeting.segue_notes ?? "" });
+    const headlinesForm = useForm({
+        headlines_notes: meeting.headlines_notes ?? "",
+    });
     const concludeForm = useForm({
         conclude_notes: meeting.conclude_notes ?? "",
         rating: meeting.rating?.toString() ?? "",
@@ -138,6 +145,10 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
 
     const saveSegue = () =>
         segueForm.patch(route("l10.segue", meeting.id), {
+            preserveScroll: true,
+        });
+    const saveHeadlines = () =>
+        headlinesForm.patch(route("l10.headlines", meeting.id), {
             preserveScroll: true,
         });
     const saveConclude = () =>
@@ -178,7 +189,10 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                 Mulai Meeting
                             </Button>
                         ) : (
-                            <Button variant="destructive" onClick={endMeeting}>
+                            <Button
+                                variant="danger"
+                                onClick={() => setEndConfirmOpen(true)}
+                            >
                                 Akhiri Meeting
                             </Button>
                         )
@@ -298,7 +312,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                             <span className="text-[13px] text-text-secondary">
                                                 Actual: {m.actual ?? "—"}
                                             </span>
-                                            {statusBadge(m.status)}
+                                            <StatusBadge status={m.status} />
                                         </div>
                                     </div>
                                 ))}
@@ -334,7 +348,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                                 {r.owner}
                                             </p>
                                         </div>
-                                        {statusBadge(r.status)}
+                                        <StatusBadge status={r.status} />
                                     </div>
                                 ))}
                             </div>
@@ -346,14 +360,47 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
             {/* HEADLINES */}
             {activeSection === "Headlines" && (
                 <Card>
-                    <CardContent className="pt-xl">
-                        <p className="mb-sm text-[12px] font-medium uppercase tracking-wider text-text-muted">
-                            Headlines
-                        </p>
-                        <p className="text-[13px] text-text-secondary">
-                            Customer dan employee headlines — update singkat
-                            good news / bad news.
-                        </p>
+                    <CardContent className="pt-xl flex flex-col gap-lg">
+                        <div>
+                            <p className="mb-xs text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                                Headlines (5 menit)
+                            </p>
+                            <p className="text-[13px] text-text-secondary">
+                                Customer dan employee headlines — update singkat
+                                good news / bad news.
+                            </p>
+                        </div>
+                        {!isReadOnly && (
+                            <div className="flex flex-col gap-xs">
+                                <Label>Catatan Headlines</Label>
+                                <Textarea
+                                    rows={4}
+                                    value={headlinesForm.data.headlines_notes}
+                                    onChange={(e) =>
+                                        headlinesForm.setData(
+                                            "headlines_notes",
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Good news / bad news dari customer atau tim..."
+                                />
+                                <div className="flex justify-end">
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={saveHeadlines}
+                                        disabled={headlinesForm.processing}
+                                    >
+                                        Simpan
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                        {meeting.headlines_notes && isReadOnly && (
+                            <p className="text-[13px] text-text-primary whitespace-pre-line">
+                                {meeting.headlines_notes}
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
             )}
@@ -379,31 +426,32 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                                 t.owner_id === auth.user.id);
 
                                         return (
-                                        <div
-                                            key={t.id}
-                                            className="flex items-center gap-md py-md"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={t.done}
-                                                onChange={() =>
-                                                    canToggle && toggleTodo(t.id)
-                                                }
-                                                disabled={!canToggle}
-                                                className="h-4 w-4 rounded accent-primary"
-                                            />
-                                            <div className="flex-1">
-                                                <p
-                                                    className={`text-[13px] ${t.done ? "line-through text-text-muted" : "text-text-primary"}`}
-                                                >
-                                                    {t.title}
-                                                </p>
-                                                <p className="text-[12px] text-text-muted">
-                                                    {t.assignee} ·{" "}
-                                                    {t.due_date ?? "—"}
-                                                </p>
+                                            <div
+                                                key={t.id}
+                                                className="flex items-center gap-md py-md"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={t.done}
+                                                    onChange={() =>
+                                                        canToggle &&
+                                                        toggleTodo(t.id)
+                                                    }
+                                                    disabled={!canToggle}
+                                                    className="h-4 w-4 rounded accent-primary"
+                                                />
+                                                <div className="flex-1">
+                                                    <p
+                                                        className={`text-[13px] ${t.done ? "line-through text-text-muted" : "text-text-primary"}`}
+                                                    >
+                                                        {t.title}
+                                                    </p>
+                                                    <p className="text-[12px] text-text-muted">
+                                                        {t.assignee} ·{" "}
+                                                        {t.due_date ?? "—"}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
                                         );
                                     })}
                                 </div>
@@ -437,7 +485,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                     <div className="flex gap-md">
                                         <div className="flex flex-1 flex-col gap-xs">
                                             <Label>Assignee</Label>
-                                            <select
+                                            <Select
                                                 value={
                                                     todoForm.data.assignee_id
                                                 }
@@ -447,7 +495,6 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                                         e.target.value,
                                                     )
                                                 }
-                                                className="bg-[#f0f0f0] border border-[#e4e4e4] rounded-lg px-3 py-2 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#1a5c41] focus:ring-2 focus:ring-[#1a5c41]/10 transition-colors appearance-none"
                                             >
                                                 <option value="">
                                                     — Pilih —
@@ -460,7 +507,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                                         {a.name}
                                                     </option>
                                                 ))}
-                                            </select>
+                                            </Select>
                                         </div>
                                         <div className="flex flex-1 flex-col gap-xs">
                                             <Label>Due Date</Label>
@@ -527,7 +574,9 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                                 >
                                                     {i.priority}
                                                 </Badge>
-                                                {statusBadge(i.status)}
+                                                <StatusBadge
+                                                    status={i.status}
+                                                />
                                             </div>
                                         </div>
                                     ))}
@@ -561,7 +610,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                     </div>
                                     <div className="flex flex-col gap-xs">
                                         <Label>Priority</Label>
-                                        <select
+                                        <Select
                                             value={issueForm.data.priority}
                                             onChange={(e) =>
                                                 issueForm.setData(
@@ -569,14 +618,13 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                                     e.target.value,
                                                 )
                                             }
-                                            className="bg-[#f0f0f0] border border-[#e4e4e4] rounded-lg px-3 py-2 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#1a5c41] focus:ring-2 focus:ring-[#1a5c41]/10 transition-colors appearance-none"
                                         >
                                             <option value="low">Low</option>
                                             <option value="medium">
                                                 Medium
                                             </option>
                                             <option value="high">High</option>
-                                        </select>
+                                        </Select>
                                     </div>
                                     <div className="flex justify-end">
                                         <Button
@@ -650,8 +698,10 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                     </Button>
                                     {isLeader && meeting.started_at && (
                                         <Button
-                                            variant="destructive"
-                                            onClick={endMeeting}
+                                            variant="danger"
+                                            onClick={() =>
+                                                setEndConfirmOpen(true)
+                                            }
                                         >
                                             Akhiri Meeting
                                         </Button>
@@ -678,6 +728,17 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                     </CardContent>
                 </Card>
             )}
+            <ConfirmDialog
+                open={endConfirmOpen}
+                onOpenChange={setEndConfirmOpen}
+                title="Akhiri Meeting"
+                description="Meeting akan ditutup dan semua data terkunci. Yakin ingin mengakhiri?"
+                confirmLabel="Akhiri Meeting"
+                onConfirm={() => {
+                    setEndConfirmOpen(false);
+                    endMeeting();
+                }}
+            />
         </AuthenticatedLayout>
     );
 }

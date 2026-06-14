@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm, Head, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
@@ -45,9 +45,9 @@ interface Metric {
 
 function StatusDot({ status }: { status: string }) {
     const cls: Record<string, string> = {
-        green: "bg-[#1a5c41]",
-        yellow: "bg-[#78350f]",
-        red: "bg-[#991b1b]",
+        green: "bg-success",
+        yellow: "bg-warning",
+        red: "bg-error",
     };
     return (
         <span
@@ -62,6 +62,30 @@ function statusCellClass(status?: string) {
     if (status === "red") return "bg-error-subtle";
     if (status === "yellow") return "bg-warning-subtle";
     return "";
+}
+
+function ScoreInput({
+    defaultValue,
+    status,
+    onCommit,
+}: {
+    defaultValue: number | string;
+    status?: string;
+    onCommit: (val: string) => void;
+}) {
+    const [val, setVal] = React.useState(String(defaultValue));
+    React.useEffect(() => {
+        setVal(String(defaultValue));
+    }, [defaultValue]);
+    return (
+        <input
+            type="number"
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            onBlur={() => onCommit(val)}
+            className={`h-8 w-20 rounded-sm border border-border text-center text-sm text-text-primary outline-none transition-colors focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-primary/12 ${statusCellClass(status) || "bg-surface-raised"}`}
+        />
+    );
 }
 
 export default function ScorecardIndex({
@@ -256,19 +280,14 @@ export default function ScorecardIndex({
                                 return (
                                     <TableCell key={w} className="text-center">
                                         {canInput ? (
-                                            <input
-                                                type="number"
+                                            <ScoreInput
                                                 defaultValue={
                                                     score?.actual_value ?? ""
                                                 }
-                                                onBlur={(e) =>
-                                                    logScore(
-                                                        metric.id,
-                                                        w,
-                                                        e.target.value,
-                                                    )
+                                                status={score?.status}
+                                                onCommit={(val) =>
+                                                    logScore(metric.id, w, val)
                                                 }
-                                                className={`h-8 w-20 rounded-sm border border-border text-center text-sm text-text-primary outline-none transition-colors focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-primary/12 ${statusCellClass(score?.status) || "bg-surface-raised"}`}
                                             />
                                         ) : score ? (
                                             <span
@@ -290,7 +309,7 @@ export default function ScorecardIndex({
                             {isLeader && (
                                 <TableCell>
                                     <Button
-                                        variant="destructive"
+                                        variant="danger"
                                         size="sm"
                                         onClick={() =>
                                             setDeleteMetricId(metric.id)
@@ -313,6 +332,7 @@ export default function ScorecardIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form
+                            id="scorecard-form"
                             onSubmit={submit}
                             className="flex flex-col gap-lg"
                         >
@@ -423,7 +443,8 @@ export default function ScorecardIndex({
                             Batal
                         </Button>
                         <Button
-                            onClick={submit}
+                            type="submit"
+                            form="scorecard-form"
                             disabled={processing || users.length === 0}
                         >
                             {processing ? "Menyimpan…" : "Simpan Metric"}

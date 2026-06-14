@@ -1,4 +1,4 @@
-import { Head, useForm } from "@inertiajs/react";
+import { Head, useForm, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
 import { Button } from "@/Components/ui/button";
@@ -119,7 +119,9 @@ export default function L10Create({ members }: { members: User[] }) {
                                 <Button
                                     type="button"
                                     variant="secondary"
-                                    onClick={() => history.back()}
+                                    onClick={() =>
+                                        router.visit(route("l10.index"))
+                                    }
                                 >
                                     Batal
                                 </Button>

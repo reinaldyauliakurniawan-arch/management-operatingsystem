@@ -70,56 +70,21 @@ export default function Authenticated({
         <div className="flex h-screen overflow-hidden bg-surface-subtle">
             {/* Sidebar */}
             <aside
-                style={{
-                    width: sidebarOpen ? 240 : 56,
-                    height: "100vh",
-                    background: "#f5f5f5",
-                    borderRight: "1px solid #e4e4e4",
-                    display: "flex",
-                    flexDirection: "column",
-                    transition: "width 200ms ease",
-                    flexShrink: 0,
-                    position: "sticky",
-                    top: 0,
-                    overflowX: "hidden",
-                }}
+                className="sticky top-0 flex flex-col overflow-x-hidden shrink-0 h-screen bg-surface-subtle border-r border-border transition-[width] duration-200 ease-in-out"
+                style={{ width: sidebarOpen ? 240 : 56 }}
             >
                 {/* Team Switcher */}
-                <div
-                    style={{
-                        borderBottom: "1px solid #e4e4e4",
-                        padding: "12px",
-                    }}
-                >
+                <div className="border-b border-border p-md">
                     {sidebarOpen ? (
                         <div>
-                            <p
-                                style={{
-                                    fontSize: 11,
-                                    fontWeight: 500,
-                                    color: "#999999",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.06em",
-                                    marginBottom: 2,
-                                }}
-                            >
+                            <p className="mb-0.5 text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
                                 Active Team
                             </p>
                             {userTeams.length > 1 ? (
                                 <select
                                     value={activeTeamId ?? ""}
                                     onChange={(e) => switchTeam(e.target.value)}
-                                    style={{
-                                        width: "100%",
-                                        background: "#f0f0f0",
-                                        border: "1px solid #e4e4e4",
-                                        borderRadius: 8,
-                                        padding: "4px 8px",
-                                        fontSize: 13,
-                                        color: "#1a1a1a",
-                                        outline: "none",
-                                        appearance: "none",
-                                    }}
+                                    className="w-full bg-surface-raised border border-border rounded-lg px-sm py-xs text-[13px] text-text-primary outline-none appearance-none"
                                 >
                                     {userTeams.map((t: any) => (
                                         <option key={t.id} value={t.id}>
@@ -128,34 +93,14 @@ export default function Authenticated({
                                     ))}
                                 </select>
                             ) : (
-                                <p
-                                    style={{
-                                        fontSize: 13,
-                                        fontWeight: 500,
-                                        color: "#1a1a1a",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
+                                <p className="text-[13px] font-medium text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
                                     {activeTeam?.name ?? "—"}
                                 </p>
                             )}
                         </div>
                     ) : (
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "center",
-                            }}
-                        >
-                            <span
-                                style={{
-                                    fontSize: 14,
-                                    fontWeight: 600,
-                                    color: "#1a5c41",
-                                }}
-                            >
+                        <div className="flex justify-center">
+                            <span className="text-[14px] font-semibold text-primary">
                                 {activeTeam?.name?.[0]?.toUpperCase() ?? "J"}
                             </span>
                         </div>
@@ -163,42 +108,15 @@ export default function Authenticated({
                 </div>
 
                 {/* Nav */}
-                <nav
-                    style={{
-                        flex: 1,
-                        overflowY: "auto",
-                        padding: "12px 8px",
-                        minHeight: 0,
-                    }}
-                >
+                <nav className="flex-1 overflow-y-auto min-h-0 px-sm py-md">
                     {navGroups.map((group) => (
-                        <div key={group.label} style={{ marginBottom: 8 }}>
+                        <div key={group.label} className="mb-sm">
                             {sidebarOpen && (
-                                <p
-                                    style={{
-                                        fontSize: 11,
-                                        fontWeight: 500,
-                                        color: "#999999",
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.06em",
-                                        padding: "0 8px",
-                                        marginBottom: 4,
-                                        marginTop: 12,
-                                    }}
-                                >
+                                <p className="px-sm mb-xs mt-md text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
                                     {group.label}
                                 </p>
                             )}
-                            <ul
-                                style={{
-                                    listStyle: "none",
-                                    margin: 0,
-                                    padding: 0,
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 2,
-                                }}
-                            >
+                            <ul className="list-none m-0 p-0 flex flex-col gap-0.5">
                                 {group.items.map((item) => {
                                     const isActive =
                                         typeof route === "function" &&
@@ -207,57 +125,11 @@ export default function Authenticated({
                                         <li key={item.href}>
                                             <Link
                                                 href={item.href}
-                                                style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: 8,
-                                                    padding: isActive
-                                                        ? "6px 8px 6px 6px"
-                                                        : "6px 8px",
-                                                    borderRadius: 8,
-                                                    fontSize: 13,
-                                                    fontWeight: isActive
-                                                        ? 500
-                                                        : 400,
-                                                    color: isActive
-                                                        ? "#1a5c41"
-                                                        : "#6b6b6b",
-                                                    background: isActive
-                                                        ? "#e8f0ec"
-                                                        : "transparent",
-                                                    borderLeft: isActive
-                                                        ? "2px solid #1a5c41"
-                                                        : "2px solid transparent",
-                                                    textDecoration: "none",
-                                                    transition:
-                                                        "background 100ms, color 100ms",
-                                                    whiteSpace: "nowrap",
-                                                    overflow: "hidden",
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    if (!isActive) {
-                                                        (
-                                                            e.currentTarget as HTMLElement
-                                                        ).style.background =
-                                                            "#e8e8e8";
-                                                        (
-                                                            e.currentTarget as HTMLElement
-                                                        ).style.color =
-                                                            "#1a1a1a";
-                                                    }
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    if (!isActive) {
-                                                        (
-                                                            e.currentTarget as HTMLElement
-                                                        ).style.background =
-                                                            "transparent";
-                                                        (
-                                                            e.currentTarget as HTMLElement
-                                                        ).style.color =
-                                                            "#6b6b6b";
-                                                    }
-                                                }}
+                                                className={`flex items-center gap-sm rounded-sm text-[13px] no-underline whitespace-nowrap overflow-hidden transition-[background,color] duration-100 border-l-2 ${
+                                                    isActive
+                                                        ? "pl-[6px] pr-sm py-[6px] font-medium text-primary bg-primary-subtle border-primary"
+                                                        : "px-sm py-[6px] font-normal text-text-secondary bg-transparent border-transparent hover:bg-surface-overlay hover:text-text-primary"
+                                                }`}
                                             >
                                                 {sidebarOpen && (
                                                     <span>{item.label}</span>
@@ -272,40 +144,14 @@ export default function Authenticated({
                 </nav>
 
                 {/* User Menu */}
-                <div
-                    style={{ borderTop: "1px solid #e4e4e4", padding: "12px" }}
-                >
+                <div className="border-t border-border p-md">
                     {sidebarOpen ? (
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                gap: 8,
-                            }}
-                        >
-                            <div style={{ minWidth: 0 }}>
-                                <p
-                                    style={{
-                                        fontSize: 13,
-                                        fontWeight: 500,
-                                        color: "#1a1a1a",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
+                        <div className="flex items-center justify-between gap-sm">
+                            <div className="min-w-0">
+                                <p className="text-[13px] font-medium text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
                                     {user.name}
                                 </p>
-                                <p
-                                    style={{
-                                        fontSize: 11,
-                                        color: "#999999",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
+                                <p className="text-[11px] text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
                                     {user.email}
                                 </p>
                             </div>
@@ -313,50 +159,15 @@ export default function Authenticated({
                                 href={route("logout")}
                                 method="post"
                                 as="button"
-                                style={{
-                                    fontSize: 11,
-                                    color: "#999999",
-                                    background: "none",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    whiteSpace: "nowrap",
-                                    transition: "color 150ms",
-                                }}
-                                onMouseEnter={(e) =>
-                                    (e.currentTarget.style.color = "#991b1b")
-                                }
-                                onMouseLeave={(e) =>
-                                    (e.currentTarget.style.color = "#999999")
-                                }
+                                className="text-[11px] text-text-muted bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-error-text"
                             >
                                 Logout
                             </Link>
                         </div>
                     ) : (
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "center",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    width: 28,
-                                    height: 28,
-                                    borderRadius: "50%",
-                                    background: "#e8f0ec",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                }}
-                            >
-                                <span
-                                    style={{
-                                        fontSize: 11,
-                                        fontWeight: 600,
-                                        color: "#1a5c41",
-                                    }}
-                                >
+                        <div className="flex justify-center">
+                            <div className="size-7 rounded-full bg-primary-subtle flex items-center justify-center">
+                                <span className="text-[11px] font-semibold text-primary">
                                     {user.name?.[0]?.toUpperCase()}
                                 </span>
                             </div>
@@ -366,48 +177,12 @@ export default function Authenticated({
             </aside>
 
             {/* Main */}
-            <div
-                style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    minWidth: 0,
-                    overflow: "hidden",
-                }}
-            >
+            <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
                 {/* Topbar */}
-                <header
-                    style={{
-                        height: 48,
-                        borderBottom: "1px solid #e4e4e4",
-                        background: "#ffffff",
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "0 24px",
-                        gap: 12,
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-                        flexShrink: 0,
-                        minWidth: 0,
-                    }}
-                >
+                <header className="h-12 shrink-0 min-w-0 flex items-center gap-md px-xl bg-surface border-b border-border shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
-                        style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            color: "#999999",
-                            padding: 4,
-                            display: "flex",
-                            alignItems: "center",
-                            transition: "color 150ms",
-                        }}
-                        onMouseEnter={(e) =>
-                            (e.currentTarget.style.color = "#1a1a1a")
-                        }
-                        onMouseLeave={(e) =>
-                            (e.currentTarget.style.color = "#999999")
-                        }
+                        className="flex items-center p-xs bg-transparent border-none cursor-pointer text-text-muted transition-colors duration-150 hover:text-text-primary"
                     >
                         <svg
                             width="16"
@@ -438,21 +213,14 @@ export default function Authenticated({
                             />
                         </svg>
                     </button>
-                    <span style={{ fontSize: 13, color: "#999999" }}>
+                    <span className="text-[13px] text-text-muted">
                         {activeTeam?.name}
                     </span>
                 </header>
 
                 {/* Content */}
-                <main
-                    style={{
-                        flex: 1,
-                        overflowY: "auto",
-                        padding: 24,
-                        width: "100%",
-                    }}
-                >
-                    <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+                <main className="flex-1 overflow-y-auto p-xl w-full">
+                    <div className="max-w-[1280px] mx-auto">
                         {header}
                         {children}
                     </div>

@@ -90,7 +90,7 @@ export default function L10Index({
                         <p className="text-[13px] font-semibold text-warning-text">
                             Meeting sedang berlangsung
                         </p>
-                        <p className="mt-xs text-[12px] text-[#92400e]">
+                        <p className="mt-xs text-[12px] text-warning-text">
                             {ongoing.title ?? "L10 Meeting"} · Dimulai{" "}
                             {fmt(ongoing.started_at)}
                         </p>
@@ -107,17 +107,17 @@ export default function L10Index({
                     {
                         label: "Terjadwal",
                         value: scheduled,
-                        valueClass: "text-[#1e3a5f]",
+                        valueClass: "text-info-text",
                     },
                     {
                         label: "Berlangsung",
                         value: ongoing ? 1 : 0,
-                        valueClass: "text-[#78350f]",
+                        valueClass: "text-warning-text",
                     },
                     {
                         label: "Selesai",
                         value: done,
-                        valueClass: "text-[#1a5c41]",
+                        valueClass: "text-primary",
                     },
                 ].map((s) => (
                     <Card key={s.label}>
@@ -139,14 +139,14 @@ export default function L10Index({
                 <TableHeader>
                     <TableRow>
                         {[
-                            "Meeting",
-                            "Jadwal",
-                            "Peserta",
-                            "Rating",
-                            "Status",
-                            "",
-                        ].map((h, i) => (
-                            <TableHead key={i}>{h}</TableHead>
+                            { key: "meeting", label: "Meeting" },
+                            { key: "jadwal", label: "Jadwal" },
+                            { key: "peserta", label: "Peserta" },
+                            { key: "rating", label: "Rating" },
+                            { key: "status", label: "Status" },
+                            { key: "actions", label: "" },
+                        ].map((h) => (
+                            <TableHead key={h.key}>{h.label}</TableHead>
                         ))}
                     </TableRow>
                 </TableHeader>
@@ -199,17 +199,13 @@ export default function L10Index({
                             <TableCell>
                                 <div className="flex items-center justify-end gap-sm">
                                     <Link href={route("l10.workspace", m.id)}>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="bg-primary-subtle text-primary-text hover:bg-primary-subtle/70"
-                                        >
+                                        <Button variant="secondary" size="sm">
                                             {m.ended_at ? "Lihat" : "Workspace"}
                                         </Button>
                                     </Link>
                                     {isLeader && (
                                         <Button
-                                            variant="destructive"
+                                            variant="danger"
                                             size="sm"
                                             onClick={() => setDeleteId(m.id)}
                                         >

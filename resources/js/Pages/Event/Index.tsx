@@ -142,7 +142,7 @@ export default function EventIndex({
                     {
                         label: "Mendatang",
                         value: upcoming,
-                        valueClass: "text-[#1e3a5f]",
+                        valueClass: "text-info-text",
                     },
                     {
                         label: "Selesai",
