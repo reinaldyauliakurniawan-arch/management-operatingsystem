@@ -186,7 +186,9 @@ export default function LeaderboardIndex({
             <Card className="mb-xl p-0">
                 <CardContent className="flex flex-wrap items-end gap-md py-md">
                     <div>
-                        <Label className="mb-1.5 text-text-secondary">Periode Cepat</Label>
+                        <Label className="mb-1.5 text-text-secondary">
+                            Periode Cepat
+                        </Label>
                         <div className="flex gap-xs">
                             {[
                                 { label: "Q1", from: `-01-01`, to: `-03-31` },
@@ -212,7 +214,9 @@ export default function LeaderboardIndex({
                         </div>
                     </div>
                     <div>
-                        <Label className="mb-1.5 text-text-secondary">Dari</Label>
+                        <Label className="mb-1.5 text-text-secondary">
+                            Dari
+                        </Label>
                         <Input
                             type="date"
                             value={dateFrom}
@@ -220,7 +224,9 @@ export default function LeaderboardIndex({
                         />
                     </div>
                     <div>
-                        <Label className="mb-1.5 text-text-secondary">Sampai</Label>
+                        <Label className="mb-1.5 text-text-secondary">
+                            Sampai
+                        </Label>
                         <Input
                             type="date"
                             value={dateTo}
@@ -236,7 +242,11 @@ export default function LeaderboardIndex({
                             onClick={() => {
                                 setDateFrom("");
                                 setDateTo("");
-                                router.get(route("leaderboard.index"), {}, { preserveState: true });
+                                router.get(
+                                    route("leaderboard.index"),
+                                    {},
+                                    { preserveState: true },
+                                );
                             }}
                         >
                             Reset
@@ -311,8 +321,8 @@ export default function LeaderboardIndex({
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>
-                                                </React.Fragment>
-                                        ))}
+                                                {expanded === entry.user_id && (
+                                                    <TableRow>
                                                         <TableCell
                                                             colSpan={4}
                                                             className="bg-surface-subtle"
@@ -477,7 +487,7 @@ export default function LeaderboardIndex({
                                         <Label className="mb-1.5 text-text-secondary">
                                             Tipe
                                         </Label>
-                                        <select
+                                        <Select
                                             value={
                                                 paramForm.data.is_automatic
                                                     ? "automatic"
@@ -490,7 +500,6 @@ export default function LeaderboardIndex({
                                                         "automatic",
                                                 )
                                             }
-                                            className="w-full rounded-sm border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/12"
                                         >
                                             <option value="manual">
                                                 Manual
@@ -498,7 +507,7 @@ export default function LeaderboardIndex({
                                             <option value="automatic">
                                                 Otomatis
                                             </option>
-                                        </select>
+                                        </Select>
                                     </div>
                                 </div>
                                 {paramForm.data.is_automatic && (
@@ -506,7 +515,7 @@ export default function LeaderboardIndex({
                                         <Label className="mb-1.5 text-text-secondary">
                                             Sumber Data *
                                         </Label>
-                                        <select
+                                        <Select
                                             value={
                                                 paramForm.data.automatic_source
                                             }
@@ -516,7 +525,6 @@ export default function LeaderboardIndex({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="w-full rounded-sm border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/12"
                                         >
                                             <option value="">— Pilih —</option>
                                             {automaticSources.map((s) => (
@@ -527,7 +535,7 @@ export default function LeaderboardIndex({
                                                     {s.label}
                                                 </option>
                                             ))}
-                                        </select>
+                                        </Select>
                                     </div>
                                 )}
                                 <div>
@@ -602,7 +610,10 @@ export default function LeaderboardIndex({
                                 >
                                     <option value="">— Pilih user —</option>
                                     {manualParamUsers.map((s) => (
-                                        <option key={s.user_id} value={s.user_id}>
+                                        <option
+                                            key={s.user_id}
+                                            value={s.user_id}
+                                        >
                                             {s.name} ({roleLabels[s.role]})
                                         </option>
                                     ))}
@@ -621,7 +632,9 @@ export default function LeaderboardIndex({
                                         )
                                     }
                                 >
-                                    <option value="">— Pilih parameter manual —</option>
+                                    <option value="">
+                                        — Pilih parameter manual —
+                                    </option>
                                     {manualParameters.map((p) => (
                                         <option key={p.id} value={p.id}>
                                             {p.name} (max {p.max_points})

@@ -231,7 +231,7 @@ export default function LeadershipAssessmentIndex({
                                     {isLeader &&
                                         cycle.assignments.length === 0 && (
                                             <Button
-                                                variant="destructive"
+                                                variant="danger"
                                                 size="sm"
                                                 onClick={() =>
                                                     setDeleteCycleId(cycle.id)
@@ -246,13 +246,24 @@ export default function LeadershipAssessmentIndex({
                                 <TableHeader>
                                     <TableRow>
                                         {[
-                                            "Assessee",
-                                            "Tipe Leadership",
-                                            "Progress",
-                                            "Status",
-                                            "",
-                                        ].map((h, i) => (
-                                            <TableHead key={i}>{h}</TableHead>
+                                            {
+                                                key: "assessee",
+                                                label: "Assessee",
+                                            },
+                                            {
+                                                key: "type",
+                                                label: "Tipe Leadership",
+                                            },
+                                            {
+                                                key: "progress",
+                                                label: "Progress",
+                                            },
+                                            { key: "status", label: "Status" },
+                                            { key: "actions", label: "" },
+                                        ].map((h) => (
+                                            <TableHead key={h.key}>
+                                                {h.label}
+                                            </TableHead>
                                         ))}
                                     </TableRow>
                                 </TableHeader>
