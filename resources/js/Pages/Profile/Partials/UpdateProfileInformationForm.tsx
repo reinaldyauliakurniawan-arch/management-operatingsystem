@@ -84,7 +84,7 @@ export default function UpdateProfileInformationForm({
                             </Link>
                         </p>
                         {status === "verification-link-sent" && (
-                            <p className="mt-sm text-[13px] font-medium text-[#1a5c41]">
+                            <p className="mt-sm text-[13px] font-medium text-primary">
                                 Link verifikasi baru sudah dikirim.
                             </p>
                         )}
@@ -96,7 +96,7 @@ export default function UpdateProfileInformationForm({
                         Simpan
                     </Button>
                     {recentlySuccessful && (
-                        <p className="text-[13px] text-[#1a5c41]">Tersimpan.</p>
+                        <p className="text-[13px] text-primary">Tersimpan.</p>
                     )}
                 </div>
             </form>

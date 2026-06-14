@@ -118,7 +118,7 @@ export default function UpdatePasswordForm({
                         Simpan
                     </Button>
                     {recentlySuccessful && (
-                        <p className="text-[13px] text-[#1a5c41]">Tersimpan.</p>
+                        <p className="text-[13px] text-primary">Tersimpan.</p>
                     )}
                 </div>
             </form>

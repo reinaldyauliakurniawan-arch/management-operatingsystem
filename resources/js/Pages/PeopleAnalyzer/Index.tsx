@@ -96,10 +96,10 @@ function SeatFitBadge({ fit }: { fit: string }) {
 function GwcDot({ value }: { value: boolean }) {
     return (
         <span
-            className={`inline-flex items-center gap-xs text-[12px] font-medium ${value ? "text-[#1a5c41]" : "text-[#991b1b]"}`}
+            className={`inline-flex items-center gap-xs text-[12px] font-medium ${value ? "text-primary" : "text-error-text"}`}
         >
             <span
-                className={`inline-block size-1.5 rounded-full ${value ? "bg-[#1a5c41]" : "bg-[#991b1b]"}`}
+                className={`inline-block size-1.5 rounded-full ${value ? "bg-primary" : "bg-error"}`}
             />
             {value ? "Y" : "N"}
         </span>
@@ -108,9 +108,9 @@ function GwcDot({ value }: { value: boolean }) {
 
 function SymbolBadge({ symbol }: { symbol: "+" | "+/-" | "-" }) {
     const styles: Record<string, string> = {
-        "+": "bg-[#e8f0ec] text-[#1a5c41]",
-        "+/-": "bg-[#fef3c7] text-[#78350f]",
-        "-": "bg-[#fef2f2] text-[#991b1b]",
+        "+": "bg-primary-subtle text-primary-text",
+        "+/-": "bg-warning-subtle text-warning-text",
+        "-": "bg-error-subtle text-error-text",
     };
     return (
         <span
@@ -312,8 +312,8 @@ export default function PeopleAnalyzerIndex({
                                                     evalForm.data[key] ===
                                                     (opt === "Y")
                                                         ? opt === "Y"
-                                                            ? "bg-[#e8f0ec] text-[#1a5c41]"
-                                                            : "bg-[#fef2f2] text-[#991b1b]"
+                                                            ? "bg-primary-subtle text-primary-text"
+                                                            : "bg-error-subtle text-error-text"
                                                         : "bg-surface-overlay text-text-muted hover:bg-surface-overlay/70"
                                                 }`}
                                             >
@@ -357,7 +357,7 @@ export default function PeopleAnalyzerIndex({
                                 onChange={(e) =>
                                     updateCoreValue(i, "symbol", e.target.value)
                                 }
-                                className="bg-[#f0f0f0] border border-[#e4e4e4] rounded-lg px-3 py-2 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#1a5c41] focus:ring-2 focus:ring-[#1a5c41]/10 transition-colors appearance-none"
+                                className="bg-surface-raised border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-colors appearance-none"
                             >
                                 <option value="+">+</option>
                                 <option value="+/-">+/-</option>
@@ -422,15 +422,15 @@ export default function PeopleAnalyzerIndex({
                     <div className="flex flex-wrap gap-md">
                         <span className="text-[13px] text-text-secondary">
                             Core Values: min{" "}
-                            <span className="font-semibold text-[#1a5c41]">
+                            <span className="font-semibold text-primary">
                                 {standard.min_plus}×(+)
                             </span>
                             {" · "}max{" "}
-                            <span className="font-semibold text-[#78350f]">
+                            <span className="font-semibold text-warning-text">
                                 {standard.max_plus_minus}×(+/-)
                             </span>
                             {" · "}max{" "}
-                            <span className="font-semibold text-[#991b1b]">
+                            <span className="font-semibold text-error-text">
                                 {standard.max_minus}×(-)
                             </span>
                         </span>
@@ -836,8 +836,8 @@ export default function PeopleAnalyzerIndex({
                                                             ] ===
                                                             (opt === "Y")
                                                                 ? opt === "Y"
-                                                                    ? "bg-[#e8f0ec] text-[#1a5c41]"
-                                                                    : "bg-[#fef2f2] text-[#991b1b]"
+                                                                    ? "bg-primary-subtle text-primary-text"
+                                                                    : "bg-error-subtle text-error-text"
                                                                 : "bg-surface-overlay text-text-muted"
                                                         }`}
                                                     >
@@ -867,8 +867,8 @@ export default function PeopleAnalyzerIndex({
                                                             .gwc_capacity ===
                                                         opt
                                                             ? opt === "Y"
-                                                                ? "bg-[#e8f0ec] text-[#1a5c41]"
-                                                                : "bg-[#fef2f2] text-[#991b1b]"
+                                                                ? "bg-primary-subtle text-primary-text"
+                                                                : "bg-error-subtle text-error-text"
                                                             : "bg-surface-overlay text-text-muted"
                                                     }`}
                                                 >
