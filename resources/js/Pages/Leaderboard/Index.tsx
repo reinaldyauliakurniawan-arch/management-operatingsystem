@@ -16,6 +16,7 @@ import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
+import { Select } from "@/Components/ui/select";
 import {
     Dialog,
     DialogContent,
@@ -102,7 +103,7 @@ export default function LeaderboardIndex({
     const applyFilter = () => {
         router.get(
             route("leaderboard.index"),
-            { date_from: dateFrom || undefined, date_to: dateTo || undefined },
+            { date_from: dateFrom || null, date_to: dateTo || null },
             { preserveState: true },
         );
     };
@@ -185,9 +186,33 @@ export default function LeaderboardIndex({
             <Card className="mb-xl p-0">
                 <CardContent className="flex flex-wrap items-end gap-md py-md">
                     <div>
-                        <Label className="mb-1.5 text-text-secondary">
-                            Dari
-                        </Label>
+                        <Label className="mb-1.5 text-text-secondary">Periode Cepat</Label>
+                        <div className="flex gap-xs">
+                            {[
+                                { label: "Q1", from: `-01-01`, to: `-03-31` },
+                                { label: "Q2", from: `-04-01`, to: `-06-30` },
+                                { label: "Q3", from: `-07-01`, to: `-09-30` },
+                                { label: "Q4", from: `-10-01`, to: `-12-31` },
+                            ].map((q) => {
+                                const year = new Date().getFullYear();
+                                return (
+                                    <button
+                                        key={q.label}
+                                        type="button"
+                                        onClick={() => {
+                                            setDateFrom(`${year}${q.from}`);
+                                            setDateTo(`${year}${q.to}`);
+                                        }}
+                                        className="rounded-xs bg-surface-raised px-2 py-0.5 text-[12px] font-medium text-text-secondary hover:bg-surface-overlay transition-colors"
+                                    >
+                                        {q.label} {year}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    <div>
+                        <Label className="mb-1.5 text-text-secondary">Dari</Label>
                         <Input
                             type="date"
                             value={dateFrom}
@@ -195,9 +220,7 @@ export default function LeaderboardIndex({
                         />
                     </div>
                     <div>
-                        <Label className="mb-1.5 text-text-secondary">
-                            Sampai
-                        </Label>
+                        <Label className="mb-1.5 text-text-secondary">Sampai</Label>
                         <Input
                             type="date"
                             value={dateTo}
@@ -207,6 +230,18 @@ export default function LeaderboardIndex({
                     <Button variant="secondary" onClick={applyFilter}>
                         Filter
                     </Button>
+                    {(dateFrom || dateTo) && (
+                        <Button
+                            variant="ghost"
+                            onClick={() => {
+                                setDateFrom("");
+                                setDateTo("");
+                                router.get(route("leaderboard.index"), {}, { preserveState: true });
+                            }}
+                        >
+                            Reset
+                        </Button>
+                    )}
                 </CardContent>
             </Card>
 
@@ -332,7 +367,7 @@ export default function LeaderboardIndex({
                                                         </TableCell>
                                                     </TableRow>
                                                 )}
-                                            </>
+                                            </React.Fragment>
                                         ))}
                                     </TableBody>
                                 </Table>
@@ -386,7 +421,7 @@ export default function LeaderboardIndex({
                                         </div>
                                         <Button
                                             size="xs"
-                                            variant="destructive"
+                                            variant="danger"
                                             onClick={() => deleteParam(p.id)}
                                         >
                                             Hapus
@@ -556,7 +591,7 @@ export default function LeaderboardIndex({
                                 <Label className="mb-1.5 text-text-secondary">
                                     User *
                                 </Label>
-                                <select
+                                <Select
                                     value={pointForm.data.user_id}
                                     onChange={(e) =>
                                         pointForm.setData(
@@ -564,24 +599,20 @@ export default function LeaderboardIndex({
                                             e.target.value,
                                         )
                                     }
-                                    className="w-full rounded-sm border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/12"
                                 >
                                     <option value="">— Pilih user —</option>
                                     {manualParamUsers.map((s) => (
-                                        <option
-                                            key={s.user_id}
-                                            value={s.user_id}
-                                        >
+                                        <option key={s.user_id} value={s.user_id}>
                                             {s.name} ({roleLabels[s.role]})
                                         </option>
                                     ))}
-                                </select>
+                                </Select>
                             </div>
                             <div>
                                 <Label className="mb-1.5 text-text-secondary">
                                     Parameter *
                                 </Label>
-                                <select
+                                <Select
                                     value={pointForm.data.parameter_id}
                                     onChange={(e) =>
                                         pointForm.setData(
@@ -589,17 +620,14 @@ export default function LeaderboardIndex({
                                             e.target.value,
                                         )
                                     }
-                                    className="w-full rounded-sm border border-border bg-surface-raised px-3 py-2 text-sm text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/12"
                                 >
-                                    <option value="">
-                                        — Pilih parameter manual —
-                                    </option>
+                                    <option value="">— Pilih parameter manual —</option>
                                     {manualParameters.map((p) => (
                                         <option key={p.id} value={p.id}>
                                             {p.name} (max {p.max_points})
                                         </option>
                                     ))}
-                                </select>
+                                </Select>
                             </div>
                             <div>
                                 <Label className="mb-1.5 text-text-secondary">

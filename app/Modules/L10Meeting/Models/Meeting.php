@@ -12,28 +12,32 @@ class Meeting extends Model
     use SoftDeletes, HasTeam;
 
     protected $fillable = [
-        'team_id',
-        'type',
-        'title',
-        'scheduled_at',
-        'started_at',
-        'ended_at',
-        'rating',
-        'segue_notes',
-        'conclude_notes',
-        'created_by',
-        'updated_by',
+        "team_id",
+        "type",
+        "title",
+        "scheduled_at",
+        "started_at",
+        "ended_at",
+        "rating",
+        "segue_notes",
+        "headlines_notes",
+        "conclude_notes",
+        "created_by",
+        "updated_by",
     ];
 
     protected $casts = [
-        'scheduled_at' => 'datetime',
-        'started_at'   => 'datetime',
-        'ended_at'     => 'datetime',
+        "scheduled_at" => "datetime",
+        "started_at" => "datetime",
+        "ended_at" => "datetime",
     ];
 
     public function todos()
     {
-        return $this->hasMany(\App\Modules\ToDo\Models\ToDo::class, 'meeting_id');
+        return $this->hasMany(
+            \App\Modules\ToDo\Models\ToDo::class,
+            "meeting_id",
+        );
     }
 
     public function isOngoing(): bool
@@ -48,6 +52,6 @@ class Meeting extends Model
 
     public function attendees()
     {
-        return $this->belongsToMany(User::class, 'meeting_attendees');
+        return $this->belongsToMany(User::class, "meeting_attendees");
     }
 }

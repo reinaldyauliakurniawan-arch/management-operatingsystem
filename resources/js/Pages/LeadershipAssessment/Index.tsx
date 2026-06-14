@@ -100,7 +100,10 @@ export default function LeadershipAssessmentIndex({
     const submitAssign = (e: React.FormEvent) => {
         e.preventDefault();
         assignForm.post(
-            route("leadership-assessment.cycles.assign", assignForm.data.cycle_id),
+            route(
+                "leadership-assessment.cycles.assign",
+                assignForm.data.cycle_id,
+            ),
             {
                 onSuccess: () => {
                     setAssignOpen(false);
@@ -300,7 +303,8 @@ export default function LeadershipAssessmentIndex({
                                                             "leadership-assessment.results",
                                                             {
                                                                 cycle: cycle.id,
-                                                                assessee: a.user_id,
+                                                                assessee:
+                                                                    a.user_id,
                                                             },
                                                         )}
                                                     >
@@ -330,6 +334,7 @@ export default function LeadershipAssessmentIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form
+                            id="cycle-form"
                             onSubmit={submitCycle}
                             className="flex flex-col gap-lg"
                         >
@@ -379,7 +384,8 @@ export default function LeadershipAssessmentIndex({
                             Batal
                         </Button>
                         <Button
-                            onClick={submitCycle}
+                            type="submit"
+                            form="cycle-form"
                             disabled={cycleForm.processing}
                         >
                             {cycleForm.processing ? "Menyimpan…" : "Buat Cycle"}
@@ -396,6 +402,7 @@ export default function LeadershipAssessmentIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form
+                            id="assign-form"
                             onSubmit={submitAssign}
                             className="flex flex-col gap-lg"
                         >
@@ -468,7 +475,8 @@ export default function LeadershipAssessmentIndex({
                             Batal
                         </Button>
                         <Button
-                            onClick={submitAssign}
+                            type="submit"
+                            form="assign-form"
                             disabled={assignForm.processing}
                         >
                             {assignForm.processing ? "Menyimpan…" : "Assign"}
