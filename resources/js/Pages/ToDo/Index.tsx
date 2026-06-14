@@ -117,17 +117,20 @@ export default function ToDoIndex({
                     {
                         label: "Pending",
                         value: pending.length,
-                        valueClass: "text-[#1a1a1a]",
+                        valueClass: "text-text-primary",
                     },
                     {
                         label: "Overdue",
                         value: overdue.length,
-                        valueClass: "text-[#991b1b]",
+                        valueClass:
+                            overdue.length > 0
+                                ? "text-error-text"
+                                : "text-text-primary",
                     },
                     {
                         label: "Done",
                         value: done.length,
-                        valueClass: "text-[#1a5c41]",
+                        valueClass: "text-primary",
                     },
                 ].map((stat) => (
                     <Card key={stat.label}>
@@ -148,11 +151,16 @@ export default function ToDoIndex({
             <Table>
                 <TableHeader>
                     <TableRow>
-                        {["", "To-Do", "Owner", "Due Date", "Status", ""].map(
-                            (h, i) => (
-                                <TableHead key={i}>{h}</TableHead>
-                            ),
-                        )}
+                        {[
+                            { key: "check", label: "" },
+                            { key: "title", label: "To-Do" },
+                            { key: "owner", label: "Owner" },
+                            { key: "due", label: "Due Date" },
+                            { key: "status", label: "Status" },
+                            { key: "actions", label: "" },
+                        ].map((h) => (
+                            <TableHead key={h.key}>{h.label}</TableHead>
+                        ))}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -211,7 +219,7 @@ export default function ToDoIndex({
                             <TableCell className="text-right">
                                 {canDelete(todo) && (
                                     <Button
-                                        variant="destructive"
+                                        variant="danger"
                                         size="sm"
                                         onClick={() => setDeleteId(todo.id)}
                                     >
@@ -232,6 +240,7 @@ export default function ToDoIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form
+                            id="todo-form"
                             onSubmit={submit}
                             className="flex flex-col gap-lg"
                         >
@@ -292,7 +301,11 @@ export default function ToDoIndex({
                         >
                             Batal
                         </Button>
-                        <Button onClick={submit} disabled={processing}>
+                        <Button
+                            type="submit"
+                            form="todo-form"
+                            disabled={processing}
+                        >
                             {processing ? "Menyimpan…" : "Simpan"}
                         </Button>
                     </DialogFooter>

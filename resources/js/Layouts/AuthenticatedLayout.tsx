@@ -67,18 +67,21 @@ export default function Authenticated({
     };
 
     return (
-        <div className="flex min-h-screen" style={{ background: "#f5f5f5" }}>
+        <div className="flex h-screen overflow-hidden bg-surface-subtle">
             {/* Sidebar */}
             <aside
                 style={{
                     width: sidebarOpen ? 240 : 56,
-                    minHeight: "100vh",
+                    height: "100vh",
                     background: "#f5f5f5",
                     borderRight: "1px solid #e4e4e4",
                     display: "flex",
                     flexDirection: "column",
                     transition: "width 200ms ease",
                     flexShrink: 0,
+                    position: "sticky",
+                    top: 0,
+                    overflowX: "hidden",
                 }}
             >
                 {/* Team Switcher */}
@@ -161,7 +164,12 @@ export default function Authenticated({
 
                 {/* Nav */}
                 <nav
-                    style={{ flex: 1, overflowY: "auto", padding: "12px 8px" }}
+                    style={{
+                        flex: 1,
+                        overflowY: "auto",
+                        padding: "12px 8px",
+                        minHeight: 0,
+                    }}
                 >
                     {navGroups.map((group) => (
                         <div key={group.label} style={{ marginBottom: 8 }}>
@@ -364,6 +372,7 @@ export default function Authenticated({
                     display: "flex",
                     flexDirection: "column",
                     minWidth: 0,
+                    overflow: "hidden",
                 }}
             >
                 {/* Topbar */}
@@ -378,6 +387,7 @@ export default function Authenticated({
                         gap: 12,
                         boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
                         flexShrink: 0,
+                        minWidth: 0,
                     }}
                 >
                     <button
@@ -437,14 +447,15 @@ export default function Authenticated({
                 <main
                     style={{
                         flex: 1,
+                        overflowY: "auto",
                         padding: 24,
-                        maxWidth: 1280,
                         width: "100%",
-                        margin: "0 auto",
                     }}
                 >
-                    {header}
-                    {children}
+                    <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+                        {header}
+                        {children}
+                    </div>
                 </main>
             </div>
         </div>

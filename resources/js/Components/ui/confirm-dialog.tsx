@@ -44,7 +44,7 @@ function ConfirmDialog({
                         {cancelLabel}
                     </DialogClose>
                     <Button
-                        variant="destructive"
+                        variant="danger"
                         onClick={onConfirm}
                         disabled={processing}
                     >

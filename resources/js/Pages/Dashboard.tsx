@@ -57,7 +57,15 @@ const fmtDatetime = (s: string) =>
     });
 
 const countdown = (s: string) => {
-    const diff = Math.ceil((new Date(s).getTime() - Date.now()) / 86400000);
+    const now = new Date();
+    const target = new Date(s.includes("T") ? s : s + "T00:00:00");
+    const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetDay = new Date(
+        target.getFullYear(),
+        target.getMonth(),
+        target.getDate(),
+    );
+    const diff = Math.ceil((targetDay.getTime() - nowDay.getTime()) / 86400000);
     if (diff <= 0) return "Hari ini";
     if (diff === 1) return "Besok";
     return `${diff} hari lagi`;

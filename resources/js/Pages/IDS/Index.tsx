@@ -111,12 +111,13 @@ export default function IDSIndex({
                     {
                         label: "Open",
                         value: open,
-                        valueClass: "text-[#991b1b]",
+                        valueClass:
+                            open > 0 ? "text-error-text" : "text-text-primary",
                     },
                     {
                         label: "Resolved",
                         value: resolved,
-                        valueClass: "text-[#1a5c41]",
+                        valueClass: "text-primary",
                     },
                 ].map((stat) => (
                     <Card key={stat.label}>
@@ -137,8 +138,14 @@ export default function IDSIndex({
             <Table>
                 <TableHeader>
                     <TableRow>
-                        {["P", "Issue", "Owner", "Status", ""].map((h, i) => (
-                            <TableHead key={i}>{h}</TableHead>
+                        {[
+                            { key: "priority", label: "P" },
+                            { key: "issue", label: "Issue" },
+                            { key: "owner", label: "Owner" },
+                            { key: "status", label: "Status" },
+                            { key: "actions", label: "" },
+                        ].map((h) => (
+                            <TableHead key={h.key}>{h.label}</TableHead>
                         ))}
                     </TableRow>
                 </TableHeader>
@@ -195,8 +202,8 @@ export default function IDSIndex({
                                     {issue.status === "open" &&
                                         (isLeader || isMember) && (
                                             <Button
+                                                variant="secondary"
                                                 size="sm"
-                                                className="bg-primary-subtle text-primary-text hover:bg-primary-subtle/70"
                                                 onClick={() =>
                                                     resolve(issue.id)
                                                 }
@@ -206,7 +213,7 @@ export default function IDSIndex({
                                         )}
                                     {isLeader && (
                                         <Button
-                                            variant="destructive"
+                                            variant="danger"
                                             size="sm"
                                             onClick={() =>
                                                 setDeleteId(issue.id)
@@ -230,6 +237,7 @@ export default function IDSIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form
+                            id="ids-form"
                             onSubmit={submit}
                             className="flex flex-col gap-lg"
                         >
@@ -309,7 +317,11 @@ export default function IDSIndex({
                         >
                             Batal
                         </Button>
-                        <Button onClick={submit} disabled={processing}>
+                        <Button
+                            type="submit"
+                            form="ids-form"
+                            disabled={processing}
+                        >
                             {processing ? "Menyimpan…" : "Identify"}
                         </Button>
                     </DialogFooter>

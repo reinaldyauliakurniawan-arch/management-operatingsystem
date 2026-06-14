@@ -71,25 +71,7 @@
     --spacing-gap-3xl: 48px;
     --spacing-gap-4xl: 64px;
 
-    --color-background: var(--color-surface);
-    --color-foreground: var(--color-text-primary);
-    --color-card: var(--color-surface);
-    --color-card-foreground: var(--color-text-primary);
-    --color-popover: var(--color-surface);
-    --color-popover-foreground: var(--color-text-primary);
-    --color-primary-foreground: var(--color-text-inverse);
-    --color-secondary: var(--color-surface-raised);
-    --color-secondary-foreground: var(--color-text-primary);
-    --color-muted: var(--color-surface-subtle);
-    --color-muted-foreground: var(--color-text-secondary);
-    --color-accent: var(--color-surface-overlay);
-    --color-accent-foreground: var(--color-text-primary);
-    --color-destructive: var(--color-error);
-    --color-destructive-foreground: var(--color-error-text);
-    --color-input: var(--color-border);
-    --color-ring: var(--color-primary);
-
-    /* shadcn ui/* component mappings — keep in sync with DESIGN.md tokens above.
+    /* shadcn/base-ui component mappings — keep in sync with DESIGN.md tokens above.
        Do not introduce new colors here; only alias to existing tokens. */
     --color-background: var(--color-surface);
     --color-foreground: var(--color-text-primary);
@@ -110,47 +92,119 @@
     --color-ring: var(--color-primary);
 }
 
-@utility gap-xs { gap: var(--spacing-gap-xs); }
-@utility gap-sm { gap: var(--spacing-gap-sm); }
-@utility gap-md { gap: var(--spacing-gap-md); }
-@utility gap-lg { gap: var(--spacing-gap-lg); }
-@utility gap-xl { gap: var(--spacing-gap-xl); }
-@utility gap-2xl { gap: var(--spacing-gap-2xl); }
+@utility gap-xs {
+    gap: var(--spacing-gap-xs);
+}
+@utility gap-sm {
+    gap: var(--spacing-gap-sm);
+}
+@utility gap-md {
+    gap: var(--spacing-gap-md);
+}
+@utility gap-lg {
+    gap: var(--spacing-gap-lg);
+}
+@utility gap-xl {
+    gap: var(--spacing-gap-xl);
+}
+@utility gap-2xl {
+    gap: var(--spacing-gap-2xl);
+}
 
-@utility p-xs { padding: var(--spacing-gap-xs); }
-@utility p-sm { padding: var(--spacing-gap-sm); }
-@utility p-md { padding: var(--spacing-gap-md); }
-@utility p-lg { padding: var(--spacing-gap-lg); }
-@utility p-xl { padding: var(--spacing-gap-xl); }
-@utility p-2xl { padding: var(--spacing-gap-2xl); }
+@utility p-xs {
+    padding: var(--spacing-gap-xs);
+}
+@utility p-sm {
+    padding: var(--spacing-gap-sm);
+}
+@utility p-md {
+    padding: var(--spacing-gap-md);
+}
+@utility p-lg {
+    padding: var(--spacing-gap-lg);
+}
+@utility p-xl {
+    padding: var(--spacing-gap-xl);
+}
+@utility p-2xl {
+    padding: var(--spacing-gap-2xl);
+}
 
-@utility px-xs { padding-inline: var(--spacing-gap-xs); }
-@utility px-sm { padding-inline: var(--spacing-gap-sm); }
-@utility px-md { padding-inline: var(--spacing-gap-md); }
-@utility px-lg { padding-inline: var(--spacing-gap-lg); }
-@utility px-xl { padding-inline: var(--spacing-gap-xl); }
-@utility px-2xl { padding-inline: var(--spacing-gap-2xl); }
+@utility px-xs {
+    padding-inline: var(--spacing-gap-xs);
+}
+@utility px-sm {
+    padding-inline: var(--spacing-gap-sm);
+}
+@utility px-md {
+    padding-inline: var(--spacing-gap-md);
+}
+@utility px-lg {
+    padding-inline: var(--spacing-gap-lg);
+}
+@utility px-xl {
+    padding-inline: var(--spacing-gap-xl);
+}
+@utility px-2xl {
+    padding-inline: var(--spacing-gap-2xl);
+}
 
-@utility py-xs { padding-block: var(--spacing-gap-xs); }
-@utility py-sm { padding-block: var(--spacing-gap-sm); }
-@utility py-md { padding-block: var(--spacing-gap-md); }
-@utility py-lg { padding-block: var(--spacing-gap-lg); }
-@utility py-xl { padding-block: var(--spacing-gap-xl); }
-@utility py-2xl { padding-block: var(--spacing-gap-2xl); }
+@utility py-xs {
+    padding-block: var(--spacing-gap-xs);
+}
+@utility py-sm {
+    padding-block: var(--spacing-gap-sm);
+}
+@utility py-md {
+    padding-block: var(--spacing-gap-md);
+}
+@utility py-lg {
+    padding-block: var(--spacing-gap-lg);
+}
+@utility py-xl {
+    padding-block: var(--spacing-gap-xl);
+}
+@utility py-2xl {
+    padding-block: var(--spacing-gap-2xl);
+}
 
-@utility mb-xs { margin-bottom: var(--spacing-gap-xs); }
-@utility mb-sm { margin-bottom: var(--spacing-gap-sm); }
-@utility mb-md { margin-bottom: var(--spacing-gap-md); }
-@utility mb-lg { margin-bottom: var(--spacing-gap-lg); }
-@utility mb-xl { margin-bottom: var(--spacing-gap-xl); }
-@utility mb-2xl { margin-bottom: var(--spacing-gap-2xl); }
+@utility mb-xs {
+    margin-bottom: var(--spacing-gap-xs);
+}
+@utility mb-sm {
+    margin-bottom: var(--spacing-gap-sm);
+}
+@utility mb-md {
+    margin-bottom: var(--spacing-gap-md);
+}
+@utility mb-lg {
+    margin-bottom: var(--spacing-gap-lg);
+}
+@utility mb-xl {
+    margin-bottom: var(--spacing-gap-xl);
+}
+@utility mb-2xl {
+    margin-bottom: var(--spacing-gap-2xl);
+}
 
-@utility mt-xs { margin-top: var(--spacing-gap-xs); }
-@utility mt-sm { margin-top: var(--spacing-gap-sm); }
-@utility mt-md { margin-top: var(--spacing-gap-md); }
-@utility mt-lg { margin-top: var(--spacing-gap-lg); }
-@utility mt-xl { margin-top: var(--spacing-gap-xl); }
-@utility mt-2xl { margin-top: var(--spacing-gap-2xl); }
+@utility mt-xs {
+    margin-top: var(--spacing-gap-xs);
+}
+@utility mt-sm {
+    margin-top: var(--spacing-gap-sm);
+}
+@utility mt-md {
+    margin-top: var(--spacing-gap-md);
+}
+@utility mt-lg {
+    margin-top: var(--spacing-gap-lg);
+}
+@utility mt-xl {
+    margin-top: var(--spacing-gap-xl);
+}
+@utility mt-2xl {
+    margin-top: var(--spacing-gap-2xl);
+}
 
 @layer base {
     * {

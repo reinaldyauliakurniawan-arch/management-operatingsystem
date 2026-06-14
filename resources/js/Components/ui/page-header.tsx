@@ -19,7 +19,7 @@ function PageHeader({
         <div
             data-slot="page-header"
             className={cn(
-                "mb-xl flex items-start justify-between gap-lg border-b border-border pb-xl",
+                "mb-xl flex items-center justify-between gap-lg border-b border-border pb-xl",
                 className,
             )}
             {...props}

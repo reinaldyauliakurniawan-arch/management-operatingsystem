@@ -168,22 +168,25 @@ export default function RocksIndex({
                     {
                         label: "Total",
                         value: total,
-                        valueClass: "text-[#1a1a1a]",
+                        valueClass: "text-text-primary",
                     },
                     {
                         label: "On Track",
                         value: onTrack,
-                        valueClass: "text-[#1a5c41]",
+                        valueClass: "text-primary",
                     },
                     {
                         label: "Off Track",
                         value: offTrack,
-                        valueClass: "text-[#991b1b]",
+                        valueClass:
+                            offTrack > 0
+                                ? "text-error-text"
+                                : "text-text-primary",
                     },
                     {
                         label: "Done",
                         value: done,
-                        valueClass: "text-[#6b6b6b]",
+                        valueClass: "text-text-secondary",
                     },
                 ].map((stat) => (
                     <Card key={stat.label}>
@@ -298,7 +301,7 @@ export default function RocksIndex({
                                     </Button>
                                     {isLeader && (
                                         <Button
-                                            variant="destructive"
+                                            variant="danger"
                                             size="sm"
                                             onClick={() =>
                                                 setDeleteRockId(rock.id)
@@ -322,6 +325,7 @@ export default function RocksIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form
+                            id="rock-form"
                             onSubmit={submit}
                             className="flex flex-col gap-lg"
                         >
@@ -425,7 +429,8 @@ export default function RocksIndex({
                             Batal
                         </Button>
                         <Button
-                            onClick={submit}
+                            type="submit"
+                            form="rock-form"
                             disabled={processing || users.length === 0}
                         >
                             {processing ? "Menyimpan…" : "Simpan Rock"}
@@ -551,7 +556,7 @@ export default function RocksIndex({
                             {isLeader && (
                                 <DialogFooter>
                                     <Button
-                                        variant="destructive"
+                                        variant="danger"
                                         onClick={() =>
                                             setDeleteRockId(detailRock.id)
                                         }
