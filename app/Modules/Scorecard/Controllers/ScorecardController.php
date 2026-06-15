@@ -166,28 +166,6 @@ class ScorecardController extends Controller
         return back()->with('message', 'Settings disimpan.');
     }
 
-    public function updateSettings(Request $request)
-    {
-        $teamId = session('active_team_id');
-        $user   = $request->user();
-        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
-
-        if (!$user->is_org_admin && $role !== 'leader') {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'q1_start_date' => 'required|date',
-            'scorecard_day' => 'required|integer|min:0|max:6',
-        ]);
-
-        \App\Modules\Teams\Models\Team::withoutGlobalScopes()
-            ->where('id', $teamId)
-            ->update($validated);
-
-        return back()->with('message', 'Settings disimpan.');
-    }
-
     public function logScore(Request $request, LogWeeklyScore $logWeeklyScore)
     {
         $teamId = session('active_team_id');
