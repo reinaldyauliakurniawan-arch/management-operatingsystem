@@ -9,7 +9,7 @@ const buttonVariants = cva(
         variants: {
             variant: {
                 default:
-                    "rounded-pill bg-primary text-text-inverse hover:bg-primary-hover hover:scale-[0.97]",
+                    "rounded-full bg-primary text-text-inverse hover:bg-primary-hover hover:scale-[0.97]",
                 outline:
                     "rounded-sm border-border bg-surface hover:bg-surface-overlay hover:text-text-primary",
                 secondary:
