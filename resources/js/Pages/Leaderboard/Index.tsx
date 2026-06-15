@@ -183,59 +183,60 @@ export default function LeaderboardIndex({
             />
 
             {/* Filter */}
-            <Card className="mb-xl p-0">
-                <CardContent className="flex flex-wrap items-end gap-md py-md">
-                    <div>
-                        <Label className="mb-1.5 text-text-secondary">
-                            Periode Cepat
-                        </Label>
-                        <div className="flex gap-xs">
-                            {[
-                                { label: "Q1", from: `-01-01`, to: `-03-31` },
-                                { label: "Q2", from: `-04-01`, to: `-06-30` },
-                                { label: "Q3", from: `-07-01`, to: `-09-30` },
-                                { label: "Q4", from: `-10-01`, to: `-12-31` },
-                            ].map((q) => {
-                                const year = new Date().getFullYear();
-                                return (
-                                    <button
-                                        key={q.label}
-                                        type="button"
-                                        onClick={() => {
-                                            setDateFrom(`${year}${q.from}`);
-                                            setDateTo(`${year}${q.to}`);
-                                        }}
-                                        className="rounded-xs bg-surface-raised px-2 py-0.5 text-[12px] font-medium text-text-secondary hover:bg-surface-overlay transition-colors"
-                                    >
-                                        {q.label} {year}
-                                    </button>
-                                );
-                            })}
-                        </div>
+            <div className="mb-xl rounded-[var(--radius-lg)] border border-border bg-surface p-6 flex flex-col md:flex-row items-start md:items-end gap-6">
+                <div className="flex flex-col gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                        Periode Cepat
+                    </span>
+                    <div className="flex bg-surface-subtle p-1 rounded-full border border-border gap-1">
+                        {[
+                            { label: "Q1", from: `-01-01`, to: `-03-31` },
+                            { label: "Q2", from: `-04-01`, to: `-06-30` },
+                            { label: "Q3", from: `-07-01`, to: `-09-30` },
+                            { label: "Q4", from: `-10-01`, to: `-12-31` },
+                        ].map((q) => {
+                            const year = new Date().getFullYear();
+                            const isActive = dateFrom === `${year}${q.from}`;
+                            return (
+                                <button
+                                    key={q.label}
+                                    type="button"
+                                    onClick={() => {
+                                        setDateFrom(`${year}${q.from}`);
+                                        setDateTo(`${year}${q.to}`);
+                                    }}
+                                    className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all ${
+                                        isActive
+                                            ? "bg-surface shadow-[var(--shadow-xs)] border border-border text-primary font-semibold"
+                                            : "text-text-secondary hover:text-text-primary"
+                                    }`}
+                                >
+                                    {q.label} {year}
+                                </button>
+                            );
+                        })}
                     </div>
-                    <div>
-                        <Label className="mb-1.5 text-text-secondary">
-                            Dari
-                        </Label>
+                </div>
+                <div className="flex items-end gap-3 flex-wrap">
+                    <div className="flex flex-col gap-1.5">
+                        <Label className="text-text-secondary">Dari</Label>
                         <Input
                             type="date"
                             value={dateFrom}
                             onChange={(e) => setDateFrom(e.target.value)}
+                            className="w-40"
                         />
                     </div>
-                    <div>
-                        <Label className="mb-1.5 text-text-secondary">
-                            Sampai
-                        </Label>
+                    <div className="flex flex-col gap-1.5">
+                        <Label className="text-text-secondary">Sampai</Label>
                         <Input
                             type="date"
                             value={dateTo}
                             onChange={(e) => setDateTo(e.target.value)}
+                            className="w-40"
                         />
                     </div>
-                    <Button variant="secondary" onClick={applyFilter}>
-                        Filter
-                    </Button>
+                    <Button onClick={applyFilter}>Filter</Button>
                     {(dateFrom || dateTo) && (
                         <Button
                             variant="ghost"
@@ -252,8 +253,8 @@ export default function LeaderboardIndex({
                             Reset
                         </Button>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
             {/* Leaderboard tables per role */}
             <div className="flex flex-col gap-xl">
@@ -267,124 +268,214 @@ export default function LeaderboardIndex({
                 )}
                 {grouped.map((group) => (
                     <div key={group.role}>
-                        <h2 className="mb-md text-[14px] font-semibold tracking-tight text-text-primary">
-                            {roleLabels[group.role]}
-                        </h2>
-                        <Card className="p-0">
-                            <CardContent className="p-0">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="w-12">
-                                                #
-                                            </TableHead>
-                                            <TableHead>Nama</TableHead>
-                                            <TableHead>Score</TableHead>
-                                            <TableHead></TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {group.entries.map((entry, idx) => (
-                                            <React.Fragment key={entry.user_id}>
-                                                <TableRow>
-                                                    <TableCell className="text-text-secondary">
-                                                        {idx + 1}
-                                                    </TableCell>
-                                                    <TableCell className="font-medium text-text-primary">
+                        <div className="mb-3 flex items-center justify-between px-1">
+                            <h2 className="text-[16px] font-semibold tracking-tight text-text-primary">
+                                {roleLabels[group.role]} Rank
+                            </h2>
+                            <div className="flex items-center gap-2 text-[11px] text-text-muted">
+                                <span className="h-2 w-2 rounded-full bg-primary" />
+                                {group.entries.length} peserta
+                            </div>
+                        </div>
+                        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
+                            <table className="w-full border-collapse">
+                                <thead>
+                                    <tr className="border-b border-border bg-surface-subtle">
+                                        <th className="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-widest text-text-secondary w-20">
+                                            # Rank
+                                        </th>
+                                        <th className="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                                            Nama
+                                        </th>
+                                        <th className="px-6 py-4 text-center text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                                            Score
+                                        </th>
+                                        <th className="px-6 py-4 text-right text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                                            Action
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                    {group.entries.map((entry, idx) => (
+                                        <React.Fragment key={entry.user_id}>
+                                            <tr className="transition-colors duration-150 hover:bg-surface-subtle">
+                                                <td className="px-6 py-5">
+                                                    {idx === 0 ? (
+                                                        <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-white">
+                                                            1
+                                                            <span className="absolute -right-1 -top-2 text-[13px]">
+                                                                🏆
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-[14px] font-semibold text-text-secondary">
+                                                            {idx + 1}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <p className="text-[14px] font-semibold text-text-primary">
                                                         {entry.name}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <span className="text-[16px] font-semibold tracking-tight text-primary-text">
+                                                    </p>
+                                                    <p className="text-[12px] text-text-secondary capitalize">
+                                                        {entry.role}
+                                                    </p>
+                                                </td>
+                                                <td className="px-6 py-5 text-center">
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <span className="text-[18px] font-bold text-primary">
                                                             {entry.score}
+                                                            <span className="text-[13px] font-medium text-text-secondary">
+                                                                {" "}
+                                                                / 100
+                                                            </span>
                                                         </span>
-                                                        <span className="ml-1 text-text-muted">
-                                                            / 100
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Button
-                                                            size="xs"
-                                                            variant="ghost"
-                                                            onClick={() =>
-                                                                setExpanded(
-                                                                    expanded ===
-                                                                        entry.user_id
-                                                                        ? null
-                                                                        : entry.user_id,
-                                                                )
-                                                            }
-                                                        >
-                                                            {expanded ===
+                                                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-raised">
+                                                            <div
+                                                                className="h-full rounded-full bg-primary transition-all"
+                                                                style={{
+                                                                    width: `${Math.min(entry.score, 100)}%`,
+                                                                    opacity:
+                                                                        idx ===
+                                                                        0
+                                                                            ? 1
+                                                                            : 0.5 +
+                                                                              0.5 *
+                                                                                  (1 -
+                                                                                      idx /
+                                                                                          group
+                                                                                              .entries
+                                                                                              .length),
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 text-right">
+                                                    <button
+                                                        onClick={() =>
+                                                            setExpanded(
+                                                                expanded ===
+                                                                    entry.user_id
+                                                                    ? null
+                                                                    : entry.user_id,
+                                                            )
+                                                        }
+                                                        className={`rounded-full border px-4 py-1.5 text-[13px] font-medium transition-all ${
+                                                            expanded ===
                                                             entry.user_id
-                                                                ? "Tutup"
-                                                                : "Breakdown"}
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                                {expanded === entry.user_id && (
-                                                    <TableRow>
-                                                        <TableCell
-                                                            colSpan={4}
-                                                            className="bg-surface-subtle"
-                                                        >
-                                                            <div className="flex flex-col gap-sm">
-                                                                {entry.breakdown.map(
-                                                                    (b) => (
-                                                                        <div
-                                                                            key={
+                                                                ? "border-primary bg-primary text-white"
+                                                                : "border-border text-text-secondary hover:bg-surface-raised"
+                                                        }`}
+                                                    >
+                                                        {expanded ===
+                                                        entry.user_id
+                                                            ? "Tutup"
+                                                            : "Breakdown"}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {expanded === entry.user_id && (
+                                                <tr>
+                                                    <td
+                                                        colSpan={4}
+                                                        className="bg-surface-subtle px-6 py-4"
+                                                    >
+                                                        <div className="flex flex-col gap-2">
+                                                            {entry.breakdown.map(
+                                                                (b) => (
+                                                                    <div
+                                                                        key={
+                                                                            b.parameter
+                                                                        }
+                                                                        className="flex items-center justify-between text-[13px]"
+                                                                    >
+                                                                        <span className="text-text-secondary">
+                                                                            {
                                                                                 b.parameter
+                                                                            }{" "}
+                                                                            {b.automatic && (
+                                                                                <Badge
+                                                                                    variant="info"
+                                                                                    className="ml-1"
+                                                                                >
+                                                                                    Auto
+                                                                                </Badge>
+                                                                            )}
+                                                                        </span>
+                                                                        <span className="font-medium text-text-primary">
+                                                                            {
+                                                                                b.earned
+                                                                            }{" "}
+                                                                            /{" "}
+                                                                            {
+                                                                                b.max
                                                                             }
-                                                                            className="flex items-center justify-between"
-                                                                        >
-                                                                            <span className="text-text-secondary">
-                                                                                {
-                                                                                    b.parameter
-                                                                                }{" "}
-                                                                                {b.automatic && (
-                                                                                    <Badge
-                                                                                        variant="info"
-                                                                                        className="ml-1"
-                                                                                    >
-                                                                                        Auto
-                                                                                    </Badge>
-                                                                                )}
-                                                                            </span>
-                                                                            <span className="font-medium text-text-primary">
-                                                                                {
-                                                                                    b.earned
-                                                                                }{" "}
-                                                                                /{" "}
-                                                                                {
-                                                                                    b.max
-                                                                                }
-                                                                            </span>
-                                                                        </div>
-                                                                    ),
-                                                                )}
-                                                                {entry.breakdown
-                                                                    .length ===
-                                                                    0 && (
-                                                                    <p className="text-text-muted">
-                                                                        Belum
-                                                                        ada
-                                                                        parameter
-                                                                        untuk
-                                                                        role
-                                                                        ini.
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                            </React.Fragment>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
+                                                                        </span>
+                                                                    </div>
+                                                                ),
+                                                            )}
+                                                            {entry.breakdown
+                                                                .length ===
+                                                                0 && (
+                                                                <p className="text-[13px] text-text-muted">
+                                                                    Belum ada
+                                                                    parameter
+                                                                    untuk role
+                                                                    ini.
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </React.Fragment>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 ))}
+
+                {/* Insight Cards */}
+                {scores.length > 0 && (
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                        {[
+                            {
+                                label: "Top Scorer",
+                                value: `${scores[0]?.name ?? "-"} (${scores[0]?.score ?? 0})`,
+                                icon: "📈",
+                            },
+                            {
+                                label: "Total Peserta",
+                                value: `${scores.length} Members`,
+                                icon: "👥",
+                            },
+                            {
+                                label: "Rata-rata Score",
+                                value: `${scores.length ? (scores.reduce((a, b) => a + b.score, 0) / scores.length).toFixed(1) : 0} pts`,
+                                icon: "⚡",
+                            },
+                        ].map((card) => (
+                            <div
+                                key={card.label}
+                                className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-surface p-6"
+                            >
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-subtle text-[22px]">
+                                    {card.icon}
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                                        {card.label}
+                                    </p>
+                                    <p className="text-[18px] font-bold text-text-primary">
+                                        {card.value}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Config Modal */}

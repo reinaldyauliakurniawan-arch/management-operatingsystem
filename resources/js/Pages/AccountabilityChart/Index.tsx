@@ -50,67 +50,99 @@ function SeatCard({
     onEdit: (seat: Seat) => void;
     depth?: number;
 }) {
+    const hasChildren = seat.children.length > 0;
+
     return (
-        <div
-            className={`flex flex-col items-center ${depth > 0 ? "mt-lg" : ""}`}
-        >
-            {depth > 0 && <div className="h-lg w-px bg-border" />}
-            <div className="w-56 rounded-[var(--radius-lg)] border border-border bg-surface p-md shadow-[var(--shadow-xs)]">
-                <p className="text-[13px] font-semibold tracking-tight text-text-primary">
+        <div className="flex flex-col items-center">
+            {/* connector from parent */}
+            {depth > 0 && <div className="h-10 w-px bg-border" />}
+
+            {/* Card */}
+            <div className="group w-[260px] rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-xs)] transition-all duration-200 hover:border-primary hover:bg-surface-subtle">
+                {/* role label + actions */}
+                <div className="mb-3 flex items-start justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-widest text-primary opacity-70">
+                        {depth === 0 ? "Root" : `Level ${depth}`}
+                    </span>
+                    {(isLeader || isOrgAdmin) && (
+                        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                            <button
+                                onClick={() => onEdit(seat)}
+                                className="rounded px-2 py-0.5 text-[11px] font-medium text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => onDelete(seat.id)}
+                                className="rounded px-2 py-0.5 text-[11px] font-medium text-error hover:bg-error-subtle"
+                            >
+                                Hapus
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* title */}
+                <h3 className="text-[15px] font-semibold leading-snug tracking-tight text-text-primary">
                     {seat.title}
-                </p>
+                </h3>
+
+                {/* person */}
                 {seat.user ? (
-                    <p className="mt-xs text-[12px] font-medium text-primary-text">
+                    <p className="mt-1 text-[13px] text-text-secondary">
                         {seat.user.name}
                     </p>
                 ) : (
-                    <p className="mt-xs text-[12px] italic text-text-muted">
+                    <p className="mt-1 text-[13px] italic text-text-muted">
                         Belum terisi
                     </p>
                 )}
+
+                {/* responsibilities */}
                 {seat.responsibilities && seat.responsibilities.length > 0 && (
-                    <p className="mt-xs text-[11px] leading-snug text-text-muted">
-                        {seat.responsibilities.slice(0, 2).join(" · ")}
-                        {seat.responsibilities.length > 2 ? " …" : ""}
-                    </p>
-                )}
-                {(isLeader || isOrgAdmin) && (
-                    <div className="mt-sm flex gap-xs">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onEdit(seat)}
-                            className="text-[11px]"
-                        >
-                            Edit
-                        </Button>
-                        <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => onDelete(seat.id)}
-                            className="text-[11px]"
-                        >
-                            Hapus
-                        </Button>
-                    </div>
+                    <ul className="mt-4 space-y-1.5 border-t border-border pt-4">
+                        {seat.responsibilities.map((r, i) => (
+                            <li
+                                key={i}
+                                className="flex items-start gap-2 text-[12px] leading-snug text-text-secondary"
+                            >
+                                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
+                                {r}
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </div>
 
-            {seat.children.length > 0 && (
+            {/* children subtree */}
+            {hasChildren && (
                 <div className="flex flex-col items-center">
-                    <div className="h-lg w-px bg-border" />
-                    <div className="flex gap-xl">
-                        {seat.children.map((child) => (
-                            <SeatCard
-                                key={child.id}
-                                seat={child}
-                                isLeader={isLeader}
-                                isOrgAdmin={isOrgAdmin}
-                                onDelete={onDelete}
-                                onEdit={onEdit}
-                                depth={depth + 1}
+                    {/* vertical down to horizontal bar */}
+                    <div className="h-10 w-px bg-border" />
+                    <div className="relative flex items-start">
+                        {/* horizontal bar */}
+                        {seat.children.length > 1 && (
+                            <div
+                                className="absolute top-0 h-px bg-border"
+                                style={{
+                                    left: "130px",
+                                    right: "130px",
+                                }}
                             />
-                        ))}
+                        )}
+                        <div className="flex gap-8">
+                            {seat.children.map((child) => (
+                                <SeatCard
+                                    key={child.id}
+                                    seat={child}
+                                    isLeader={isLeader}
+                                    isOrgAdmin={isOrgAdmin}
+                                    onDelete={onDelete}
+                                    onEdit={onEdit}
+                                    depth={depth + 1}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
@@ -422,8 +454,8 @@ export default function AccountabilityChartIndex({
                     </CardContent>
                 </Card>
             ) : (
-                <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-border bg-surface p-2xl">
-                    <div className="flex flex-col items-center">
+                <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-border bg-surface-subtle p-2xl">
+                    <div className="flex min-w-max flex-col items-center pb-16">
                         {seats
                             .filter((s) => s.parent_id === null)
                             .map((seat) => (
