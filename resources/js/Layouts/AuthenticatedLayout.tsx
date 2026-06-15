@@ -155,14 +155,22 @@ export default function Authenticated({
                                     {user.email}
                                 </p>
                             </div>
-                            <Link
-                                href={route("logout")}
-                                method="post"
-                                as="button"
-                                className="text-[11px] text-text-muted bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-error-text"
-                            >
-                                Logout
-                            </Link>
+                            <div className="flex gap-sm">
+                                <Link
+                                    href={route("profile.edit")}
+                                    className="text-[11px] text-text-muted bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-text-primary"
+                                >
+                                    Profil
+                                </Link>
+                                <Link
+                                    href={route("logout")}
+                                    method="post"
+                                    as="button"
+                                    className="text-[11px] text-text-muted bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-error-text"
+                                >
+                                    Logout
+                                </Link>
+                            </div>
                         </div>
                     ) : (
                         <div className="flex justify-center">

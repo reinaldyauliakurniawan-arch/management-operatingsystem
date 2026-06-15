@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Head, usePage, router, useForm } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
@@ -23,11 +23,11 @@ import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
 interface Seat {
     id: number;
     title: string;
-    responsibilities: string | null;
+    responsibilities: string[];
     user: { id: number; name: string } | null;
     parent_id: number | null;
+    team_id: number;
     children: Seat[];
-    is_sub_chart: boolean;
 }
 
 interface User {
@@ -39,7 +39,6 @@ function SeatCard({
     seat,
     isLeader,
     isOrgAdmin,
-    users,
     onDelete,
     onEdit,
     depth = 0,
@@ -47,7 +46,6 @@ function SeatCard({
     seat: Seat;
     isLeader: boolean;
     isOrgAdmin: boolean;
-    users: User[];
     onDelete: (id: number) => void;
     onEdit: (seat: Seat) => void;
     depth?: number;
@@ -56,34 +54,25 @@ function SeatCard({
         <div
             className={`flex flex-col items-center ${depth > 0 ? "mt-lg" : ""}`}
         >
-            {/* Connector line */}
             {depth > 0 && <div className="h-lg w-px bg-border" />}
-            <div
-                className="w-56 rounded-lg border border-border bg-surface p-md shadow-xs"
-                className="min-w-[200px]"
-            >
+            <div className="w-56 rounded-[var(--radius-lg)] border border-border bg-surface p-md shadow-[var(--shadow-xs)]">
                 <p className="text-[13px] font-semibold tracking-tight text-text-primary">
                     {seat.title}
                 </p>
                 {seat.user ? (
-                    <p className="mt-xs text-[12px] text-primary-text font-medium">
+                    <p className="mt-xs text-[12px] font-medium text-primary-text">
                         {seat.user.name}
                     </p>
                 ) : (
-                    <p className="mt-xs text-[12px] text-text-muted italic">
+                    <p className="mt-xs text-[12px] italic text-text-muted">
                         Belum terisi
                     </p>
                 )}
-                {seat.responsibilities && (
-                    <p className="mt-xs text-[11px] text-text-muted leading-snug">
-                        {seat.responsibilities.slice(0, 80)}
-                        {seat.responsibilities.length > 80 ? "…" : ""}
+                {seat.responsibilities && seat.responsibilities.length > 0 && (
+                    <p className="mt-xs text-[11px] leading-snug text-text-muted">
+                        {seat.responsibilities.slice(0, 2).join(" · ")}
+                        {seat.responsibilities.length > 2 ? " …" : ""}
                     </p>
-                )}
-                {seat.is_sub_chart && (
-                    <Badge variant="info" className="mt-sm">
-                        Sub-chart
-                    </Badge>
                 )}
                 {(isLeader || isOrgAdmin) && (
                     <div className="mt-sm flex gap-xs">
@@ -107,9 +96,8 @@ function SeatCard({
                 )}
             </div>
 
-            {/* Children */}
             {seat.children.length > 0 && (
-                <div className="mt-0 flex flex-col items-center">
+                <div className="flex flex-col items-center">
                     <div className="h-lg w-px bg-border" />
                     <div className="flex gap-xl">
                         {seat.children.map((child) => (
@@ -118,7 +106,6 @@ function SeatCard({
                                 seat={child}
                                 isLeader={isLeader}
                                 isOrgAdmin={isOrgAdmin}
-                                users={users}
                                 onDelete={onDelete}
                                 onEdit={onEdit}
                                 depth={depth + 1}
@@ -134,9 +121,11 @@ function SeatCard({
 export default function AccountabilityChartIndex({
     seats,
     users,
+    bigPicture: initialBigPicture,
 }: {
     seats: Seat[];
     users: User[];
+    bigPicture: boolean;
 }) {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
@@ -145,33 +134,63 @@ export default function AccountabilityChartIndex({
     const [createOpen, setCreateOpen] = useState(false);
     const [editSeat, setEditSeat] = useState<Seat | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [tab, setTab] = useState<"existing" | "new">("existing");
+    const [bigPicture, setBigPicture] = useState(initialBigPicture);
 
     const { data, setData, post, put, processing, reset, errors } = useForm({
         title: "",
         responsibilities: "",
         user_id: "" as string | number,
         parent_id: "" as string | number,
-        is_sub_chart: false,
+        // new user fields
+        create_new_user: false,
+        new_user_name: "",
+        new_user_email: "",
+        new_user_role: "member" as string,
     });
+
+    const toggleBigPicture = (val: boolean) => {
+        setBigPicture(val);
+        router.get(
+            route("accountability.index"),
+            { big_picture: val ? 1 : 0 },
+            { preserveState: true, replace: true },
+        );
+    };
 
     const openCreate = () => {
         reset();
+        setTab("existing");
         setCreateOpen(true);
     };
 
     const openEdit = (seat: Seat) => {
         setData({
             title: seat.title,
-            responsibilities: seat.responsibilities ?? "",
+            responsibilities: seat.responsibilities?.join("\n") ?? "",
             user_id: seat.user?.id ?? "",
             parent_id: seat.parent_id ?? "",
-            is_sub_chart: seat.is_sub_chart,
+            create_new_user: false,
+            new_user_name: "",
+            new_user_email: "",
+            new_user_role: "member",
         });
         setEditSeat(seat);
     };
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
+        const payload = {
+            ...data,
+            responsibilities: data.responsibilities
+                ? data.responsibilities
+                      .split("\n")
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                : [],
+            create_new_user: tab === "new",
+        };
+
         if (editSeat) {
             put(route("accountability-chart.update", editSeat.id), {
                 onSuccess: () => {
@@ -181,6 +200,7 @@ export default function AccountabilityChartIndex({
             });
         } else {
             post(route("accountability-chart.store"), {
+                data: payload,
                 onSuccess: () => {
                     setCreateOpen(false);
                     reset();
@@ -196,17 +216,15 @@ export default function AccountabilityChartIndex({
         });
     };
 
-    // Flatten all seats for parent selector
     const allSeats = (function flatten(list: Seat[]): Seat[] {
         return list.flatMap((s) => [s, ...flatten(s.children)]);
     })(seats);
 
-    const FormBody = () => (
+    const ExistingUserForm = () => (
         <div className="flex flex-col gap-lg">
             <div className="flex flex-col gap-xs">
-                <Label htmlFor="seat-title">Nama Seat / Posisi *</Label>
+                <Label>Nama Seat / Posisi *</Label>
                 <Input
-                    id="seat-title"
                     value={data.title}
                     onChange={(e) => setData("title", e.target.value)}
                     placeholder="Misal: Head of Marketing"
@@ -219,21 +237,21 @@ export default function AccountabilityChartIndex({
                 )}
             </div>
             <div className="flex flex-col gap-xs">
-                <Label htmlFor="seat-resp">Responsibilities</Label>
+                <Label>Responsibilities (satu per baris)</Label>
                 <Textarea
-                    id="seat-resp"
                     value={data.responsibilities}
                     onChange={(e) =>
                         setData("responsibilities", e.target.value)
                     }
-                    placeholder="Tanggung jawab utama seat ini..."
+                    placeholder={
+                        "Contoh:\nManage marketing budget\nLead campaign strategy"
+                    }
                     rows={3}
                 />
             </div>
             <div className="flex flex-col gap-xs">
-                <Label htmlFor="seat-user">User (opsional)</Label>
+                <Label>User (opsional)</Label>
                 <Select
-                    id="seat-user"
                     value={data.user_id}
                     onChange={(e) => setData("user_id", e.target.value)}
                 >
@@ -246,13 +264,12 @@ export default function AccountabilityChartIndex({
                 </Select>
             </div>
             <div className="flex flex-col gap-xs">
-                <Label htmlFor="seat-parent">Parent Seat (opsional)</Label>
+                <Label>Parent Seat (opsional)</Label>
                 <Select
-                    id="seat-parent"
                     value={data.parent_id}
                     onChange={(e) => setData("parent_id", e.target.value)}
                 >
-                    <option value="">— Root (tidak ada parent) —</option>
+                    <option value="">— Root —</option>
                     {allSeats
                         .filter((s) => s.id !== editSeat?.id)
                         .map((s) => (
@@ -262,17 +279,83 @@ export default function AccountabilityChartIndex({
                         ))}
                 </Select>
             </div>
-            <div className="flex items-center gap-sm">
-                <input
-                    id="seat-subchart"
-                    type="checkbox"
-                    checked={data.is_sub_chart}
-                    onChange={(e) => setData("is_sub_chart", e.target.checked)}
-                    className="h-4 w-4 rounded accent-primary"
+        </div>
+    );
+
+    const NewUserForm = () => (
+        <div className="flex flex-col gap-lg">
+            <div className="rounded-sm bg-info-subtle px-md py-sm text-[12px] text-info-text">
+                User baru akan dibuat dengan password default{" "}
+                <strong>member123</strong>. Mereka bisa mengubah password
+                sendiri setelah login.
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Nama Lengkap *</Label>
+                <Input
+                    value={data.new_user_name}
+                    onChange={(e) => setData("new_user_name", e.target.value)}
+                    placeholder="Nama lengkap"
+                    aria-invalid={!!errors.new_user_name}
                 />
-                <Label htmlFor="seat-subchart" className="cursor-pointer">
-                    Tandai sebagai sub-chart tim
-                </Label>
+                {errors.new_user_name && (
+                    <p className="text-[12px] text-error-text">
+                        {errors.new_user_name}
+                    </p>
+                )}
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Email *</Label>
+                <Input
+                    type="email"
+                    value={data.new_user_email}
+                    onChange={(e) => setData("new_user_email", e.target.value)}
+                    placeholder="email@perusahaan.com"
+                    aria-invalid={!!errors.new_user_email}
+                />
+                {errors.new_user_email && (
+                    <p className="text-[12px] text-error-text">
+                        {errors.new_user_email}
+                    </p>
+                )}
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Role di Team *</Label>
+                <Select
+                    value={data.new_user_role}
+                    onChange={(e) => setData("new_user_role", e.target.value)}
+                >
+                    <option value="member">Member</option>
+                    <option value="tutor">Tutor</option>
+                    <option value="leader">Leader</option>
+                </Select>
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Nama Seat / Posisi *</Label>
+                <Input
+                    value={data.title}
+                    onChange={(e) => setData("title", e.target.value)}
+                    placeholder="Misal: Head of Marketing"
+                    aria-invalid={!!errors.title}
+                />
+                {errors.title && (
+                    <p className="text-[12px] text-error-text">
+                        {errors.title}
+                    </p>
+                )}
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Parent Seat (opsional)</Label>
+                <Select
+                    value={data.parent_id}
+                    onChange={(e) => setData("parent_id", e.target.value)}
+                >
+                    <option value="">— Root —</option>
+                    {allSeats.map((s) => (
+                        <option key={s.id} value={s.id}>
+                            {s.title}
+                        </option>
+                    ))}
+                </Select>
             </div>
         </div>
     );
@@ -285,9 +368,36 @@ export default function AccountabilityChartIndex({
                 title="Accountability Chart"
                 subtitle="Struktur organisasi — siapa di seat apa"
                 action={
-                    isLeader || isOrgAdmin ? (
-                        <Button onClick={openCreate}>+ Tambah Seat</Button>
-                    ) : undefined
+                    <div className="flex items-center gap-sm">
+                        {/* View toggle */}
+                        <div className="flex rounded-sm border border-border overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => toggleBigPicture(false)}
+                                className={`px-md py-xs text-[12px] font-medium transition-colors ${
+                                    !bigPicture
+                                        ? "bg-primary text-text-inverse"
+                                        : "bg-surface text-text-secondary hover:bg-surface-overlay"
+                                }`}
+                            >
+                                Tim Saya
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => toggleBigPicture(true)}
+                                className={`px-md py-xs text-[12px] font-medium transition-colors ${
+                                    bigPicture
+                                        ? "bg-primary text-text-inverse"
+                                        : "bg-surface text-text-secondary hover:bg-surface-overlay"
+                                }`}
+                            >
+                                Seluruh Org
+                            </button>
+                        </div>
+                        {(isLeader || isOrgAdmin) && !bigPicture && (
+                            <Button onClick={openCreate}>+ Tambah Seat</Button>
+                        )}
+                    </div>
                 }
             />
 
@@ -295,29 +405,34 @@ export default function AccountabilityChartIndex({
                 <Card>
                     <CardContent className="py-16">
                         <EmptyState
-                            title="Chart belum dibuat"
+                            title={
+                                bigPicture
+                                    ? "Belum ada chart"
+                                    : "Chart tim belum dibuat"
+                            }
                             description={
-                                isOrgAdmin
-                                    ? "Tambah seat pertama untuk membangun struktur organisasi."
-                                    : "Struktur organisasi belum dibuat oleh org admin."
+                                isLeader || isOrgAdmin
+                                    ? "Tambah seat pertama untuk membangun struktur."
+                                    : "Struktur belum dibuat oleh leader."
                             }
                         />
                     </CardContent>
                 </Card>
             ) : (
-                <div className="overflow-x-auto rounded-lg border border-border bg-surface p-2xl">
+                <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-border bg-surface p-2xl">
                     <div className="flex flex-col items-center">
-                        {seats.map((seat) => (
-                            <SeatCard
-                                key={seat.id}
-                                seat={seat}
-                                isLeader={isLeader}
-                                isOrgAdmin={isOrgAdmin}
-                                users={users}
-                                onDelete={(id) => setDeleteId(id)}
-                                onEdit={openEdit}
-                            />
-                        ))}
+                        {seats
+                            .filter((s) => s.parent_id === null)
+                            .map((seat) => (
+                                <SeatCard
+                                    key={seat.id}
+                                    seat={seat}
+                                    isLeader={isLeader && !bigPicture}
+                                    isOrgAdmin={isOrgAdmin && !bigPicture}
+                                    onDelete={(id) => setDeleteId(id)}
+                                    onEdit={openEdit}
+                                />
+                            ))}
                     </div>
                 </div>
             )}
@@ -329,8 +444,37 @@ export default function AccountabilityChartIndex({
                         <DialogTitle>Tambah Seat</DialogTitle>
                     </DialogHeader>
                     <DialogBody>
+                        {/* Tab switcher */}
+                        <div className="mb-lg flex rounded-sm border border-border overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setTab("existing")}
+                                className={`flex-1 py-xs text-[12px] font-medium transition-colors ${
+                                    tab === "existing"
+                                        ? "bg-primary text-text-inverse"
+                                        : "bg-surface text-text-secondary hover:bg-surface-overlay"
+                                }`}
+                            >
+                                User yang Ada
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setTab("new")}
+                                className={`flex-1 py-xs text-[12px] font-medium transition-colors ${
+                                    tab === "new"
+                                        ? "bg-primary text-text-inverse"
+                                        : "bg-surface text-text-secondary hover:bg-surface-overlay"
+                                }`}
+                            >
+                                Buat User Baru
+                            </button>
+                        </div>
                         <form id="seat-create-form" onSubmit={submit}>
-                            <FormBody />
+                            {tab === "existing" ? (
+                                <ExistingUserForm />
+                            ) : (
+                                <NewUserForm />
+                            )}
                         </form>
                     </DialogBody>
                     <DialogFooter>
@@ -345,7 +489,11 @@ export default function AccountabilityChartIndex({
                             form="seat-create-form"
                             disabled={processing}
                         >
-                            {processing ? "Menyimpan…" : "Simpan"}
+                            {processing
+                                ? "Menyimpan…"
+                                : tab === "new"
+                                  ? "Buat User & Seat"
+                                  : "Simpan Seat"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -362,7 +510,7 @@ export default function AccountabilityChartIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form id="seat-edit-form" onSubmit={submit}>
-                            <FormBody />
+                            <ExistingUserForm />
                         </form>
                     </DialogBody>
                     <DialogFooter>
@@ -387,7 +535,7 @@ export default function AccountabilityChartIndex({
                 open={deleteId !== null}
                 onOpenChange={(open) => !open && setDeleteId(null)}
                 title="Hapus Seat"
-                description="Seat ini akan dihapus (soft delete). Data historis tetap tersimpan."
+                description="Seat ini akan dihapus. Anggota yang terhubung tidak ikut terhapus."
                 onConfirm={() => deleteId && destroy(deleteId)}
             />
         </AuthenticatedLayout>
