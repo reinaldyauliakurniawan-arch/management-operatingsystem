@@ -22,7 +22,7 @@ class VTOController extends Controller
         );
 
         return Inertia::render('VTO/Index', [
-            'vto'     => new VTOResource($vto),
+            'vto'     => VTOResource::make($vto)->resolve(),
             'canEdit' => auth()->user()->is_org_admin
                          || auth()->user()->teamMemberships()->where('team_id', $teamId)->value('role') === 'leader',
         ]);
@@ -40,6 +40,6 @@ class VTOController extends Controller
 
         $updateVTO->execute($request->validated());
 
-        return back()->with('message', 'VTO diperbarui.');
+        return redirect()->route('vto.index')->with('message', 'VTO diperbarui.');
     }
 }

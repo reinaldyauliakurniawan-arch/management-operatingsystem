@@ -1,58 +1,179 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Manual Book — Management Operating System (Just Speak)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+---
 
-## About Laravel
+## 1. Login & Akses
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+1. Buka aplikasi di browser
+2. Login dengan email dan password
+3. Jika baru pertama kali, sistem akan arahkan ke halaman **buat organisasi**
+4. Jika punya lebih dari 1 team, sistem akan arahkan ke **team picker** — pilih team yang ingin diakses
+5. Setelah login, landing page adalah **Dashboard**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 2. Navigasi Utama
 
-## Learning Laravel
+Sidebar kiri berisi menu:
+- **Dashboard** — ringkasan aktivitas
+- **VTO** — Vision/Traction Organizer
+- **Rocks** — prioritas 90 hari
+- **Scorecard** — metrik mingguan
+- **To-Do** — daftar tugas
+- **IDS** — Issues list
+- **L10 Meeting** — meeting mingguan
+- **Accountability Chart** — struktur organisasi
+- **People Analyzer** — evaluasi orang
+- **Leaderboard** — peringkat performa
+- **Leadership Assessment** — assessment kepemimpinan
+- **Event** — jadwal acara
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 3. VTO (Vision/Traction Organizer)
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+**Siapa yang bisa edit:** Org Admin atau Team Leader
 
-## Agentic Development
+### Cara mengisi VTO:
+1. Buka menu **VTO**
+2. Halaman terbagi dua tab: **Vision** dan **Traction**
+3. Klik tombol **Edit** di setiap section untuk mengisi data
+4. Isi form di modal yang muncul
+5. Klik **Simpan**
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Section di tab Vision:
+- **Core Values** — nilai-nilai organisasi (bisa tambah banyak item)
+- **Core Focus** — Purpose/Cause/Passion dan Niche organisasi
+- **10-Year Target** — target besar 10 tahun
+- **Marketing Strategy** — Target Market, 3 Uniques, Proven Process, Guarantee
+- **3-Year Picture** — target date, revenue, profit, measurables, dan gambaran 3 tahun ke depan
 
-```bash
-composer require laravel/boost --dev
+### Section di tab Traction:
+- **1-Year Plan** — target date, revenue, profit, measurables, goals tahun ini
+- **Rocks** — link ke modul Rocks
+- **Issues** — link ke modul IDS
 
-php artisan boost:install
-```
+---
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## 4. Rocks (90-Day Priorities)
 
-## Contributing
+**Siapa yang bisa akses:** semua member team
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Cara membuat Rock:
+1. Buka menu **Rocks**
+2. Klik **Tambah Rock**
+3. Isi judul, owner, dan due date
+4. Klik **Simpan**
 
-## Code of Conduct
+### Status Rock:
+- **On Track** — berjalan sesuai rencana
+- **Off Track** — perlu perhatian
+- **Done** — selesai
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## 5. Scorecard
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**Siapa yang bisa akses:** semua member team; hanya leader yang bisa tambah metrik
 
-## License
+### Cara mengisi Scorecard:
+1. Buka menu **Scorecard**
+2. Lihat daftar metrik mingguan
+3. Klik pada nilai aktual untuk mengisi angka minggu ini
+4. Status otomatis terhitung: hijau (on track), kuning (perlu perhatian), merah (off track)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+
+## 6. To-Do
+
+**Siapa yang bisa akses:** semua member team
+
+### Cara membuat To-Do:
+1. Buka menu **To-Do**
+2. Klik **Tambah**
+3. Isi judul, assignee, dan due date
+4. Klik **Simpan**
+5. Centang item untuk menandai selesai
+
+---
+
+## 7. IDS (Issues — Identify, Discuss, Solve)
+
+**Siapa yang bisa akses:** semua member team
+
+### Cara mengangkat Issue:
+1. Buka menu **IDS**
+2. Klik **Tambah Issue**
+3. Isi judul, deskripsi, prioritas, dan owner
+4. Klik **Simpan**
+
+### Priority level:
+- **High** (7–10)
+- **Medium** (4–6)
+- **Low** (0–3)
+
+### Status Issue:
+- **Open** — belum diselesaikan
+- **Resolved** — sudah diselesaikan
+
+---
+
+## 8. L10 Meeting
+
+**Siapa yang bisa buat meeting:** Team Leader
+
+### Cara membuat L10 Meeting:
+1. Buka menu **L10 Meeting**
+2. Klik **Buat Meeting**
+3. Isi judul, jadwal, dan pilih peserta
+4. Klik **Simpan**
+
+### Cara menjalankan meeting (Workspace):
+1. Klik meeting yang ingin dijalankan
+2. Klik **Mulai Meeting**
+3. Workspace berisi: Segue, Headlines, Rocks review, Scorecard, To-Do review, IDS
+4. Bisa tambah To-Do dan Issue langsung dari dalam workspace meeting
+5. Setelah selesai, klik **Selesaikan Meeting**, isi rating dan catatan penutup
+6. Meeting akan tercatat sebagai selesai
+
+---
+
+## 9. Accountability Chart
+
+**Siapa yang bisa edit:** Org Admin atau Team Leader
+
+### Cara menggunakan:
+1. Buka menu **Accountability Chart**
+2. Lihat struktur seat/jabatan organisasi
+3. Klik seat untuk melihat detail atau mengedit
+
+---
+
+## 10. People Analyzer
+
+**Siapa yang bisa akses:** Team Leader
+
+Digunakan untuk mengevaluasi anggota tim berdasarkan Core Values organisasi.
+
+---
+
+## 11. Roles & Permissions
+
+| Fitur | Member | Leader | Org Admin |
+|---|---|---|---|
+| Lihat VTO | ✓ | ✓ | ✓ |
+| Edit VTO | ✗ | ✓ | ✓ |
+| Buat Rock | ✓ | ✓ | ✓ |
+| Buat L10 Meeting | ✗ | ✓ | ✓ |
+| Edit Scorecard metrik | ✗ | ✓ | ✓ |
+| Edit Accountability Chart | ✗ | ✓ | ✓ |
+| People Analyzer | ✗ | ✓ | ✓ |
+
+---
+
+## 12. Tips & Catatan Penting
+
+- **Session team** — jika akses tiba-tiba logout atau redirect ke team picker, pilih ulang team aktif
+- **VTO hanya ada 1 per organisasi** — semua leader dalam org yang sama melihat VTO yang sama
+- **Rocks ditinjau setiap L10 Meeting** — update status rock secara rutin
+- **IDS diselesaikan dalam meeting** — angkat issue, diskusi, dan tandai resolved setelah ada keputusan

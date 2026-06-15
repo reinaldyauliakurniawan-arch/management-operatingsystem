@@ -392,7 +392,10 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
             onFinish: () => setProcessing(false),
             onSuccess: () => {
                 setEditTarget(null);
-                router.reload({ only: ["vto"] });
+            },
+            onError: (errors) => {
+                console.error("VTO save errors:", errors);
+                alert("Gagal menyimpan: " + JSON.stringify(errors));
             },
         });
     };
