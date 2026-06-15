@@ -279,6 +279,7 @@ export default function EventIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form
+                            id="event-form"
                             onSubmit={submit}
                             className="flex flex-col gap-lg"
                         >
@@ -385,7 +386,11 @@ export default function EventIndex({
                         >
                             Batal
                         </Button>
-                        <Button onClick={submit} disabled={processing}>
+                        <Button
+                            type="submit"
+                            form="event-form"
+                            disabled={processing}
+                        >
                             {processing ? "Menyimpan…" : "Simpan Event"}
                         </Button>
                     </DialogFooter>

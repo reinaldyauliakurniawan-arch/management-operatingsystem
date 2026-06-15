@@ -329,7 +329,7 @@ export default function AccountabilityChartIndex({
                         <DialogTitle>Tambah Seat</DialogTitle>
                     </DialogHeader>
                     <DialogBody>
-                        <form onSubmit={submit}>
+                        <form id="seat-create-form" onSubmit={submit}>
                             <FormBody />
                         </form>
                     </DialogBody>
@@ -340,7 +340,11 @@ export default function AccountabilityChartIndex({
                         >
                             Batal
                         </Button>
-                        <Button onClick={submit} disabled={processing}>
+                        <Button
+                            type="submit"
+                            form="seat-create-form"
+                            disabled={processing}
+                        >
                             {processing ? "Menyimpan…" : "Simpan"}
                         </Button>
                     </DialogFooter>
@@ -357,7 +361,7 @@ export default function AccountabilityChartIndex({
                         <DialogTitle>Edit Seat</DialogTitle>
                     </DialogHeader>
                     <DialogBody>
-                        <form onSubmit={submit}>
+                        <form id="seat-edit-form" onSubmit={submit}>
                             <FormBody />
                         </form>
                     </DialogBody>
@@ -368,7 +372,11 @@ export default function AccountabilityChartIndex({
                         >
                             Batal
                         </Button>
-                        <Button onClick={submit} disabled={processing}>
+                        <Button
+                            type="submit"
+                            form="seat-edit-form"
+                            disabled={processing}
+                        >
                             {processing ? "Menyimpan…" : "Update"}
                         </Button>
                     </DialogFooter>
