@@ -138,22 +138,26 @@ export default function AccountabilityChartIndex({
     const [bigPicture, setBigPicture] = useState(initialBigPicture);
 
     const [submitAsNew, setSubmitAsNew] = React.useState(false);
-    const { data, setData, post, put, processing, reset, errors, transform } = useForm({
-        title: "",
-        responsibilities: "",
-        user_id: "" as string | number,
-        parent_id: "" as string | number,
-        // new user fields
-        create_new_user: false,
-        new_user_name: "",
-        new_user_email: "",
-        new_user_role: "member" as string,
-    });
+    const { data, setData, post, put, processing, reset, errors, transform } =
+        useForm({
+            title: "",
+            responsibilities: "",
+            user_id: "" as string | number,
+            parent_id: "" as string | number,
+            // new user fields
+            create_new_user: false,
+            new_user_name: "",
+            new_user_email: "",
+            new_user_role: "member" as string,
+        });
 
     transform((d) => ({
         ...d,
         responsibilities: d.responsibilities
-            ? d.responsibilities.split("\n").map((s: string) => s.trim()).filter(Boolean)
+            ? d.responsibilities
+                  .split("\n")
+                  .map((s: string) => s.trim())
+                  .filter(Boolean)
             : [],
         create_new_user: submitAsNew,
     }));
@@ -189,7 +193,6 @@ export default function AccountabilityChartIndex({
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        
 
         if (editSeat) {
             put(route("accountability-chart.update", editSeat.id), {
@@ -216,9 +219,9 @@ export default function AccountabilityChartIndex({
         });
     };
 
-    const allSeats = (function flatten(list: Seat[]): Seat[] {
-        return list.flatMap((s) => [s, ...flatten(s.children)]);
-    })(seats);
+    const allSeats = (function flatten(list: Seat[] = []): Seat[] {
+        return (list ?? []).flatMap((s) => [s, ...flatten(s.children ?? [])]);
+    })(seats ?? []);
 
     const ExistingUserForm = () => (
         <div className="flex flex-col gap-lg">

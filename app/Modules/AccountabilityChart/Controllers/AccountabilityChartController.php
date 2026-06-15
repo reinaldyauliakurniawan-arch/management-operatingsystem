@@ -23,14 +23,14 @@ class AccountabilityChartController extends Controller
         if ($bigPicture && $orgId) {
             $teamIds = Team::where("organization_id", $orgId)->pluck("id");
             $seats = Seat::withoutGlobalScopes()
-                ->with(["user", "children"])
+                ->with(["user", "children.user", "children.children.user", "children.children.children"])
                 ->whereIn("team_id", $teamIds)
                 ->whereNull("parent_id")
                 ->orderBy("id")
                 ->get();
         } else {
             $seats = Seat::withoutGlobalScopes()
-                ->with(["user", "children"])
+                ->with(["user", "children.user", "children.children.user", "children.children.children"])
                 ->where("team_id", $teamId)
                 ->whereNull("parent_id")
                 ->orderBy("id")

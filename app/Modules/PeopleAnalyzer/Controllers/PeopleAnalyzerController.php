@@ -36,6 +36,7 @@ class PeopleAnalyzerController extends Controller
 
         $evals = $evalsQuery->latest()->get()->map(function ($e) use ($standard) {
             $e->seat_fit_computed = $e->computeSeatFit($standard);
+            $e->core_values_scores = $e->core_values_scores ?? [];
             return $e;
         });
 

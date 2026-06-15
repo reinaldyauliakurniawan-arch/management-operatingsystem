@@ -172,7 +172,9 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                         onClick={() =>
                                             openEdit(
                                                 "core_values",
-                                                vto.core_values.join("\n"),
+                                                (vto.core_values ?? []).join(
+                                                    "\n",
+                                                ),
                                             )
                                         }
                                     >
@@ -180,9 +182,9 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                     </Button>
                                 )}
                             </div>
-                            {vto.core_values.length > 0 ? (
+                            {(vto.core_values ?? []).length > 0 ? (
                                 <ul className="flex flex-col gap-xs">
-                                    {vto.core_values.map((cv, i) => (
+                                    {(vto.core_values ?? []).map((cv, i) => (
                                         <li
                                             key={i}
                                             className="flex items-center gap-sm text-[14px] text-text-primary"
