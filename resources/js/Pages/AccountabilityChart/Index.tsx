@@ -137,7 +137,8 @@ export default function AccountabilityChartIndex({
     const [tab, setTab] = useState<"existing" | "new">("existing");
     const [bigPicture, setBigPicture] = useState(initialBigPicture);
 
-    const { data, setData, post, put, processing, reset, errors } = useForm({
+    const [submitAsNew, setSubmitAsNew] = React.useState(false);
+    const { data, setData, post, put, processing, reset, errors, transform } = useForm({
         title: "",
         responsibilities: "",
         user_id: "" as string | number,
@@ -148,6 +149,14 @@ export default function AccountabilityChartIndex({
         new_user_email: "",
         new_user_role: "member" as string,
     });
+
+    transform((d) => ({
+        ...d,
+        responsibilities: d.responsibilities
+            ? d.responsibilities.split("\n").map((s: string) => s.trim()).filter(Boolean)
+            : [],
+        create_new_user: submitAsNew,
+    }));
 
     const toggleBigPicture = (val: boolean) => {
         setBigPicture(val);
@@ -180,16 +189,7 @@ export default function AccountabilityChartIndex({
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        const payload = {
-            ...data,
-            responsibilities: data.responsibilities
-                ? data.responsibilities
-                      .split("\n")
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                : [],
-            create_new_user: tab === "new",
-        };
+        
 
         if (editSeat) {
             put(route("accountability-chart.update", editSeat.id), {
@@ -199,8 +199,8 @@ export default function AccountabilityChartIndex({
                 },
             });
         } else {
+            setSubmitAsNew(tab === "new");
             post(route("accountability-chart.store"), {
-                data: payload,
                 onSuccess: () => {
                     setCreateOpen(false);
                     reset();

@@ -47,17 +47,27 @@ return new class extends Migration
                     ->where('id', '!=', $keepId)
                     ->delete();
             }
-        }
 
-        Schema::table('vto_plans', function (Blueprint $table) {
-            if (Schema::hasColumn('vto_plans', 'team_id')) {
+            // Drop FK dulu sebelum drop index (fix MySQL error 1553)
+            $fks = DB::select("
+                SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'vto_plans'
+                  AND COLUMN_NAME = 'team_id'
+                  AND REFERENCED_TABLE_NAME IS NOT NULL
+            ");
+
+            Schema::table('vto_plans', function (Blueprint $table) use ($fks) {
+                foreach ($fks as $fk) {
+                    $table->dropForeign($fk->CONSTRAINT_NAME);
+                }
                 try {
                     $table->dropUnique(['team_id']);
                 } catch (\Throwable) {
                 }
-                $table->dropConstrainedForeignId('team_id');
-            }
-        });
+                $table->dropColumn('team_id');
+            });
+        }
 
         Schema::table('vto_plans', function (Blueprint $table) {
             try {

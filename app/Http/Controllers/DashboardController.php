@@ -18,7 +18,17 @@ class DashboardController extends Controller
             ? auth()->user()->teamMemberships()->where('team_id', $teamId)->value('role')
             : null;
 
-        $stats = $teamId ? $this->buildStats($teamId, $userId, $role) : [];
+        $stats = $teamId ? $this->buildStats($teamId, $userId, $role) : [
+            'rocks_total'     => 0,
+            'rocks_on_track'  => 0,
+            'rocks_off_track' => 0,
+            'rocks_done'      => 0,
+            'my_rocks'        => [],
+            'issues_open'     => 0,
+            'todos_overdue'   => 0,
+            'todos_due_today' => 0,
+            'scorecard_red'   => 0,
+        ];
 
         $upcomingMeeting = $teamId && $role === 'leader'
             ? \App\Modules\L10Meeting\Models\Meeting::where('team_id', $teamId)
