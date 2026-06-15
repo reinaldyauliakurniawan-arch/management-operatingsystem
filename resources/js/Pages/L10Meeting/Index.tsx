@@ -121,7 +121,7 @@ export default function L10Index({
                     },
                 ].map((s) => (
                     <Card key={s.label}>
-                        <CardContent className="pt-xl">
+                        <CardContent>
                             <p className="mb-sm text-[12px] font-medium uppercase tracking-wide text-text-muted">
                                 {s.label}
                             </p>

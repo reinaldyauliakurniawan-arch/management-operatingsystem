@@ -1,32 +1,79 @@
 import { Link, usePage, router } from "@inertiajs/react";
 import { PropsWithChildren, ReactNode } from "react";
 import { useState } from "react";
+import {
+    LayoutDashboard,
+    Target,
+    Network,
+    Users,
+    LineChart,
+    AlertCircle,
+    Mountain,
+    CheckSquare,
+    CalendarClock,
+    Award,
+    CalendarDays,
+    Trophy,
+} from "lucide-react";
 
 const navGroups = [
     {
         label: "EOS Core",
         items: [
-            { label: "Dashboard", href: "/dashboard", routeName: "dashboard" },
-            { label: "VTO", href: "/vto", routeName: "vto.index" },
+            {
+                label: "Dashboard",
+                href: "/dashboard",
+                routeName: "dashboard",
+                icon: LayoutDashboard,
+            },
+            {
+                label: "VTO",
+                href: "/vto",
+                routeName: "vto.index",
+                icon: Target,
+            },
             {
                 label: "Accountability Chart",
                 href: "/accountability-chart",
                 routeName: "accountability.index",
+                icon: Network,
             },
             {
                 label: "People Analyzer",
                 href: "/people-analyzer",
                 routeName: "people-analyzer.index",
+                icon: Users,
             },
             {
                 label: "Scorecard",
                 href: "/scorecard",
                 routeName: "scorecard.index",
+                icon: LineChart,
             },
-            { label: "Issues / IDS", href: "/ids", routeName: "ids.index" },
-            { label: "Rocks", href: "/rocks", routeName: "rocks.index" },
-            { label: "To-Do", href: "/todos", routeName: "todos.index" },
-            { label: "L10 Meeting", href: "/l10", routeName: "l10.index" },
+            {
+                label: "Issues / IDS",
+                href: "/ids",
+                routeName: "ids.index",
+                icon: AlertCircle,
+            },
+            {
+                label: "Rocks",
+                href: "/rocks",
+                routeName: "rocks.index",
+                icon: Mountain,
+            },
+            {
+                label: "To-Do",
+                href: "/todos",
+                routeName: "todos.index",
+                icon: CheckSquare,
+            },
+            {
+                label: "L10 Meeting",
+                href: "/l10",
+                routeName: "l10.index",
+                icon: CalendarClock,
+            },
         ],
     },
     {
@@ -36,12 +83,19 @@ const navGroups = [
                 label: "Leadership Assessment",
                 href: "/leadership-assessment",
                 routeName: "leadership-assessment.index",
+                icon: Award,
             },
-            { label: "Events", href: "/events", routeName: "events.index" },
+            {
+                label: "Events",
+                href: "/events",
+                routeName: "events.index",
+                icon: CalendarDays,
+            },
             {
                 label: "Leaderboard",
                 href: "/leaderboard",
                 routeName: "leaderboard.index",
+                icon: Trophy,
             },
         ],
     },
@@ -125,12 +179,18 @@ export default function Authenticated({
                                         <li key={item.href}>
                                             <Link
                                                 href={item.href}
+                                                title={
+                                                    !sidebarOpen
+                                                        ? item.label
+                                                        : undefined
+                                                }
                                                 className={`flex items-center gap-sm rounded-sm text-[13px] no-underline whitespace-nowrap overflow-hidden transition-[background,color] duration-100 border-l-2 ${
                                                     isActive
                                                         ? "pl-[6px] pr-sm py-[6px] font-medium text-primary bg-primary-subtle border-primary"
                                                         : "px-sm py-[6px] font-normal text-text-secondary bg-transparent border-transparent hover:bg-surface-overlay hover:text-text-primary"
-                                                }`}
+                                                } ${!sidebarOpen ? "justify-center" : ""}`}
                                             >
+                                                <item.icon className="h-4 w-4 shrink-0" />
                                                 {sidebarOpen && (
                                                     <span>{item.label}</span>
                                                 )}

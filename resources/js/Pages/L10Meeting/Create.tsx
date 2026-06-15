@@ -44,7 +44,7 @@ export default function L10Create({ members }: { members: User[] }) {
 
             <div className="max-w-xl">
                 <Card>
-                    <CardContent className="pt-xl">
+                    <CardContent>
                         <form
                             onSubmit={submit}
                             className="flex flex-col gap-lg"

@@ -18,7 +18,7 @@ export default function Edit({
 
             <div className="flex flex-col gap-xl max-w-xl">
                 <Card>
-                    <CardContent className="pt-xl">
+                    <CardContent>
                         <UpdateProfileInformationForm
                             mustVerifyEmail={mustVerifyEmail}
                             status={status}
@@ -27,13 +27,13 @@ export default function Edit({
                 </Card>
 
                 <Card>
-                    <CardContent className="pt-xl">
+                    <CardContent>
                         <UpdatePasswordForm />
                     </CardContent>
                 </Card>
 
                 <Card>
-                    <CardContent className="pt-xl">
+                    <CardContent>
                         <DeleteUserForm />
                     </CardContent>
                 </Card>

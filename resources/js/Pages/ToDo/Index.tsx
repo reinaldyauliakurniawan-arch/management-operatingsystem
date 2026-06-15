@@ -134,7 +134,7 @@ export default function ToDoIndex({
                     },
                 ].map((stat) => (
                     <Card key={stat.label}>
-                        <CardContent className="pt-xl">
+                        <CardContent>
                             <p className="mb-sm text-[12px] font-medium tracking-wide text-text-muted uppercase">
                                 {stat.label}
                             </p>

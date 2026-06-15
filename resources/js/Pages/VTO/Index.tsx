@@ -41,7 +41,7 @@ function Section({
 }) {
     return (
         <Card>
-            <CardContent className="pt-xl">
+            <CardContent>
                 <div className="mb-md flex items-center justify-between">
                     <p className="text-[12px] font-medium uppercase tracking-wider text-text-muted">
                         {title}
@@ -160,7 +160,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                 <div className="flex flex-col gap-lg">
                     {/* Core Values */}
                     <Card>
-                        <CardContent className="pt-xl">
+                        <CardContent>
                             <div className="mb-md flex items-center justify-between">
                                 <p className="text-[12px] font-medium uppercase tracking-wider text-text-muted">
                                     Core Values

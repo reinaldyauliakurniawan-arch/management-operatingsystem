@@ -55,7 +55,7 @@ export default function EventIndex({
     events,
     users,
 }: {
-    events: { data: Event[] };
+    events: Event[];
     users: { id: number; name: string }[];
 }) {
     const { auth } = usePage().props as any;
@@ -112,7 +112,7 @@ export default function EventIndex({
         );
     };
 
-    const eventList = events.data;
+    const eventList = events;
     const upcoming = eventList.filter(
         (e) => new Date(e.event_date) >= new Date(),
     ).length;
@@ -151,7 +151,7 @@ export default function EventIndex({
                     },
                 ].map((s) => (
                     <Card key={s.label}>
-                        <CardContent className="pt-xl">
+                        <CardContent>
                             <p className="mb-sm text-[12px] font-medium uppercase tracking-wide text-text-muted">
                                 {s.label}
                             </p>

@@ -55,7 +55,8 @@ export default function TakeAssessment({
         initialResponses[r.item_id] = r.rubric_level;
     });
 
-    const [responses, setResponses] = useState<Record<number, number>>(initialResponses);
+    const [responses, setResponses] =
+        useState<Record<number, number>>(initialResponses);
     const [processing, setProcessing] = useState(false);
 
     const allItems = assignments.flatMap((a) => a.leadership_type.items);
@@ -106,15 +107,14 @@ export default function TakeAssessment({
                             </p>
                             {assignment.leadership_type.items.map((item) => (
                                 <Card key={item.id} className="mb-lg">
-                                    <CardContent className="pt-xl">
+                                    <CardContent>
                                         <p className="mb-lg text-[14px] font-semibold tracking-tight text-text-primary">
                                             {item.title}
                                         </p>
                                         <div className="flex flex-col gap-sm">
                                             {[...item.rubrics]
                                                 .sort(
-                                                    (a, b) =>
-                                                        a.level - b.level,
+                                                    (a, b) => a.level - b.level,
                                                 )
                                                 .map((rubric) => {
                                                     const selected =

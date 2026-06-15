@@ -45,7 +45,7 @@ class AccountabilityChartController extends Controller
             : User::all(["id", "name"]);
 
         return Inertia::render("AccountabilityChart/Index", [
-            "seats" => SeatResource::collection($seats),
+            "seats" => SeatResource::collection($seats)->collection->values(),
             "users" => $users,
             "bigPicture" => $bigPicture,
         ]);

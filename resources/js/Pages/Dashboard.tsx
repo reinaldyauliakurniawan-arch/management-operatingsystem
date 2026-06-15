@@ -86,7 +86,7 @@ function StatCard({
 }) {
     const inner = (
         <Card>
-            <CardContent className="pt-xl">
+            <CardContent>
                 <p className="mb-sm text-[12px] font-medium uppercase tracking-wide text-text-muted">
                     {label}
                 </p>
@@ -211,7 +211,7 @@ export default function Dashboard({
                     <div className="grid grid-cols-3 gap-lg">
                         {/* Upcoming meeting */}
                         <Card>
-                            <CardContent className="pt-xl">
+                            <CardContent>
                                 <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
                                     L10 Terdekat
                                 </p>
@@ -242,7 +242,7 @@ export default function Dashboard({
 
                         {/* Top leaderboard per role */}
                         <Card>
-                            <CardContent className="pt-xl">
+                            <CardContent>
                                 <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
                                     Top Leaderboard
                                 </p>
@@ -289,7 +289,7 @@ export default function Dashboard({
 
                         {/* Upcoming events */}
                         <Card>
-                            <CardContent className="pt-xl">
+                            <CardContent>
                                 <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
                                     Events (7 hari)
                                 </p>
@@ -468,7 +468,7 @@ function MemberBottomSection({
     return (
         <div className="grid grid-cols-2 gap-lg">
             <Card>
-                <CardContent className="pt-xl">
+                <CardContent>
                     <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
                         Skor Leaderboard
                     </p>
@@ -492,7 +492,7 @@ function MemberBottomSection({
             </Card>
 
             <Card>
-                <CardContent className="pt-xl">
+                <CardContent>
                     <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
                         Events Mendatang
                     </p>
@@ -531,7 +531,7 @@ function MemberBottomSection({
 
             {upcomingMeeting && (
                 <Card className="col-span-2">
-                    <CardContent className="pt-xl">
+                    <CardContent>
                         <p className="mb-sm text-[12px] font-medium uppercase tracking-wider text-text-muted">
                             L10 Terdekat
                         </p>

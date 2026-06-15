@@ -282,7 +282,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
             {/* SCORECARD */}
             {activeSection === "Scorecard" && (
                 <Card>
-                    <CardContent className="pt-xl">
+                    <CardContent>
                         <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
                             Scorecard Review
                         </p>
@@ -325,7 +325,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
             {/* ROCK REVIEW */}
             {activeSection === "Rock Review" && (
                 <Card>
-                    <CardContent className="pt-xl">
+                    <CardContent>
                         <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
                             Rock Review
                         </p>
@@ -409,7 +409,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
             {activeSection === "To-Do Review" && (
                 <div className="flex flex-col gap-lg">
                     <Card>
-                        <CardContent className="pt-xl">
+                        <CardContent>
                             <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
                                 To-Do Review
                             </p>
@@ -461,7 +461,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
 
                     {!isReadOnly && (
                         <Card>
-                            <CardContent className="pt-xl">
+                            <CardContent>
                                 <p className="mb-md text-[13px] font-medium text-text-primary">
                                     Tambah To-Do dari Meeting
                                 </p>
@@ -543,7 +543,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
             {activeSection === "IDS" && (
                 <div className="flex flex-col gap-lg">
                     <Card>
-                        <CardContent className="pt-xl">
+                        <CardContent>
                             <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
                                 Issues — Identify, Discuss, Solve
                             </p>
@@ -587,7 +587,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
 
                     {!isReadOnly && (
                         <Card>
-                            <CardContent className="pt-xl">
+                            <CardContent>
                                 <p className="mb-md text-[13px] font-medium text-text-primary">
                                     Tambah Issue
                                 </p>

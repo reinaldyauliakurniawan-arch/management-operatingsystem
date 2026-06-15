@@ -52,7 +52,7 @@ export default function Results({
 
             {overallAvg !== null && (
                 <Card className="mb-xl">
-                    <CardContent className="pt-xl">
+                    <CardContent>
                         <p className="text-[12px] font-medium uppercase tracking-wider text-text-muted">
                             Rata-rata Keseluruhan
                         </p>
@@ -82,14 +82,13 @@ export default function Results({
                 <div className="flex flex-col gap-xl">
                     {byType.map((group) => (
                         <Card key={group.type}>
-                            <CardContent className="pt-xl">
+                            <CardContent>
                                 <div className="mb-lg flex items-center justify-between">
                                     <h2 className="text-[14px] font-semibold text-text-primary">
                                         {group.type}
                                     </h2>
                                     <Badge variant="info">
-                                        Avg {group.avg} ({group.count}{" "}
-                                        respons)
+                                        Avg {group.avg} ({group.count} respons)
                                     </Badge>
                                 </div>
                                 <div className="flex flex-col gap-sm">
