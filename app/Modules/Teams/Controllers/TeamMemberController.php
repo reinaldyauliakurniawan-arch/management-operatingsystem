@@ -16,31 +16,21 @@ class TeamMemberController extends Controller
      * List members of active team.
      * Leader: lihat semua. Member/tutor: hanya lihat, tidak bisa manage.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $teamId  = session('active_team_id');
-        $team    = Team::with('members.user')->findOrFail($teamId);
+        $teamId = $request->input('team_id', session('active_team_id'));
+        $team   = Team::with('members.user')->findOrFail($teamId);
 
         $members = $team->members->map(fn($m) => [
-            'id'           => $m->id,
-            'user_id'      => $m->user_id,
-            'name'         => $m->user->name,
-            'email'        => $m->user->email,
-            'role'         => $m->role,
+            'id'            => $m->id,
+            'user_id'       => $m->user_id,
+            'name'          => $m->user->name,
+            'email'         => $m->user->email,
+            'role'          => $m->role,
             'is_integrator' => $m->is_integrator,
         ]);
 
-        // Org admin: bisa lihat semua user untuk di-invite
-        $allUsers = Auth::user()->is_org_admin
-            ? User::whereDoesntHave('teamMemberships', fn($q) => $q->where('team_id', $teamId))
-                  ->get(['id', 'name', 'email'])
-            : collect();
-
-        return Inertia::render('Teams/Members', [
-            'team'    => ['id' => $team->id, 'name' => $team->name],
-            'members' => $members,
-            'allUsers' => $allUsers,
-        ]);
+        return response()->json(['members' => $members]);
     }
 
     /**

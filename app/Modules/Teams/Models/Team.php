@@ -20,6 +20,8 @@ class Team extends Model
         'parent_team_id',
         'created_by',
         'updated_by',
+        'q1_start_date',
+        'scorecard_day',
     ];
 
     public function organization()

@@ -24,6 +24,7 @@ import { Label } from "@/Components/ui/label";
 import { Select } from "@/Components/ui/select";
 import { EmptyState } from "@/Components/ui/empty-state";
 import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
+import { Settings } from "lucide-react";
 
 interface User {
     id: number;
@@ -88,32 +89,49 @@ function ScoreInput({
     );
 }
 
+const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
 export default function ScorecardIndex({
     metrics,
     users,
     weeks,
     filters,
+    scorecardSettings,
 }: {
     metrics: { data: Metric[] };
     users: User[];
     weeks: string[];
-    filters: { year: number; quarter: number };
+    filters: { quarter: number };
+    scorecardSettings: { q1_start_date: string; scorecard_day: number };
 }) {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
+    const isOrgAdmin = auth.user?.is_org_admin;
+    const canManageSettings = isLeader || isOrgAdmin;
     const userId = auth.user.id;
     const [createOpen, setCreateOpen] = useState(false);
     const [deleteMetricId, setDeleteMetricId] = useState<number | null>(null);
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
-    const goToPeriod = (year: number, quarter: number) => {
+    const settingsForm = useForm({
+        q1_start_date: scorecardSettings.q1_start_date,
+        scorecard_day: String(scorecardSettings.scorecard_day),
+    });
+
+    const submitSettings = (e: React.FormEvent) => {
+        e.preventDefault();
+        settingsForm.patch(route("scorecard.settings"), {
+            onSuccess: () => setSettingsOpen(false),
+        });
+    };
+
+    const goToPeriod = (quarter: number) => {
         router.get(
             route("scorecard.index"),
-            { year, quarter },
+            { quarter },
             { preserveState: true },
         );
     };
-
-    const yearOptions = [filters.year - 1, filters.year, filters.year + 1];
 
     const { data, setData, post, processing, reset, errors } = useForm({
         title: "",
@@ -177,10 +195,7 @@ export default function ScorecardIndex({
                         <Select
                             value={String(filters.quarter)}
                             onChange={(e) =>
-                                goToPeriod(
-                                    filters.year,
-                                    parseInt(e.target.value),
-                                )
+                                goToPeriod(parseInt(e.target.value))
                             }
                             className="h-9 w-auto"
                         >
@@ -189,26 +204,19 @@ export default function ScorecardIndex({
                             <option value={3}>Q3</option>
                             <option value={4}>Q4</option>
                         </Select>
-                        <Select
-                            value={String(filters.year)}
-                            onChange={(e) =>
-                                goToPeriod(
-                                    parseInt(e.target.value),
-                                    filters.quarter,
-                                )
-                            }
-                            className="h-9 w-auto"
-                        >
-                            {yearOptions.map((y) => (
-                                <option key={y} value={y}>
-                                    {y}
-                                </option>
-                            ))}
-                        </Select>
                         {isLeader && (
                             <Button onClick={() => setCreateOpen(true)}>
                                 + Tambah Metric
                             </Button>
+                        )}
+                        {canManageSettings && (
+                            <button
+                                onClick={() => setSettingsOpen(true)}
+                                className="p-2 rounded-md text-text-muted hover:text-text-primary hover:bg-surface-raised transition-colors"
+                                title="Scorecard Settings"
+                            >
+                                <Settings className="size-4" />
+                            </button>
                         )}
                     </div>
                 }
@@ -448,6 +456,85 @@ export default function ScorecardIndex({
                             disabled={processing || users.length === 0}
                         >
                             {processing ? "Menyimpan…" : "Simpan Metric"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal Scorecard Settings */}
+            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <DialogContent size="sm">
+                    <DialogHeader>
+                        <DialogTitle>Scorecard Settings</DialogTitle>
+                    </DialogHeader>
+                    <DialogBody>
+                        <form
+                            id="scorecard-settings-form"
+                            onSubmit={submitSettings}
+                            className="flex flex-col gap-md"
+                        >
+                            <div className="flex flex-col gap-xs">
+                                <Label>Q1 Start Date *</Label>
+                                <Input
+                                    type="date"
+                                    value={settingsForm.data.q1_start_date}
+                                    onChange={(e) =>
+                                        settingsForm.setData(
+                                            "q1_start_date",
+                                            e.target.value,
+                                        )
+                                    }
+                                    aria-invalid={
+                                        !!settingsForm.errors.q1_start_date
+                                    }
+                                />
+                                <p className="text-[12px] text-text-muted">
+                                    Tanggal mulai Q1. Q2/Q3/Q4 dihitung otomatis
+                                    per 13 minggu.
+                                </p>
+                                {settingsForm.errors.q1_start_date && (
+                                    <p className="text-[12px] text-error-text">
+                                        {settingsForm.errors.q1_start_date}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label>Hari Evaluasi Scorecard *</Label>
+                                <Select
+                                    value={settingsForm.data.scorecard_day}
+                                    onChange={(e) =>
+                                        settingsForm.setData(
+                                            "scorecard_day",
+                                            e.target.value,
+                                        )
+                                    }
+                                >
+                                    {DAYS.map((d, i) => (
+                                        <option key={i} value={i}>
+                                            {d}
+                                        </option>
+                                    ))}
+                                </Select>
+                                <p className="text-[12px] text-text-muted">
+                                    Header kolom tabel akan menyesuaikan hari
+                                    ini.
+                                </p>
+                            </div>
+                        </form>
+                    </DialogBody>
+                    <DialogFooter>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setSettingsOpen(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="submit"
+                            form="scorecard-settings-form"
+                            disabled={settingsForm.processing}
+                        >
+                            {settingsForm.processing ? "Menyimpan…" : "Simpan"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

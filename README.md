@@ -22,6 +22,7 @@ Sidebar kiri berisi menu:
 - **To-Do** — daftar tugas
 - **IDS** — Issues list
 - **L10 Meeting** — meeting mingguan
+- **Teams** — manajemen team dan user
 - **Accountability Chart** — struktur organisasi
 - **People Analyzer** — evaluasi orang
 - **Leaderboard** — peringkat performa
@@ -138,7 +139,43 @@ Sidebar kiri berisi menu:
 
 ---
 
-## 9. Accountability Chart
+## 9. Teams & User Management
+
+**Siapa yang bisa akses:** Org Admin
+
+### Tab Teams — Kelola Team:
+1. Buka menu **Teams**
+2. Klik **+ Buat Team** untuk membuat team baru
+3. Isi nama, tipe (Leadership / Departmental / Project), pilih leader, dan parent team (opsional)
+4. Klik chevron ▼ di baris team untuk melihat daftar anggota
+5. Klik **+ Tambah Anggota** untuk menambah user ke team dan assign role
+6. Klik **Edit Role** di baris anggota untuk mengubah role mereka (leader / member / tutor)
+7. Klik **Hapus** di baris anggota untuk mengeluarkan mereka dari team (akun tidak ikut terhapus)
+8. Klik **Switch ke Team Ini** untuk berpindah ke team lain
+
+### Tab Users — Kelola Akun:
+1. Klik tab **Users** di halaman Teams
+2. Klik **+ Buat User** untuk membuat akun baru
+3. Isi nama, email, password, centang **Jadikan Org Admin** jika perlu
+4. Opsional: assign langsung ke team dan pilih role-nya
+5. Klik **⋮** di baris user untuk:
+   - **Edit** — ubah nama, email, atau status org admin
+   - **Reset Password** — set password baru untuk user tersebut
+   - **Hapus** — hapus akun permanen (tidak bisa hapus akun sendiri)
+
+### Perbedaan Role:
+| Role | Lingkup | Keterangan |
+|---|---|---|
+| Org Admin | Seluruh sistem | Bisa manage semua team, user, dan organisasi |
+| Leader | Per team | Bisa manage anggota di team-nya |
+| Member | Per team | Akses standar |
+| Tutor | Per team | Akses khusus tutor |
+
+> Satu user bisa menjadi leader di satu team dan member di team lain secara bersamaan.
+
+---
+
+## 10. Accountability Chart
 
 **Siapa yang bisa edit:** Org Admin atau Team Leader
 
@@ -149,7 +186,7 @@ Sidebar kiri berisi menu:
 
 ---
 
-## 10. People Analyzer
+## 11. People Analyzer
 
 **Siapa yang bisa akses:** Team Leader
 
@@ -157,7 +194,7 @@ Digunakan untuk mengevaluasi anggota tim berdasarkan Core Values organisasi.
 
 ---
 
-## 11. Roles & Permissions
+## 12. Roles & Permissions
 
 | Fitur | Member | Leader | Org Admin |
 |---|---|---|---|
@@ -171,7 +208,7 @@ Digunakan untuk mengevaluasi anggota tim berdasarkan Core Values organisasi.
 
 ---
 
-## 12. Tips & Catatan Penting
+## 13. Tips & Catatan Penting
 
 - **Session team** — jika akses tiba-tiba logout atau redirect ke team picker, pilih ulang team aktif
 - **VTO hanya ada 1 per organisasi** — semua leader dalam org yang sama melihat VTO yang sama

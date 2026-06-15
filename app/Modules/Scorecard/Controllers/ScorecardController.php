@@ -21,15 +21,35 @@ class ScorecardController extends Controller
             ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
             : User::all(['id', 'name']);
 
-        $now = Carbon::now();
-        $year = (int) $request->query('year', $now->year);
-        $quarter = (int) $request->query('quarter', intdiv($now->month - 1, 3) + 1);
-        $quarter = max(1, min(4, $quarter));
+        // Load team settings
+        $team = \App\Modules\Teams\Models\Team::withoutGlobalScopes()->find($teamId);
+        $scorecardDay = $team?->scorecard_day ?? 1; // default Senin
+        $q1StartDate  = $team?->q1_start_date
+            ? Carbon::parse($team->q1_start_date)
+            : Carbon::create(Carbon::now()->year, 1, 1); // fallback Jan 1
 
-        // Bulan awal quarter (Q1=Jan, Q2=Apr, Q3=Jul, Q4=Okt)
-        $startMonth = (($quarter - 1) * 3) + 1;
-        $quarterStart = Carbon::create($year, $startMonth, 1)->startOfDay();
-        $quarterEnd = Carbon::create($year, $startMonth, 1)->addMonths(3)->subDay()->endOfDay();
+        $now     = Carbon::now();
+        $quarter = (int) $request->query('quarter', 1);
+
+        // Hitung awal tiap quarter berdasarkan q1_start_date (per 13 minggu)
+        $quarterStart = $q1StartDate->copy()->addWeeks(($quarter - 1) * 13);
+        $quarterEnd   = $quarterStart->copy()->addWeeks(13)->subDay();
+
+        // Auto-detect quarter aktif jika tidak ada query
+        if (!$request->has('quarter')) {
+            for ($q = 4; $q >= 1; $q--) {
+                $qs = $q1StartDate->copy()->addWeeks(($q - 1) * 13);
+                $qe = $qs->copy()->addWeeks(13)->subDay();
+                if ($now->between($qs, $qe)) {
+                    $quarter      = $q;
+                    $quarterStart = $qs;
+                    $quarterEnd   = $qe;
+                    break;
+                }
+            }
+        }
+
+        $quarter = max(1, min(4, $quarter));
 
         $metrics = Metric::with([
             'owner',
@@ -41,24 +61,26 @@ class ScorecardController extends Controller
                 ->orderBy('week_start_date', 'desc'),
         ])->where('team_id', $teamId)->latest()->get();
 
-        // Generate minggu yang overlap dengan quarter kalender
-        $weeks = [];
-        $cursor = $quarterStart->copy()->startOfWeek();
+        // Generate minggu berdasarkan scorecard_day
+        $weeks  = [];
+        $cursor = $quarterStart->copy()->startOfWeek(Carbon::MONDAY);
+        // Geser ke hari evaluasi yang dipilih
+        $cursor->addDays($scorecardDay === 0 ? 6 : $scorecardDay - 1);
+        if ($cursor->lt($quarterStart)) $cursor->addWeek();
+
         while ($cursor->lte($quarterEnd)) {
-            $weekEnd = $cursor->copy()->endOfWeek();
-            if ($weekEnd->gte($quarterStart)) {
-                $weeks[] = $cursor->format('Y-m-d');
-            }
+            $weeks[] = $cursor->format('Y-m-d');
             $cursor->addWeek();
         }
 
         return Inertia::render('Scorecard/Index', [
-            'metrics' => MetricResource::collection($metrics),
-            'users' => $users,
-            'weeks' => $weeks,
-            'filters' => [
-                'year' => $year,
-                'quarter' => $quarter,
+            'metrics'         => MetricResource::collection($metrics),
+            'users'           => $users,
+            'weeks'           => $weeks,
+            'filters'         => ['quarter' => $quarter],
+            'scorecardSettings' => [
+                'q1_start_date' => $q1StartDate->format('Y-m-d'),
+                'scorecard_day' => $scorecardDay,
             ],
         ]);
     }
@@ -120,6 +142,50 @@ class ScorecardController extends Controller
 
         $metric->delete();
         return back()->with('message', 'Metric deleted');
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $teamId = session('active_team_id');
+        $user   = $request->user();
+        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if (!$user->is_org_admin && $role !== 'leader') {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'q1_start_date' => 'required|date',
+            'scorecard_day' => 'required|integer|min:0|max:6',
+        ]);
+
+        \App\Modules\Teams\Models\Team::withoutGlobalScopes()
+            ->where('id', $teamId)
+            ->update($validated);
+
+        return back()->with('message', 'Settings disimpan.');
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $teamId = session('active_team_id');
+        $user   = $request->user();
+        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if (!$user->is_org_admin && $role !== 'leader') {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'q1_start_date' => 'required|date',
+            'scorecard_day' => 'required|integer|min:0|max:6',
+        ]);
+
+        \App\Modules\Teams\Models\Team::withoutGlobalScopes()
+            ->where('id', $teamId)
+            ->update($validated);
+
+        return back()->with('message', 'Settings disimpan.');
     }
 
     public function logScore(Request $request, LogWeeklyScore $logWeeklyScore)

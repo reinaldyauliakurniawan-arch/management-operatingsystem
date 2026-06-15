@@ -14,6 +14,7 @@ import {
     Award,
     CalendarDays,
     Trophy,
+    UsersRound,
 } from "lucide-react";
 
 const navGroups = [
@@ -31,6 +32,12 @@ const navGroups = [
                 href: "/vto",
                 routeName: "vto.index",
                 icon: Target,
+            },
+            {
+                label: "Teams",
+                href: "/teams",
+                routeName: "teams.index",
+                icon: UsersRound,
             },
             {
                 label: "Accountability Chart",

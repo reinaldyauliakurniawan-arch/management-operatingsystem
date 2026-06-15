@@ -17,6 +17,13 @@ Route::patch('/teams/{team}', [TeamController::class, 'update'])->name('teams.up
 Route::post('/teams/{team}/assign-leader', [TeamController::class, 'assignLeader'])->name('teams.assignLeader');
 Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
 
+// User management (org admin)
+Route::get('/users', [\App\Modules\Teams\Controllers\TeamController::class, 'users'])->name('users.index');
+Route::post('/users', [\App\Modules\Teams\Controllers\TeamController::class, 'storeUser'])->name('users.store');
+Route::patch('/users/{user}', [\App\Modules\Teams\Controllers\TeamController::class, 'updateUser'])->name('users.update');
+Route::patch('/users/{user}/reset-password', [\App\Modules\Teams\Controllers\TeamController::class, 'resetPassword'])->name('users.resetPassword');
+Route::delete('/users/{user}', [\App\Modules\Teams\Controllers\TeamController::class, 'destroyUser'])->name('users.destroy');
+
 // Member management
 Route::get('/teams/members', [TeamMemberController::class, 'index'])->name('teams.members.index');
 Route::post('/teams/members', [TeamMemberController::class, 'store'])->name('teams.members.store');
