@@ -102,7 +102,7 @@ export default function DeleteUserForm({
                             Batal
                         </Button>
                         <Button
-                            variant="destructive"
+                            variant="danger"
                             onClick={deleteUser}
                             disabled={processing}
                         >

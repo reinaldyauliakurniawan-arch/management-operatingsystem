@@ -96,7 +96,7 @@ function SeatCard({
                             Edit
                         </Button>
                         <Button
-                            variant="destructive"
+                            variant="danger"
                             size="sm"
                             onClick={() => onDelete(seat.id)}
                             className="text-[11px]"

@@ -543,7 +543,7 @@ export default function PeopleAnalyzerIndex({
                                                     Edit
                                                 </Button>
                                                 <Button
-                                                    variant="destructive"
+                                                    variant="danger"
                                                     size="sm"
                                                     onClick={() =>
                                                         setDeleteId(ev.id)

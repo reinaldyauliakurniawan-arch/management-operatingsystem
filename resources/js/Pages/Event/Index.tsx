@@ -254,7 +254,7 @@ export default function EventIndex({
                                         </Button>
                                         {isLeader && (
                                             <Button
-                                                variant="destructive"
+                                                variant="danger"
                                                 size="sm"
                                                 onClick={() =>
                                                     setDeleteId(ev.id)
