@@ -3,7 +3,7 @@
 3. composer install
 4. cp .env.example .env
 5. php artisan key:generate
-6. # Edit .env (DB_CONNECTION, DB_DATABASE, dll)
+6. Edit .env (DB_CONNECTION, DB_DATABASE, dll)
 7. php artisan migrate
 8. npm install
 9. npm run build
