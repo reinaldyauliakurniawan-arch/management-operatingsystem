@@ -431,6 +431,14 @@ export default function Dashboard({
                     />
                 </>
             )}
+            {!isLeader && !isMember && !isTutor && (
+                <Card>
+                    <CardContent className="py-xl text-center text-[14px] text-text-muted">
+                        Akunmu belum terdaftar sebagai anggota team. Hubungi
+                        leader untuk mendapatkan akses.
+                    </CardContent>
+                </Card>
+            )}
         </AuthenticatedLayout>
     );
 }
