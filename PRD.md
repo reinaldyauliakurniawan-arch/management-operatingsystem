@@ -66,9 +66,9 @@ Upcoming events yang di-assign ke dirinya
 **Deskripsi:** Master data struktur organisasi dan tim.
 
 **CRUD:**
-- **Create:** Org admin buat organization, buat team, assign leader ke team. Leader assign member ke team-nya, assign role per user per team
+- **Create:** Org admin buat organization, buat team, assign leader ke team. Leader assign member ke team-nya, assign role per user per team, bisa via accountability chart add usernya
 - **Read:** Semua user lihat struktur org, leader lihat detail team-nya
-- **Update:** Org admin edit nama org/team. Leader edit member & role di team-nya, pindah member antar team
+- **Update:** Org admin edit nama org/team. Leader edit member & role di team-nya, pindah member antar team. data tersinkron ke semuanya
 - **Delete:** Org admin hapus team (soft delete, data historis tetap), remove member dari team
 
 ---
