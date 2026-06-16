@@ -12,18 +12,19 @@ class Metric extends Model
     use SoftDeletes, HasTeam;
 
     protected $fillable = [
-        'team_id',
-        'title',
-        'owner_id',
-        'goal_value',
-        'comparison_operator',
-        'created_by',
-        'updated_by',
+        "team_id",
+        "title",
+        "owner_id",
+        "goal_value",
+        "comparison_operator",
+        "frequency",
+        "created_by",
+        "updated_by",
     ];
 
     public function owner()
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->belongsTo(User::class, "owner_id");
     }
 
     public function scores()
@@ -34,6 +35,8 @@ class Metric extends Model
     // FIX: relasi latestOfMany — 1 score terbaru per metric, benar di eager loading
     public function latestScore()
     {
-        return $this->hasOne(WeeklyScore::class)->latestOfMany('week_start_date');
+        return $this->hasOne(WeeklyScore::class)->latestOfMany(
+            "week_start_date",
+        );
     }
 }

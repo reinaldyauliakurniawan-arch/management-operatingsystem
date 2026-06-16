@@ -234,13 +234,26 @@ export default function AccountabilityChartIndex({
                 },
             });
         } else {
-            setSubmitAsNew(tab === "new");
-            post(route("accountability-chart.store"), {
-                onSuccess: () => {
-                    setCreateOpen(false);
-                    reset();
+            const isNew = tab === "new";
+            router.post(
+                route("accountability-chart.store"),
+                {
+                    ...data,
+                    responsibilities: data.responsibilities
+                        ? data.responsibilities
+                              .split("\n")
+                              .map((s: string) => s.trim())
+                              .filter(Boolean)
+                        : [],
+                    create_new_user: isNew,
                 },
-            });
+                {
+                    onSuccess: () => {
+                        setCreateOpen(false);
+                        reset();
+                    },
+                },
+            );
         }
     };
 

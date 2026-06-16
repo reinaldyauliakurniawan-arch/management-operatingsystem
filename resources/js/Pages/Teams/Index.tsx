@@ -195,8 +195,9 @@ export default function TeamsIndex({
         });
     };
 
-    const submitMember = (e: React.FormEvent) => {
+    const submitMember = (e: React.FormEvent, teamId: number) => {
         e.preventDefault();
+        memberForm.setData("team_id" as any, teamId);
         memberForm.post(route("teams.members.store"), {
             onSuccess: () => {
                 setAddMemberOpen(false);
@@ -542,11 +543,15 @@ export default function TeamsIndex({
                                                             <Button
                                                                 variant="secondary"
                                                                 size="sm"
-                                                                onClick={() =>
+                                                                onClick={() => {
+                                                                    memberForm.setData(
+                                                                        "team_id" as any,
+                                                                        team.id,
+                                                                    );
                                                                     setAddMemberOpen(
                                                                         true,
-                                                                    )
-                                                                }
+                                                                    );
+                                                                }}
                                                             >
                                                                 + Tambah Anggota
                                                             </Button>

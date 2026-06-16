@@ -96,6 +96,16 @@ export default function Login({
                 <Button type="submit" disabled={processing} className="w-full">
                     {processing ? "Masuk…" : "Masuk"}
                 </Button>
+
+                <p className="text-center text-[13px] text-text-muted">
+                    Belum punya akun?{" "}
+                    <Link
+                        href={route("register")}
+                        className="text-primary-text hover:underline"
+                    >
+                        Daftar
+                    </Link>
+                </p>
             </form>
         </GuestLayout>
     );

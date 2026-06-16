@@ -95,7 +95,7 @@ export default function EventIndex({
 
     const overrideAttendance = (eventId: number, userId: number) =>
         router.post(
-            route("events.override-attendance", {
+            route("events.override", {
                 event: eventId,
                 user: userId,
             }),

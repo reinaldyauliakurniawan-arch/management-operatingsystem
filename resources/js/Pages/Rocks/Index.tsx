@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Head, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
@@ -79,6 +79,13 @@ export default function RocksIndex({
     const [detailRock, setDetailRock] = useState<Rock | null>(null);
     const [milestoneTitle, setMilestoneTitle] = useState("");
     const [deleteRockId, setDeleteRockId] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (detailRock) {
+            const updated = rocks.data.find((r) => r.id === detailRock.id);
+            if (updated) setDetailRock(updated);
+        }
+    }, [rocks]);
 
     const { data, setData, post, processing, reset, errors } = useForm({
         title: "",

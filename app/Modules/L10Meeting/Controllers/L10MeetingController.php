@@ -54,7 +54,7 @@ class L10MeetingController extends Controller
             : User::all(["id", "name"]);
 
         return Inertia::render("L10Meeting/Create", [
-            "users" => $users,
+            "members" => $users,
         ]);
     }
 
@@ -102,13 +102,13 @@ class L10MeetingController extends Controller
             ->get();
 
         return Inertia::render("L10Meeting/Workspace", [
-            "meeting" => (new MeetingWorkspaceResource(
+            "meeting" => new MeetingWorkspaceResource(
                 $meeting,
                 $rocks,
                 $metrics,
                 $todos,
                 $issues,
-            ))->resolve(),
+            )->resolve(),
         ]);
     }
 

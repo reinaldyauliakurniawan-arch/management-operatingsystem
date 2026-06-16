@@ -80,7 +80,7 @@ export default function LeadershipAssessmentIndex({
     const [assignOpen, setAssignOpen] = useState(false);
     const [deleteCycleId, setDeleteCycleId] = useState<number | null>(null);
 
-    const cycleForm = useForm({ name: "", period: "" });
+    const cycleForm = useForm({ name: "", periode_start: "", periode_end: "" });
     const assignForm = useForm({
         cycle_id: "",
         user_id: "",
@@ -370,19 +370,27 @@ export default function LeadershipAssessmentIndex({
                                 )}
                             </div>
                             <div className="flex flex-col gap-xs">
-                                <Label htmlFor="cycle-period">
-                                    Periode (opsional)
-                                </Label>
+                                <Label>Periode Mulai (opsional)</Label>
                                 <Input
-                                    id="cycle-period"
-                                    value={cycleForm.data.period}
+                                    type="date"
+                                    value={cycleForm.data.periode_start}
                                     onChange={(e) =>
                                         cycleForm.setData(
-                                            "period",
+                                            "periode_start",
                                             e.target.value,
                                         )
                                     }
-                                    placeholder="Misal: Juli — September 2025"
+                                />
+                                <Label>Periode Selesai (opsional)</Label>
+                                <Input
+                                    type="date"
+                                    value={cycleForm.data.periode_end}
+                                    onChange={(e) =>
+                                        cycleForm.setData(
+                                            "periode_end",
+                                            e.target.value,
+                                        )
+                                    }
                                 />
                             </div>
                         </form>

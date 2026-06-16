@@ -294,42 +294,6 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
         );
         setOneYearGoals(vto.one_year_goals ?? []);
     }, [vto]);
-
-    useEffect(() => {
-        if (!vto) return;
-        setCoreValues(vto.core_values ?? []);
-        setCoreFocusPurpose(vto.core_focus_purpose ?? "");
-        setCoreFocusNiche(vto.core_focus_niche ?? "");
-        setTenYearTarget(vto.ten_year_target ?? "");
-        setTargetMarket(vto.target_market ?? "");
-        setThreeUniques(vto.three_uniques ?? "");
-        setProvenProcess(vto.proven_process ?? "");
-        setGuarantee(vto.guarantee ?? "");
-        setThreeYearDate(vto.three_year_date ?? "");
-        setThreeYearRevenue(vto.three_year_revenue ?? "");
-        setThreeYearProfit(vto.three_year_profit ?? "");
-        setThreeYearMeasurables(
-            vto.three_year_measurables
-                ? String(vto.three_year_measurables)
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                : [],
-        );
-        setThreeYearLook(vto.three_year_look ?? []);
-        setOneYearDate(vto.one_year_date ?? "");
-        setOneYearRevenue(vto.one_year_revenue ?? "");
-        setOneYearProfit(vto.one_year_profit ?? "");
-        setOneYearMeasurables(
-            vto.one_year_measurables
-                ? String(vto.one_year_measurables)
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                : [],
-        );
-        setOneYearGoals(vto.one_year_goals ?? []);
-    }, [vto]);
     const [coreFocusPurpose, setCoreFocusPurpose] = useState(
         vto?.core_focus_purpose ?? "",
     );
@@ -489,7 +453,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                             <Button
                                 className="mt-4"
                                 onClick={() =>
-                                    router.post(route("vto.store"), {})
+                                    router.post(route("vto.update"), {})
                                 }
                             >
                                 Inisiasi VTO

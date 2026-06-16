@@ -18,19 +18,21 @@ class TeamMemberController extends Controller
      */
     public function index(Request $request)
     {
-        $teamId = $request->input('team_id', session('active_team_id'));
-        $team   = Team::with('members.user')->findOrFail($teamId);
+        $teamId = $request->input("team_id", session("active_team_id"));
+        $team = Team::with("members.user")->findOrFail($teamId);
 
-        $members = $team->members->map(fn($m) => [
-            'id'            => $m->id,
-            'user_id'       => $m->user_id,
-            'name'          => $m->user->name,
-            'email'         => $m->user->email,
-            'role'          => $m->role,
-            'is_integrator' => $m->is_integrator,
-        ]);
+        $members = $team->members->map(
+            fn($m) => [
+                "id" => $m->id,
+                "user_id" => $m->user_id,
+                "name" => $m->user->name,
+                "email" => $m->user->email,
+                "role" => $m->role,
+                "is_integrator" => $m->is_integrator,
+            ],
+        );
 
-        return response()->json(['members' => $members]);
+        return response()->json(["members" => $members]);
     }
 
     /**
@@ -38,37 +40,46 @@ class TeamMemberController extends Controller
      */
     public function store(Request $request)
     {
-        $teamId = session('active_team_id');
-        $user   = Auth::user();
-        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
-
-        if (!$user->is_org_admin && $role !== 'leader') {
-            abort(403, 'Hanya org admin atau leader yang bisa menambah anggota.');
-        }
-
         $validated = $request->validate([
-            'user_id'       => 'required|exists:users,id',
-            'role'          => 'required|in:leader,member,tutor',
-            'is_integrator' => 'boolean',
+            "team_id" => "required|exists:teams,id",
+            "user_id" => "required|exists:users,id",
+            "role" => "required|in:leader,member,tutor",
+            "is_integrator" => "boolean",
         ]);
 
+        $teamId = $validated["team_id"];
+        $user = Auth::user();
+        $role = $user
+            ->teamMemberships()
+            ->where("team_id", $teamId)
+            ->value("role");
+
+        if (!$user->is_org_admin && $role !== "leader") {
+            abort(
+                403,
+                "Hanya org admin atau leader yang bisa menambah anggota.",
+            );
+        }
+
         // Cegah duplikat
-        $existing = TeamMember::where('team_id', $teamId)
-            ->where('user_id', $validated['user_id'])
+        $existing = TeamMember::where("team_id", $teamId)
+            ->where("user_id", $validated["user_id"])
             ->first();
 
         if ($existing) {
-            return back()->withErrors(['user_id' => 'User sudah menjadi anggota team ini.']);
+            return back()->withErrors([
+                "user_id" => "User sudah menjadi anggota team ini.",
+            ]);
         }
 
         TeamMember::create([
-            'team_id'       => $teamId,
-            'user_id'       => $validated['user_id'],
-            'role'          => $validated['role'],
-            'is_integrator' => $validated['is_integrator'] ?? false,
+            "team_id" => $validated["team_id"],
+            "user_id" => $validated["user_id"],
+            "role" => $validated["role"],
+            "is_integrator" => $validated["is_integrator"] ?? false,
         ]);
 
-        return back()->with('message', 'Anggota ditambahkan.');
+        return back()->with("message", "Anggota ditambahkan.");
     }
 
     /**
@@ -76,11 +87,14 @@ class TeamMemberController extends Controller
      */
     public function update(Request $request, TeamMember $member)
     {
-        $teamId = session('active_team_id');
-        $user   = Auth::user();
-        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
+        $teamId = session("active_team_id");
+        $user = Auth::user();
+        $role = $user
+            ->teamMemberships()
+            ->where("team_id", $teamId)
+            ->value("role");
 
-        if (!$user->is_org_admin && $role !== 'leader') {
+        if (!$user->is_org_admin && $role !== "leader") {
             abort(403);
         }
 
@@ -88,13 +102,13 @@ class TeamMemberController extends Controller
         abort_unless($member->team_id === (int) $teamId, 403);
 
         $validated = $request->validate([
-            'role'          => 'required|in:leader,member,tutor',
-            'is_integrator' => 'boolean',
+            "role" => "required|in:leader,member,tutor",
+            "is_integrator" => "boolean",
         ]);
 
         $member->update($validated);
 
-        return back()->with('message', 'Role diperbarui.');
+        return back()->with("message", "Role diperbarui.");
     }
 
     /**
@@ -102,21 +116,31 @@ class TeamMemberController extends Controller
      */
     public function destroy(TeamMember $member)
     {
-        $teamId = session('active_team_id');
-        $user   = Auth::user();
-        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
+        $teamId = session("active_team_id");
+        $user = Auth::user();
+        $role = $user
+            ->teamMemberships()
+            ->where("team_id", $teamId)
+            ->value("role");
 
-        if (!$user->is_org_admin && $role !== 'leader') {
-            abort(403, 'Hanya org admin atau leader yang bisa mengeluarkan anggota.');
+        if (!$user->is_org_admin && $role !== "leader") {
+            abort(
+                403,
+                "Hanya org admin atau leader yang bisa mengeluarkan anggota.",
+            );
         }
 
         abort_unless($member->team_id === (int) $teamId, 403);
 
         // Cegah remove diri sendiri
-        abort_if($member->user_id === Auth::id(), 422, 'Tidak bisa mengeluarkan diri sendiri.');
+        abort_if(
+            $member->user_id === Auth::id(),
+            422,
+            "Tidak bisa mengeluarkan diri sendiri.",
+        );
 
         $member->delete();
 
-        return back()->with('message', 'Anggota dikeluarkan dari team.');
+        return back()->with("message", "Anggota dikeluarkan dari team.");
     }
 }
