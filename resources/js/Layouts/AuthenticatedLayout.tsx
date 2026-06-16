@@ -15,6 +15,7 @@ import {
     CalendarDays,
     Trophy,
     UsersRound,
+    Workflow,
 } from "lucide-react";
 
 const navGroups = [
@@ -26,48 +27,63 @@ const navGroups = [
                 href: "/dashboard",
                 routeName: "dashboard",
                 icon: LayoutDashboard,
+                external: false,
             },
             {
                 label: "VTO",
                 href: "/vto",
                 routeName: "vto.index",
                 icon: Target,
+                external: false,
             },
             {
                 label: "Accountability Chart",
                 href: "/accountability-chart",
                 routeName: "accountability.index",
                 icon: Network,
+                external: false,
             },
             {
                 label: "Scorecard",
                 href: "/scorecard",
                 routeName: "scorecard.index",
                 icon: LineChart,
+                external: false,
+            },
+            {
+                label: "Core Process",
+                href: "https://www.canva.com/design/DAG3C7iUjn0/NMyonqO2Jc6o-6NRC-3I5A/edit?utm_content=DAG3C7iUjn0&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton",
+                routeName: null,
+                icon: Workflow,
+                external: true,
             },
             {
                 label: "Issues List",
                 href: "/ids",
                 routeName: "ids.index",
                 icon: AlertCircle,
+                external: false,
             },
             {
                 label: "90D Priorities",
                 href: "/rocks",
                 routeName: "rocks.index",
                 icon: Mountain,
+                external: false,
             },
             {
                 label: "L10 Meeting",
                 href: "/l10",
                 routeName: "l10.index",
                 icon: CalendarClock,
+                external: false,
             },
             {
                 label: "Weekly Priorities",
                 href: "/todos",
                 routeName: "todos.index",
                 icon: CheckSquare,
+                external: false,
             },
         ],
     },
@@ -79,30 +95,35 @@ const navGroups = [
                 href: "/leadership-assessment",
                 routeName: "leadership-assessment.index",
                 icon: Award,
+                external: false,
             },
             {
                 label: "Teams",
                 href: "/teams",
                 routeName: "teams.index",
                 icon: UsersRound,
+                external: false,
             },
             {
                 label: "People Analyzer",
                 href: "/people-analyzer",
                 routeName: "people-analyzer.index",
                 icon: Users,
+                external: false,
             },
             {
                 label: "Events",
                 href: "/events",
                 routeName: "events.index",
                 icon: CalendarDays,
+                external: false,
             },
             {
                 label: "Leaderboard",
                 href: "/leaderboard",
                 routeName: "leaderboard.index",
                 icon: Trophy,
+                external: false,
             },
         ],
     },
@@ -130,14 +151,12 @@ export default function Authenticated({
 
     return (
         <div className="relative flex h-screen overflow-hidden bg-surface-subtle">
-            {/* Mobile overlay */}
             {mobileOpen && (
                 <div
                     className="fixed inset-0 z-30 bg-black/40 md:hidden"
                     onClick={() => setMobileOpen(false)}
                 />
             )}
-            {/* Sidebar */}
             <aside
                 className={`flex flex-col overflow-x-hidden shrink-0 h-screen bg-surface-subtle border-r border-border transition-all duration-200 ease-in-out z-40 ${
                     mobileOpen
@@ -148,7 +167,6 @@ export default function Authenticated({
                     width: mobileOpen ? undefined : sidebarOpen ? 240 : 56,
                 }}
             >
-                {/* Team Switcher */}
                 <div className="border-b border-border p-md">
                     {sidebarOpen ? (
                         <div>
@@ -182,7 +200,6 @@ export default function Authenticated({
                     )}
                 </div>
 
-                {/* Nav */}
                 <nav className="flex-1 overflow-y-auto min-h-0 px-sm py-md">
                     {navGroups.map((group) => (
                         <div key={group.label} className="mb-sm">
@@ -193,29 +210,58 @@ export default function Authenticated({
                             )}
                             <ul className="list-none m-0 p-0 flex flex-col gap-0.5">
                                 {group.items.map((item) => {
+                                    const href = item.href;
                                     const isActive =
+                                        !item.external &&
+                                        item.routeName !== null &&
                                         typeof route === "function" &&
                                         route().current(item.routeName);
+
+                                    const cls = `flex items-center gap-sm rounded-sm text-[var(--font-base)] no-underline whitespace-nowrap overflow-hidden transition-[background,color] duration-100 border-l-2 ${
+                                        isActive
+                                            ? "pl-[6px] pr-sm py-[6px] font-medium text-white bg-primary border-primary"
+                                            : "px-sm py-[6px] font-normal text-text-secondary bg-transparent border-transparent hover:bg-surface-overlay hover:text-text-primary"
+                                    } ${!sidebarOpen ? "justify-center" : ""}`;
+
                                     return (
-                                        <li key={item.href}>
-                                            <Link
-                                                href={item.href}
-                                                title={
-                                                    !sidebarOpen
-                                                        ? item.label
-                                                        : undefined
-                                                }
-                                                className={`flex items-center gap-sm rounded-sm text-[var(--font-base)] no-underline whitespace-nowrap overflow-hidden transition-[background,color] duration-100 border-l-2 ${
-                                                    isActive
-                                                        ? "pl-[6px] pr-sm py-[6px] font-medium text-white bg-primary border-primary"
-                                                        : "px-sm py-[6px] font-normal text-text-secondary bg-transparent border-transparent hover:bg-surface-overlay hover:text-text-primary"
-                                                } ${!sidebarOpen ? "justify-center" : ""}`}
-                                            >
-                                                <item.icon className="h-4 w-4 shrink-0" />
-                                                {sidebarOpen && (
-                                                    <span>{item.label}</span>
-                                                )}
-                                            </Link>
+                                        <li key={href}>
+                                            {item.external ? (
+                                                <a
+                                                    href={href}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    title={
+                                                        !sidebarOpen
+                                                            ? item.label
+                                                            : undefined
+                                                    }
+                                                    className={cls}
+                                                >
+                                                    <item.icon className="h-4 w-4 shrink-0" />
+                                                    {sidebarOpen && (
+                                                        <span>
+                                                            {item.label}
+                                                        </span>
+                                                    )}
+                                                </a>
+                                            ) : (
+                                                <Link
+                                                    href={href}
+                                                    title={
+                                                        !sidebarOpen
+                                                            ? item.label
+                                                            : undefined
+                                                    }
+                                                    className={cls}
+                                                >
+                                                    <item.icon className="h-4 w-4 shrink-0" />
+                                                    {sidebarOpen && (
+                                                        <span>
+                                                            {item.label}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            )}
                                         </li>
                                     );
                                 })}
@@ -224,7 +270,6 @@ export default function Authenticated({
                     ))}
                 </nav>
 
-                {/* User Menu */}
                 <div className="border-t border-border p-md">
                     {sidebarOpen ? (
                         <div className="flex items-center justify-between gap-sm">
@@ -265,11 +310,8 @@ export default function Authenticated({
                 </div>
             </aside>
 
-            {/* Main */}
             <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-                {/* Topbar */}
                 <header className="h-12 shrink-0 min-w-0 flex items-center gap-md px-xl bg-surface border-b border-border shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-                    {/* Mobile hamburger */}
                     <button
                         onClick={() => setMobileOpen(!mobileOpen)}
                         className="flex md:hidden items-center p-xs bg-transparent border-none cursor-pointer text-text-muted hover:text-text-primary"
@@ -341,7 +383,6 @@ export default function Authenticated({
                     </span>
                 </header>
 
-                {/* Content */}
                 <main className="flex-1 overflow-y-auto p-xl w-full">
                     <div className="max-w-[1280px] mx-auto">
                         {header}
