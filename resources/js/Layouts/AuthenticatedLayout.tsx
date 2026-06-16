@@ -19,10 +19,10 @@ import {
 
 const navGroups = [
     {
-        label: "EOS Core",
+        label: "Fundamentals",
         items: [
             {
-                label: "Dashboard",
+                label: "Home",
                 href: "/dashboard",
                 routeName: "dashboard",
                 icon: LayoutDashboard,
@@ -34,22 +34,10 @@ const navGroups = [
                 icon: Target,
             },
             {
-                label: "Teams",
-                href: "/teams",
-                routeName: "teams.index",
-                icon: UsersRound,
-            },
-            {
                 label: "Accountability Chart",
                 href: "/accountability-chart",
                 routeName: "accountability.index",
                 icon: Network,
-            },
-            {
-                label: "People Analyzer",
-                href: "/people-analyzer",
-                routeName: "people-analyzer.index",
-                icon: Users,
             },
             {
                 label: "Scorecard",
@@ -58,28 +46,28 @@ const navGroups = [
                 icon: LineChart,
             },
             {
-                label: "Issues / IDS",
+                label: "Issues List",
                 href: "/ids",
                 routeName: "ids.index",
                 icon: AlertCircle,
             },
             {
-                label: "Rocks",
+                label: "90D Priorities",
                 href: "/rocks",
                 routeName: "rocks.index",
                 icon: Mountain,
-            },
-            {
-                label: "To-Do",
-                href: "/todos",
-                routeName: "todos.index",
-                icon: CheckSquare,
             },
             {
                 label: "L10 Meeting",
                 href: "/l10",
                 routeName: "l10.index",
                 icon: CalendarClock,
+            },
+            {
+                label: "Weekly Priorities",
+                href: "/todos",
+                routeName: "todos.index",
+                icon: CheckSquare,
             },
         ],
     },
@@ -91,6 +79,18 @@ const navGroups = [
                 href: "/leadership-assessment",
                 routeName: "leadership-assessment.index",
                 icon: Award,
+            },
+            {
+                label: "Teams",
+                href: "/teams",
+                routeName: "teams.index",
+                icon: UsersRound,
+            },
+            {
+                label: "People Analyzer",
+                href: "/people-analyzer",
+                routeName: "people-analyzer.index",
+                icon: Users,
             },
             {
                 label: "Events",
@@ -144,7 +144,9 @@ export default function Authenticated({
                         ? "fixed inset-y-0 left-0 w-60 shadow-[var(--shadow-lg)]"
                         : "hidden md:sticky md:top-0 md:flex"
                 }`}
-                style={{ width: mobileOpen ? undefined : sidebarOpen ? 240 : 56 }}
+                style={{
+                    width: mobileOpen ? undefined : sidebarOpen ? 240 : 56,
+                }}
             >
                 {/* Team Switcher */}
                 <div className="border-b border-border p-md">
@@ -272,10 +274,33 @@ export default function Authenticated({
                         onClick={() => setMobileOpen(!mobileOpen)}
                         className="flex md:hidden items-center p-xs bg-transparent border-none cursor-pointer text-text-muted hover:text-text-primary"
                     >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <rect y="2" width="16" height="1.5" rx="0.75" fill="currentColor" />
-                            <rect y="7.25" width="16" height="1.5" rx="0.75" fill="currentColor" />
-                            <rect y="12.5" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                        >
+                            <rect
+                                y="2"
+                                width="16"
+                                height="1.5"
+                                rx="0.75"
+                                fill="currentColor"
+                            />
+                            <rect
+                                y="7.25"
+                                width="16"
+                                height="1.5"
+                                rx="0.75"
+                                fill="currentColor"
+                            />
+                            <rect
+                                y="12.5"
+                                width="16"
+                                height="1.5"
+                                rx="0.75"
+                                fill="currentColor"
+                            />
                         </svg>
                     </button>
                     <button
