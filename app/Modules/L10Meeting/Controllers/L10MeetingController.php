@@ -101,14 +101,16 @@ class L10MeetingController extends Controller
             ->orderBy("priority", "desc")
             ->get();
 
+        $resource = new MeetingWorkspaceResource(
+            $meeting,
+            $rocks,
+            $metrics,
+            $todos,
+            $issues,
+        );
+
         return Inertia::render("L10Meeting/Workspace", [
-            "meeting" => new MeetingWorkspaceResource(
-                $meeting,
-                $rocks,
-                $metrics,
-                $todos,
-                $issues,
-            )->resolve(),
+            "meeting" => $resource->resolve(),
         ]);
     }
 

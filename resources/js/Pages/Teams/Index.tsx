@@ -195,9 +195,8 @@ export default function TeamsIndex({
         });
     };
 
-    const submitMember = (e: React.FormEvent, teamId: number) => {
+    const submitMember = (e: React.FormEvent) => {
         e.preventDefault();
-        memberForm.setData("team_id" as any, teamId);
         memberForm.post(route("teams.members.store"), {
             onSuccess: () => {
                 setAddMemberOpen(false);
