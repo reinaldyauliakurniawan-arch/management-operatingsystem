@@ -87,7 +87,7 @@ function StatCard({
     const inner = (
         <Card>
             <CardContent>
-                <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wide text-text-muted">
+                <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
                     {label}
                 </p>
                 <p
@@ -96,7 +96,9 @@ function StatCard({
                     {value}
                 </p>
                 {sub && (
-                    <p className="mt-xs text-[var(--font-base)] text-text-muted">{sub}</p>
+                    <p className="mt-xs text-[var(--font-base)] text-text-muted">
+                        {sub}
+                    </p>
                 )}
             </CardContent>
         </Card>
@@ -112,7 +114,7 @@ function StatCard({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
     return (
-        <p className="mb-md text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
+        <p className="mb-md text-[length:var(--font-md)] font-semibold text-primary">
             {children}
         </p>
     );
@@ -212,7 +214,7 @@ export default function Dashboard({
                         {/* Upcoming meeting */}
                         <Card>
                             <CardContent>
-                                <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
+                                <p className="mb-lg text-[length:var(--font-md)] font-semibold text-primary">
                                     L10 Terdekat
                                 </p>
                                 {upcomingMeeting ? (
@@ -243,7 +245,7 @@ export default function Dashboard({
                         {/* Top leaderboard per role */}
                         <Card>
                             <CardContent>
-                                <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
+                                <p className="mb-lg text-[length:var(--font-md)] font-semibold text-primary">
                                     Top Leaderboard
                                 </p>
                                 {Object.keys(leaderboardTop3ByRole).length ===
@@ -290,7 +292,7 @@ export default function Dashboard({
                         {/* Upcoming events */}
                         <Card>
                             <CardContent>
-                                <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
+                                <p className="mb-lg text-[length:var(--font-md)] font-semibold text-primary">
                                     Events (7 hari)
                                 </p>
                                 {upcomingEvents.length === 0 ? (
@@ -469,7 +471,7 @@ function MemberBottomSection({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-lg">
             <Card>
                 <CardContent>
-                    <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
+                    <p className="mb-lg text-[length:var(--font-md)] font-semibold text-primary">
                         Skor Leaderboard
                     </p>
                     {selfLeaderboard ? (
@@ -493,7 +495,7 @@ function MemberBottomSection({
 
             <Card>
                 <CardContent>
-                    <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
+                    <p className="mb-lg text-[length:var(--font-md)] font-semibold text-primary">
                         Events Mendatang
                     </p>
                     {upcomingEvents.length === 0 ? (
@@ -532,7 +534,7 @@ function MemberBottomSection({
             {upcomingMeeting && (
                 <Card className="col-span-2">
                     <CardContent>
-                        <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
+                        <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
                             L10 Terdekat
                         </p>
                         <p className="text-[var(--font-md)] font-semibold tracking-tight text-text-primary">

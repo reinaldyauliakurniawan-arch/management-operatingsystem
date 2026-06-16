@@ -12,7 +12,7 @@ function Card({
             data-slot="card"
             data-size={size}
             className={cn(
-                "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface py-(--card-spacing) text-sm text-text-primary shadow-[var(--shadow-sm)] [--card-spacing:var(--spacing-gap-xl)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:var(--spacing-gap-md)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-[var(--radius-lg)] *:[img:last-child]:rounded-b-[var(--radius-lg)]",
+                "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface py-(--card-spacing) text-text-primary shadow-[var(--shadow-sm)] [--card-spacing:var(--spacing-gap-xl)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:var(--spacing-gap-md)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-[var(--radius-lg)] *:[img:last-child]:rounded-b-[var(--radius-lg)]",
                 className,
             )}
             {...props}
@@ -38,7 +38,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
         <div
             data-slot="card-title"
             className={cn(
-                "text-[var(--font-md)] leading-snug font-semibold tracking-tight text-text-primary group-data-[size=sm]/card:text-sm",
+                "text-[length:var(--font-md)] leading-snug font-semibold tracking-tight text-primary group-data-[size=sm]/card:text-sm",
                 className,
             )}
             {...props}
@@ -50,7 +50,10 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
     return (
         <div
             data-slot="card-description"
-            className={cn("text-sm text-text-secondary", className)}
+            className={cn(
+                "text-[length:var(--font-base)] text-text-secondary",
+                className,
+            )}
             {...props}
         />
     );

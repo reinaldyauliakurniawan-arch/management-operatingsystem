@@ -102,7 +102,7 @@ function SectionTitle({
 }) {
     return (
         <div className="flex items-center gap-2 mb-4">
-            <h3 className="text-[var(--font-md)] font-semibold leading-6 text-primary">
+            <h3 className="text-[length:var(--font-md)] font-semibold leading-6 text-primary">
                 {title}
             </h3>
             <Icon className="size-4 text-text-muted ml-auto" />

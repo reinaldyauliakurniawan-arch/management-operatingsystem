@@ -198,7 +198,7 @@ export default function RocksIndex({
                 ].map((stat) => (
                     <Card key={stat.label}>
                         <CardContent>
-                            <p className="mb-sm text-[var(--font-base)] font-medium tracking-wide text-text-muted uppercase">
+                            <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
                                 {stat.label}
                             </p>
                             <p
@@ -212,118 +212,122 @@ export default function RocksIndex({
             </div>
 
             <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        {[
-                            "Rock",
-                            "Owner",
-                            "Periode",
-                            "Due Date",
-                            "Status",
-                            "",
-                        ].map((h) => (
-                            <TableHead key={h}>{h}</TableHead>
-                        ))}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {rockList.length === 0 && (
+                <Table>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={6}>
-                                <EmptyState
-                                    title="Belum ada rock"
-                                    description={
-                                        isLeader
-                                            ? "Tambah rock pertama untuk team ini."
-                                            : "Belum ada rock yang ditambahkan untuk team ini."
-                                    }
-                                />
-                            </TableCell>
+                            {[
+                                "Rock",
+                                "Owner",
+                                "Periode",
+                                "Due Date",
+                                "Status",
+                                "",
+                            ].map((h) => (
+                                <TableHead key={h}>{h}</TableHead>
+                            ))}
                         </TableRow>
-                    )}
-                    {rockList.map((rock) => (
-                        <TableRow key={rock.id}>
-                            <TableCell>
-                                <button
-                                    onClick={() => setDetailRock(rock)}
-                                    className="cursor-pointer text-left"
-                                >
-                                    <p className="text-[var(--font-base)] font-medium text-text-primary">
-                                        {rock.title}
-                                    </p>
-                                    {rock.description && (
-                                        <p className="mt-0.5 text-[var(--font-base)] text-text-muted">
-                                            {rock.description.slice(0, 60)}
-                                            {rock.description.length > 60
-                                                ? "…"
-                                                : ""}
-                                        </p>
-                                    )}
-                                </button>
-                            </TableCell>
-                            <TableCell className="text-text-secondary">
-                                {rock.owner.name}
-                            </TableCell>
-                            <TableCell className="text-text-secondary">
-                                {rock.quarter} {rock.year}
-                            </TableCell>
-                            <TableCell className="text-text-secondary">
-                                {rock.due_date ?? "—"}
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                    variant={statusBadgeVariant[rock.status]}
-                                >
-                                    {statusLabel[rock.status]}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex items-center justify-end gap-sm">
-                                    {isLeader && (
-                                        <Select
-                                            value={rock.status}
-                                            onChange={(e) =>
-                                                updateStatus(
-                                                    rock.id,
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="h-7 w-auto pr-7 text-xs"
-                                        >
-                                            <option value="on_track">
-                                                On Track
-                                            </option>
-                                            <option value="off_track">
-                                                Off Track
-                                            </option>
-                                            <option value="done">Done</option>
-                                        </Select>
-                                    )}
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
+                    </TableHeader>
+                    <TableBody>
+                        {rockList.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={6}>
+                                    <EmptyState
+                                        title="Belum ada rock"
+                                        description={
+                                            isLeader
+                                                ? "Tambah rock pertama untuk team ini."
+                                                : "Belum ada rock yang ditambahkan untuk team ini."
+                                        }
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {rockList.map((rock) => (
+                            <TableRow key={rock.id}>
+                                <TableCell>
+                                    <button
                                         onClick={() => setDetailRock(rock)}
+                                        className="cursor-pointer text-left"
                                     >
-                                        Detail
-                                    </Button>
-                                    {isLeader && (
+                                        <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                            {rock.title}
+                                        </p>
+                                        {rock.description && (
+                                            <p className="mt-0.5 text-[var(--font-base)] text-text-muted">
+                                                {rock.description.slice(0, 60)}
+                                                {rock.description.length > 60
+                                                    ? "…"
+                                                    : ""}
+                                            </p>
+                                        )}
+                                    </button>
+                                </TableCell>
+                                <TableCell className="text-text-secondary">
+                                    {rock.owner.name}
+                                </TableCell>
+                                <TableCell className="text-text-secondary">
+                                    {rock.quarter} {rock.year}
+                                </TableCell>
+                                <TableCell className="text-text-secondary">
+                                    {rock.due_date ?? "—"}
+                                </TableCell>
+                                <TableCell>
+                                    <Badge
+                                        variant={
+                                            statusBadgeVariant[rock.status]
+                                        }
+                                    >
+                                        {statusLabel[rock.status]}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center justify-end gap-sm">
+                                        {isLeader && (
+                                            <Select
+                                                value={rock.status}
+                                                onChange={(e) =>
+                                                    updateStatus(
+                                                        rock.id,
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="h-7 w-auto pr-7 text-xs"
+                                            >
+                                                <option value="on_track">
+                                                    On Track
+                                                </option>
+                                                <option value="off_track">
+                                                    Off Track
+                                                </option>
+                                                <option value="done">
+                                                    Done
+                                                </option>
+                                            </Select>
+                                        )}
                                         <Button
-                                            variant="danger"
+                                            variant="ghost"
                                             size="sm"
-                                            onClick={() =>
-                                                setDeleteRockId(rock.id)
-                                            }
+                                            onClick={() => setDetailRock(rock)}
                                         >
-                                            Hapus
+                                            Detail
                                         </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                                        {isLeader && (
+                                            <Button
+                                                variant="danger"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setDeleteRockId(rock.id)
+                                                }
+                                            >
+                                                Hapus
+                                            </Button>
+                                        )}
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </div>
 
             {/* Create Modal */}
@@ -488,7 +492,7 @@ export default function RocksIndex({
 
                                 {/* Milestones */}
                                 <div>
-                                    <p className="mb-md text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
+                                    <p className="mb-md text-[length:var(--font-md)] font-semibold text-primary">
                                         Milestones
                                     </p>
                                     <div className="flex flex-col gap-sm">

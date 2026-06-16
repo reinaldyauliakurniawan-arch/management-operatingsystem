@@ -135,7 +135,7 @@ export default function ToDoIndex({
                 ].map((stat) => (
                     <Card key={stat.label}>
                         <CardContent>
-                            <p className="mb-sm text-[var(--font-base)] font-medium tracking-wide text-text-muted uppercase">
+                            <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
                                 {stat.label}
                             </p>
                             <p
@@ -149,89 +149,91 @@ export default function ToDoIndex({
             </div>
 
             <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        {[
-                            { key: "check", label: "" },
-                            { key: "title", label: "To-Do" },
-                            { key: "owner", label: "Owner" },
-                            { key: "due", label: "Due Date" },
-                            { key: "status", label: "Status" },
-                            { key: "actions", label: "" },
-                        ].map((h) => (
-                            <TableHead key={h.key}>{h.label}</TableHead>
-                        ))}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {todoList.length === 0 && (
+                <Table>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={6}>
-                                <EmptyState
-                                    title="Belum ada to-do"
-                                    description="Tambah to-do pertama untuk team ini."
-                                />
-                            </TableCell>
+                            {[
+                                { key: "check", label: "" },
+                                { key: "title", label: "To-Do" },
+                                { key: "owner", label: "Owner" },
+                                { key: "due", label: "Due Date" },
+                                { key: "status", label: "Status" },
+                                { key: "actions", label: "" },
+                            ].map((h) => (
+                                <TableHead key={h.key}>{h.label}</TableHead>
+                            ))}
                         </TableRow>
-                    )}
-                    {todoList.map((todo) => (
-                        <TableRow
-                            key={todo.id}
-                            className={todo.is_completed ? "opacity-50" : ""}
-                        >
-                            <TableCell className="w-10">
-                                <Checkbox
-                                    checked={todo.is_completed}
-                                    onCheckedChange={() => toggle(todo.id)}
-                                />
-                            </TableCell>
-                            <TableCell>
-                                <span
-                                    className={`text-[var(--font-base)] font-medium text-text-primary ${todo.is_completed ? "line-through" : ""}`}
-                                >
-                                    {todo.title}
-                                </span>
-                            </TableCell>
-                            <TableCell className="text-text-secondary">
-                                {todo.owner.name}
-                            </TableCell>
-                            <TableCell>
-                                <span
-                                    className={
-                                        todo.is_overdue
-                                            ? "font-medium text-error-text"
-                                            : "text-text-secondary"
-                                    }
-                                >
-                                    {todo.due_date}
-                                    {todo.is_overdue && " ⚠"}
-                                </span>
-                            </TableCell>
-                            <TableCell>
-                                {todo.is_completed ? (
-                                    <Badge variant="success">Done</Badge>
-                                ) : todo.is_overdue ? (
-                                    <Badge variant="error">Overdue</Badge>
-                                ) : (
-                                    <Badge variant="neutral">Pending</Badge>
-                                )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                                {canDelete(todo) && (
-                                    <Button
-                                        variant="danger"
-                                        size="sm"
-                                        onClick={() => setDeleteId(todo.id)}
+                    </TableHeader>
+                    <TableBody>
+                        {todoList.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={6}>
+                                    <EmptyState
+                                        title="Belum ada to-do"
+                                        description="Tambah to-do pertama untuk team ini."
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {todoList.map((todo) => (
+                            <TableRow
+                                key={todo.id}
+                                className={
+                                    todo.is_completed ? "opacity-50" : ""
+                                }
+                            >
+                                <TableCell className="w-10">
+                                    <Checkbox
+                                        checked={todo.is_completed}
+                                        onCheckedChange={() => toggle(todo.id)}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <span
+                                        className={`text-[var(--font-base)] font-medium text-text-primary ${todo.is_completed ? "line-through" : ""}`}
                                     >
-                                        Hapus
-                                    </Button>
-                                )}
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                                        {todo.title}
+                                    </span>
+                                </TableCell>
+                                <TableCell className="text-text-secondary">
+                                    {todo.owner.name}
+                                </TableCell>
+                                <TableCell>
+                                    <span
+                                        className={
+                                            todo.is_overdue
+                                                ? "font-medium text-error-text"
+                                                : "text-text-secondary"
+                                        }
+                                    >
+                                        {todo.due_date}
+                                        {todo.is_overdue && " ⚠"}
+                                    </span>
+                                </TableCell>
+                                <TableCell>
+                                    {todo.is_completed ? (
+                                        <Badge variant="success">Done</Badge>
+                                    ) : todo.is_overdue ? (
+                                        <Badge variant="error">Overdue</Badge>
+                                    ) : (
+                                        <Badge variant="neutral">Pending</Badge>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {canDelete(todo) && (
+                                        <Button
+                                            variant="danger"
+                                            size="sm"
+                                            onClick={() => setDeleteId(todo.id)}
+                                        >
+                                            Hapus
+                                        </Button>
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </div>
 
             {/* Create Modal */}

@@ -122,7 +122,7 @@ export default function IDSIndex({
                 ].map((stat) => (
                     <Card key={stat.label}>
                         <CardContent>
-                            <p className="mb-sm text-[var(--font-base)] font-medium tracking-wide text-text-muted uppercase">
+                            <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
                                 {stat.label}
                             </p>
                             <p
@@ -136,99 +136,103 @@ export default function IDSIndex({
             </div>
 
             <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        {[
-                            { key: "priority", label: "P" },
-                            { key: "issue", label: "Issue" },
-                            { key: "owner", label: "Owner" },
-                            { key: "status", label: "Status" },
-                            { key: "actions", label: "" },
-                        ].map((h) => (
-                            <TableHead key={h.key}>{h.label}</TableHead>
-                        ))}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {issueList.length === 0 && (
+                <Table>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={5}>
-                                <EmptyState
-                                    title="Tidak ada issue"
-                                    description="Semua aman! Belum ada issue yang di-identify."
-                                />
-                            </TableCell>
+                            {[
+                                { key: "priority", label: "P" },
+                                { key: "issue", label: "Issue" },
+                                { key: "owner", label: "Owner" },
+                                { key: "status", label: "Status" },
+                                { key: "actions", label: "" },
+                            ].map((h) => (
+                                <TableHead key={h.key}>{h.label}</TableHead>
+                            ))}
                         </TableRow>
-                    )}
-                    {issueList.map((issue) => (
-                        <TableRow
-                            key={issue.id}
-                            className={
-                                issue.status === "resolved" ? "opacity-50" : ""
-                            }
-                        >
-                            <TableCell className="w-12">
-                                <span
-                                    className={`text-[var(--font-base)] font-semibold ${priorityClass(issue.priority)}`}
-                                >
-                                    {issue.priority}
-                                </span>
-                            </TableCell>
-                            <TableCell>
-                                <p className="text-[var(--font-base)] font-medium text-text-primary">
-                                    {issue.title}
-                                </p>
-                                {issue.description && (
-                                    <p className="mt-0.5 text-[var(--font-base)] text-text-muted">
-                                        {issue.description.slice(0, 80)}
-                                        {issue.description.length > 80
-                                            ? "…"
-                                            : ""}
+                    </TableHeader>
+                    <TableBody>
+                        {issueList.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={5}>
+                                    <EmptyState
+                                        title="Tidak ada issue"
+                                        description="Semua aman! Belum ada issue yang di-identify."
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {issueList.map((issue) => (
+                            <TableRow
+                                key={issue.id}
+                                className={
+                                    issue.status === "resolved"
+                                        ? "opacity-50"
+                                        : ""
+                                }
+                            >
+                                <TableCell className="w-12">
+                                    <span
+                                        className={`text-[var(--font-base)] font-semibold ${priorityClass(issue.priority)}`}
+                                    >
+                                        {issue.priority}
+                                    </span>
+                                </TableCell>
+                                <TableCell>
+                                    <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                        {issue.title}
                                     </p>
-                                )}
-                            </TableCell>
-                            <TableCell className="text-text-secondary">
-                                {issue.owner?.name ?? "—"}
-                            </TableCell>
-                            <TableCell>
-                                {issue.status === "open" ? (
-                                    <Badge variant="error">Open</Badge>
-                                ) : (
-                                    <Badge variant="success">Resolved</Badge>
-                                )}
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex items-center justify-end gap-sm">
-                                    {issue.status === "open" &&
-                                        (isLeader || isMember) && (
+                                    {issue.description && (
+                                        <p className="mt-0.5 text-[var(--font-base)] text-text-muted">
+                                            {issue.description.slice(0, 80)}
+                                            {issue.description.length > 80
+                                                ? "…"
+                                                : ""}
+                                        </p>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-text-secondary">
+                                    {issue.owner?.name ?? "—"}
+                                </TableCell>
+                                <TableCell>
+                                    {issue.status === "open" ? (
+                                        <Badge variant="error">Open</Badge>
+                                    ) : (
+                                        <Badge variant="success">
+                                            Resolved
+                                        </Badge>
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center justify-end gap-sm">
+                                        {issue.status === "open" &&
+                                            (isLeader || isMember) && (
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        resolve(issue.id)
+                                                    }
+                                                >
+                                                    Solve
+                                                </Button>
+                                            )}
+                                        {isLeader && (
                                             <Button
-                                                variant="secondary"
+                                                variant="danger"
                                                 size="sm"
                                                 onClick={() =>
-                                                    resolve(issue.id)
+                                                    setDeleteId(issue.id)
                                                 }
                                             >
-                                                Solve
+                                                Hapus
                                             </Button>
                                         )}
-                                    {isLeader && (
-                                        <Button
-                                            variant="danger"
-                                            size="sm"
-                                            onClick={() =>
-                                                setDeleteId(issue.id)
-                                            }
-                                        >
-                                            Hapus
-                                        </Button>
-                                    )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </div>
 
             {/* Create Modal */}

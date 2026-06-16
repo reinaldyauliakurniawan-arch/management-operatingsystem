@@ -25,11 +25,11 @@ function PageHeader({
             {...props}
         >
             <div>
-                <h1 className="text-[var(--font-lg)] leading-tight font-semibold tracking-[-0.02em] text-text-primary">
+                <h1 className="text-[length:var(--font-xl)] leading-tight font-semibold tracking-[-0.02em] text-[var(--color-primary)]">
                     {title}
                 </h1>
                 {subtitle && (
-                    <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                    <p className="mt-1 text-[var(--font-base)] leading-relaxed text-text-secondary">
                         {subtitle}
                     </p>
                 )}

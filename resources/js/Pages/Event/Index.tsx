@@ -152,7 +152,7 @@ export default function EventIndex({
                 ].map((s) => (
                     <Card key={s.label}>
                         <CardContent>
-                            <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wide text-text-muted">
+                            <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
                                 {s.label}
                             </p>
                             <p
@@ -166,111 +166,113 @@ export default function EventIndex({
             </div>
 
             <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        {["Event", "Tipe", "Tanggal", "Peserta", ""].map(
-                            (h, i) => (
-                                <TableHead key={i}>{h}</TableHead>
-                            ),
-                        )}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {eventList.length === 0 && (
+                <Table>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={5}>
-                                <EmptyState
-                                    title="Belum ada event"
-                                    description={
-                                        isLeader
-                                            ? "Tambah event pertama untuk tim."
-                                            : "Belum ada event yang dijadwalkan."
-                                    }
-                                />
-                            </TableCell>
+                            {["Event", "Tipe", "Tanggal", "Peserta", ""].map(
+                                (h, i) => (
+                                    <TableHead key={i}>{h}</TableHead>
+                                ),
+                            )}
                         </TableRow>
-                    )}
-                    {eventList.map((ev) => {
-                        const isPast = new Date(ev.event_date) < new Date();
-                        const attended = ev.attendees.filter(
-                            (a) => a.attended,
-                        ).length;
-                        return (
-                            <TableRow key={ev.id}>
-                                <TableCell>
-                                    <p className="text-[var(--font-base)] font-medium text-text-primary">
-                                        {ev.name}
-                                    </p>
-                                    {ev.description && (
-                                        <p className="mt-0.5 text-[var(--font-base)] text-text-muted">
-                                            {ev.description.slice(0, 60)}
-                                            {ev.description.length > 60
-                                                ? "…"
-                                                : ""}
-                                        </p>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <Badge
-                                        variant={
-                                            ev.type === "training"
-                                                ? "success"
-                                                : "info"
+                    </TableHeader>
+                    <TableBody>
+                        {eventList.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={5}>
+                                    <EmptyState
+                                        title="Belum ada event"
+                                        description={
+                                            isLeader
+                                                ? "Tambah event pertama untuk tim."
+                                                : "Belum ada event yang dijadwalkan."
                                         }
-                                    >
-                                        {ev.type}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="whitespace-nowrap text-text-secondary">
-                                    {fmt(ev.event_date)}
-                                </TableCell>
-                                <TableCell className="text-text-secondary">
-                                    {attended}/{ev.attendees.length} hadir
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex items-center justify-end gap-sm">
-                                        {!isPast && !ev.has_attended && (
-                                            <Button
-                                                size="sm"
-                                                className="bg-primary-subtle text-primary-text hover:bg-primary-subtle/70"
-                                                onClick={() =>
-                                                    markAttended(ev.id)
-                                                }
-                                            >
-                                                Hadir
-                                            </Button>
-                                        )}
-                                        {ev.has_attended && (
-                                            <Badge variant="success">
-                                                Hadir ✓
-                                            </Badge>
-                                        )}
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setDetailEvent(ev)}
-                                        >
-                                            Detail
-                                        </Button>
-                                        {isLeader && (
-                                            <Button
-                                                variant="danger"
-                                                size="sm"
-                                                onClick={() =>
-                                                    setDeleteId(ev.id)
-                                                }
-                                            >
-                                                Hapus
-                                            </Button>
-                                        )}
-                                    </div>
+                                    />
                                 </TableCell>
                             </TableRow>
-                        );
-                    })}
-                </TableBody>
-            </Table>
+                        )}
+                        {eventList.map((ev) => {
+                            const isPast = new Date(ev.event_date) < new Date();
+                            const attended = ev.attendees.filter(
+                                (a) => a.attended,
+                            ).length;
+                            return (
+                                <TableRow key={ev.id}>
+                                    <TableCell>
+                                        <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                            {ev.name}
+                                        </p>
+                                        {ev.description && (
+                                            <p className="mt-0.5 text-[var(--font-base)] text-text-muted">
+                                                {ev.description.slice(0, 60)}
+                                                {ev.description.length > 60
+                                                    ? "…"
+                                                    : ""}
+                                            </p>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant={
+                                                ev.type === "training"
+                                                    ? "success"
+                                                    : "info"
+                                            }
+                                        >
+                                            {ev.type}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="whitespace-nowrap text-text-secondary">
+                                        {fmt(ev.event_date)}
+                                    </TableCell>
+                                    <TableCell className="text-text-secondary">
+                                        {attended}/{ev.attendees.length} hadir
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center justify-end gap-sm">
+                                            {!isPast && !ev.has_attended && (
+                                                <Button
+                                                    size="sm"
+                                                    className="bg-primary-subtle text-primary-text hover:bg-primary-subtle/70"
+                                                    onClick={() =>
+                                                        markAttended(ev.id)
+                                                    }
+                                                >
+                                                    Hadir
+                                                </Button>
+                                            )}
+                                            {ev.has_attended && (
+                                                <Badge variant="success">
+                                                    Hadir ✓
+                                                </Badge>
+                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setDetailEvent(ev)
+                                                }
+                                            >
+                                                Detail
+                                            </Button>
+                                            {isLeader && (
+                                                <Button
+                                                    variant="danger"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        setDeleteId(ev.id)
+                                                    }
+                                                >
+                                                    Hapus
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
             </div>
 
             {/* Create Modal */}

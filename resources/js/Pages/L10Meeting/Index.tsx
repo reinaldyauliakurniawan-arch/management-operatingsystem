@@ -122,7 +122,7 @@ export default function L10Index({
                 ].map((s) => (
                     <Card key={s.label}>
                         <CardContent>
-                            <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wide text-text-muted">
+                            <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
                                 {s.label}
                             </p>
                             <p
@@ -136,89 +136,98 @@ export default function L10Index({
             </div>
 
             <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        {[
-                            { key: "meeting", label: "Meeting" },
-                            { key: "jadwal", label: "Jadwal" },
-                            { key: "peserta", label: "Peserta" },
-                            { key: "rating", label: "Rating" },
-                            { key: "status", label: "Status" },
-                            { key: "actions", label: "" },
-                        ].map((h) => (
-                            <TableHead key={h.key}>{h.label}</TableHead>
-                        ))}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {meetingList.length === 0 && (
+                <Table>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={6}>
-                                <EmptyState
-                                    title="Belum ada meeting"
-                                    description={
-                                        isLeader
-                                            ? "Buat meeting pertama untuk tim."
-                                            : "Belum ada meeting yang dijadwalkan."
-                                    }
-                                />
-                            </TableCell>
+                            {[
+                                { key: "meeting", label: "Meeting" },
+                                { key: "jadwal", label: "Jadwal" },
+                                { key: "peserta", label: "Peserta" },
+                                { key: "rating", label: "Rating" },
+                                { key: "status", label: "Status" },
+                                { key: "actions", label: "" },
+                            ].map((h) => (
+                                <TableHead key={h.key}>{h.label}</TableHead>
+                            ))}
                         </TableRow>
-                    )}
-                    {meetingList.map((m) => (
-                        <TableRow key={m.id}>
-                            <TableCell>
-                                <p className="text-[var(--font-base)] font-medium text-text-primary">
-                                    {m.title ?? "L10 Meeting"}
-                                </p>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-text-secondary">
-                                {fmt(m.scheduled_at)}
-                            </TableCell>
-                            <TableCell className="text-text-secondary">
-                                {m.attendees
-                                    .slice(0, 3)
-                                    .map((a) => a.name)
-                                    .join(", ")}
-                                {m.attendees.length > 3
-                                    ? ` +${m.attendees.length - 3}`
-                                    : ""}
-                            </TableCell>
-                            <TableCell className="text-text-secondary">
-                                {m.rating ? (
-                                    <span className="font-medium text-primary-text">
-                                        {m.rating}/10
-                                    </span>
-                                ) : (
-                                    "—"
-                                )}
-                            </TableCell>
-                            <TableCell>
-                                <MeetingStatus m={m} />
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex items-center justify-end gap-sm">
-                                    <Link href={route("l10.workspace", m.id)}>
-                                        <Button variant="secondary" size="sm">
-                                            {m.ended_at ? "Lihat" : "Workspace"}
-                                        </Button>
-                                    </Link>
-                                    {isLeader && (
-                                        <Button
-                                            variant="danger"
-                                            size="sm"
-                                            onClick={() => setDeleteId(m.id)}
-                                        >
-                                            Hapus
-                                        </Button>
+                    </TableHeader>
+                    <TableBody>
+                        {meetingList.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={6}>
+                                    <EmptyState
+                                        title="Belum ada meeting"
+                                        description={
+                                            isLeader
+                                                ? "Buat meeting pertama untuk tim."
+                                                : "Belum ada meeting yang dijadwalkan."
+                                        }
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {meetingList.map((m) => (
+                            <TableRow key={m.id}>
+                                <TableCell>
+                                    <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                        {m.title ?? "L10 Meeting"}
+                                    </p>
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap text-text-secondary">
+                                    {fmt(m.scheduled_at)}
+                                </TableCell>
+                                <TableCell className="text-text-secondary">
+                                    {m.attendees
+                                        .slice(0, 3)
+                                        .map((a) => a.name)
+                                        .join(", ")}
+                                    {m.attendees.length > 3
+                                        ? ` +${m.attendees.length - 3}`
+                                        : ""}
+                                </TableCell>
+                                <TableCell className="text-text-secondary">
+                                    {m.rating ? (
+                                        <span className="font-medium text-primary-text">
+                                            {m.rating}/10
+                                        </span>
+                                    ) : (
+                                        "—"
                                     )}
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                                </TableCell>
+                                <TableCell>
+                                    <MeetingStatus m={m} />
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center justify-end gap-sm">
+                                        <Link
+                                            href={route("l10.workspace", m.id)}
+                                        >
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                            >
+                                                {m.ended_at
+                                                    ? "Lihat"
+                                                    : "Workspace"}
+                                            </Button>
+                                        </Link>
+                                        {isLeader && (
+                                            <Button
+                                                variant="danger"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setDeleteId(m.id)
+                                                }
+                                            >
+                                                Hapus
+                                            </Button>
+                                        )}
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </div>
 
             <ConfirmDialog
