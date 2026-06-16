@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Trophy, TrendingUp, Users, Zap } from "lucide-react";
 import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
 import { useForm, Head, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
@@ -183,7 +184,7 @@ export default function LeaderboardIndex({
             />
 
             {/* Filter */}
-            <div className="mb-xl rounded-[var(--radius-lg)] border border-border bg-surface p-6 flex flex-col md:flex-row items-start md:items-end gap-6">
+            <div className="mb-xl rounded-[var(--radius-lg)] border border-border bg-surface p-4 md:p-6 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6">
                 <div className="flex flex-col gap-2">
                     <span className="text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
                         Periode Cepat
@@ -277,7 +278,7 @@ export default function LeaderboardIndex({
                                 {group.entries.length} peserta
                             </div>
                         </div>
-                        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
+                        <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-border bg-surface">
                             <table className="w-full border-collapse">
                                 <thead>
                                     <tr className="border-b border-border bg-surface-subtle">
@@ -303,8 +304,8 @@ export default function LeaderboardIndex({
                                                     {idx === 0 ? (
                                                         <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[var(--font-base)] font-bold text-white">
                                                             1
-                                                            <span className="absolute -right-1 -top-2 text-[var(--font-base)]">
-                                                                🏆
+                                                            <span className="absolute -right-1 -top-2">
+                                                                <Trophy className="h-3.5 w-3.5 text-primary" />
                                                             </span>
                                                         </div>
                                                     ) : (
@@ -439,30 +440,30 @@ export default function LeaderboardIndex({
 
                 {/* Insight Cards */}
                 {scores.length > 0 && (
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                         {[
                             {
                                 label: "Top Scorer",
                                 value: `${scores[0]?.name ?? "-"} (${scores[0]?.score ?? 0})`,
-                                icon: "📈",
+                                icon: TrendingUp,
                             },
                             {
                                 label: "Total Peserta",
                                 value: `${scores.length} Members`,
-                                icon: "👥",
+                                icon: Users,
                             },
                             {
                                 label: "Rata-rata Score",
                                 value: `${scores.length ? (scores.reduce((a, b) => a + b.score, 0) / scores.length).toFixed(1) : 0} pts`,
-                                icon: "⚡",
+                                icon: Zap,
                             },
                         ].map((card) => (
                             <div
                                 key={card.label}
                                 className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-surface p-6"
                             >
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-subtle text-[var(--font-lg)]">
-                                    {card.icon}
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-subtle">
+                                    <card.icon className="h-5 w-5 text-primary" />
                                 </div>
                                 <div>
                                     <p className="text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">

@@ -170,7 +170,7 @@ export default function RocksIndex({
             />
 
             {/* Stats */}
-            <div className="mb-xl grid grid-cols-4 gap-lg">
+            <div className="mb-xl grid grid-cols-2 md:grid-cols-4 gap-lg">
                 {[
                     {
                         label: "Total",
@@ -211,6 +211,7 @@ export default function RocksIndex({
                 ))}
             </div>
 
+            <div className="overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -323,6 +324,7 @@ export default function RocksIndex({
                     ))}
                 </TableBody>
             </Table>
+            </div>
 
             {/* Create Modal */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>

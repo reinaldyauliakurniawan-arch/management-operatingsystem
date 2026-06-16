@@ -137,7 +137,7 @@ export default function EventIndex({
             />
 
             {/* Stats */}
-            <div className="mb-xl grid max-w-sm grid-cols-2 gap-lg">
+            <div className="mb-xl grid grid-cols-2 max-w-sm gap-lg">
                 {[
                     {
                         label: "Mendatang",
@@ -165,6 +165,7 @@ export default function EventIndex({
                 ))}
             </div>
 
+            <div className="overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -270,6 +271,7 @@ export default function EventIndex({
                     })}
                 </TableBody>
             </Table>
+            </div>
 
             {/* Create Modal */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>

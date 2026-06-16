@@ -222,6 +222,7 @@ export default function ScorecardIndex({
                 }
             />
 
+            <div className="overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -331,6 +332,7 @@ export default function ScorecardIndex({
                     ))}
                 </TableBody>
             </Table>
+            </div>
 
             {/* Create Modal */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>

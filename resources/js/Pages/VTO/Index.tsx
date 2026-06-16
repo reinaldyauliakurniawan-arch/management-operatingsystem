@@ -620,7 +620,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                         <Empty canEdit={canEdit} />
                                     )}
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border">
                                     <div>
                                         <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
                                             3 Uniques
@@ -917,7 +917,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
 
                         {editTarget?.type === "three_year_picture" && (
                             <div className="flex flex-col gap-md">
-                                <div className="grid grid-cols-2 gap-md">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
                                     <div className="flex flex-col gap-xs">
                                         <Label>Target Date</Label>
                                         <Input
@@ -976,7 +976,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
 
                         {editTarget?.type === "one_year_plan" && (
                             <div className="flex flex-col gap-md">
-                                <div className="grid grid-cols-2 gap-md">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
                                     <div className="flex flex-col gap-xs">
                                         <Label>Target Date</Label>
                                         <Input

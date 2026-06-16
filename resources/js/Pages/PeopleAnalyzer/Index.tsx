@@ -457,6 +457,7 @@ export default function PeopleAnalyzerIndex({
                     </CardContent>
                 </Card>
             ) : (
+                <div className="overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -559,6 +560,7 @@ export default function PeopleAnalyzerIndex({
                         ))}
                     </TableBody>
                 </Table>
+                </div>
             )}
 
             {/* Create Modal */}

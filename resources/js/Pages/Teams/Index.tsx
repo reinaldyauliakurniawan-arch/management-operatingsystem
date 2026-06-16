@@ -319,7 +319,7 @@ export default function TeamsIndex({
             <div className="flex gap-1 mb-4 border-b border-border">
                 <button
                     onClick={() => setTab("teams")}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    className={`px-4 py-2 text-[var(--font-base)] font-medium border-b-2 transition-colors ${
                         tab === "teams"
                             ? "border-primary text-primary"
                             : "border-transparent text-text-muted hover:text-text-primary"
@@ -329,7 +329,7 @@ export default function TeamsIndex({
                 </button>
                 <button
                     onClick={() => setTab("users")}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    className={`px-4 py-2 text-[var(--font-base)] font-medium border-b-2 transition-colors ${
                         tab === "users"
                             ? "border-primary text-primary"
                             : "border-transparent text-text-muted hover:text-text-primary"

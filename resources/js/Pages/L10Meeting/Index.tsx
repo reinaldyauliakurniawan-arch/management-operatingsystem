@@ -85,7 +85,7 @@ export default function L10Index({
 
             {/* Ongoing alert */}
             {ongoing && (
-                <div className="mb-xl flex items-center justify-between rounded-lg border border-warning bg-warning-subtle px-xl py-md">
+                <div className="mb-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-md rounded-lg border border-warning bg-warning-subtle px-xl py-md">
                     <div>
                         <p className="text-[var(--font-base)] font-semibold text-warning-text">
                             Meeting sedang berlangsung
@@ -102,7 +102,7 @@ export default function L10Index({
             )}
 
             {/* Stats */}
-            <div className="mb-xl grid grid-cols-3 gap-lg">
+            <div className="mb-xl grid grid-cols-1 sm:grid-cols-3 gap-lg">
                 {[
                     {
                         label: "Terjadwal",
@@ -135,6 +135,7 @@ export default function L10Index({
                 ))}
             </div>
 
+            <div className="overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -218,6 +219,7 @@ export default function L10Index({
                     ))}
                 </TableBody>
             </Table>
+            </div>
 
             <ConfirmDialog
                 open={deleteId !== null}

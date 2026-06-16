@@ -144,7 +144,7 @@ export default function Dashboard({
             {isLeader && (
                 <>
                     <SectionLabel>Rocks Tim</SectionLabel>
-                    <div className="mb-2xl grid grid-cols-4 gap-lg">
+                    <div className="mb-2xl grid grid-cols-2 md:grid-cols-4 gap-lg">
                         <StatCard
                             label="Total Rocks"
                             value={stats.rocks_total}
@@ -175,7 +175,7 @@ export default function Dashboard({
                     </div>
 
                     <SectionLabel>Weekly Pulse</SectionLabel>
-                    <div className="mb-2xl grid grid-cols-3 gap-lg">
+                    <div className="mb-2xl grid grid-cols-1 sm:grid-cols-3 gap-lg">
                         <StatCard
                             label="Scorecard Merah"
                             value={stats.scorecard_red}
@@ -208,7 +208,7 @@ export default function Dashboard({
                         />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
                         {/* Upcoming meeting */}
                         <Card>
                             <CardContent>
@@ -363,7 +363,7 @@ export default function Dashboard({
                             </Card>
                         </>
                     )}
-                    <div className="mb-xl grid grid-cols-3 gap-lg">
+                    <div className="mb-xl grid grid-cols-1 sm:grid-cols-3 gap-lg">
                         <StatCard
                             label="Rocks Saya (On Track)"
                             value={stats.rocks_on_track}
@@ -402,7 +402,7 @@ export default function Dashboard({
             {/* TUTOR VIEW */}
             {isTutor && (
                 <>
-                    <div className="mb-xl grid grid-cols-2 gap-lg">
+                    <div className="mb-xl grid grid-cols-1 sm:grid-cols-2 gap-lg">
                         <StatCard
                             label="To-Do Hari Ini"
                             value={stats.todos_due_today}
@@ -466,7 +466,7 @@ function MemberBottomSection({
     } | null;
 }) {
     return (
-        <div className="grid grid-cols-2 gap-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-lg">
             <Card>
                 <CardContent>
                     <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">

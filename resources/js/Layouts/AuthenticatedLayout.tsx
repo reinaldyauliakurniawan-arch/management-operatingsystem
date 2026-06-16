@@ -118,6 +118,7 @@ export default function Authenticated({
     const activeTeamId = auth.activeTeamId;
     const activeTeam = userTeams.find((t: any) => t.id === activeTeamId);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     const switchTeam = (teamId: string) => {
         router.post(
@@ -128,11 +129,22 @@ export default function Authenticated({
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-surface-subtle">
+        <div className="relative flex h-screen overflow-hidden bg-surface-subtle">
+            {/* Mobile overlay */}
+            {mobileOpen && (
+                <div
+                    className="fixed inset-0 z-30 bg-black/40 md:hidden"
+                    onClick={() => setMobileOpen(false)}
+                />
+            )}
             {/* Sidebar */}
             <aside
-                className="sticky top-0 flex flex-col overflow-x-hidden shrink-0 h-screen bg-surface-subtle border-r border-border transition-[width] duration-200 ease-in-out"
-                style={{ width: sidebarOpen ? 240 : 56 }}
+                className={`flex flex-col overflow-x-hidden shrink-0 h-screen bg-surface-subtle border-r border-border transition-all duration-200 ease-in-out z-40 ${
+                    mobileOpen
+                        ? "fixed inset-y-0 left-0 w-60 shadow-[var(--shadow-lg)]"
+                        : "hidden md:sticky md:top-0 md:flex"
+                }`}
+                style={{ width: mobileOpen ? undefined : sidebarOpen ? 240 : 56 }}
             >
                 {/* Team Switcher */}
                 <div className="border-b border-border p-md">
@@ -255,9 +267,20 @@ export default function Authenticated({
             <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
                 {/* Topbar */}
                 <header className="h-12 shrink-0 min-w-0 flex items-center gap-md px-xl bg-surface border-b border-border shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                    {/* Mobile hamburger */}
+                    <button
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                        className="flex md:hidden items-center p-xs bg-transparent border-none cursor-pointer text-text-muted hover:text-text-primary"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <rect y="2" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                            <rect y="7.25" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                            <rect y="12.5" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                        </svg>
+                    </button>
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
-                        className="flex items-center p-xs bg-transparent border-none cursor-pointer text-text-muted transition-colors duration-150 hover:text-text-primary"
+                        className="hidden md:flex items-center p-xs bg-transparent border-none cursor-pointer text-text-muted transition-colors duration-150 hover:text-text-primary"
                     >
                         <svg
                             width="16"

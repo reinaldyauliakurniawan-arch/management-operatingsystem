@@ -106,7 +106,7 @@ export default function IDSIndex({
             />
 
             {/* Stats */}
-            <div className="mb-xl grid max-w-md grid-cols-2 gap-lg">
+            <div className="mb-xl grid grid-cols-2 max-w-md gap-lg">
                 {[
                     {
                         label: "Open",
@@ -135,6 +135,7 @@ export default function IDSIndex({
                 ))}
             </div>
 
+            <div className="overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -228,6 +229,7 @@ export default function IDSIndex({
                     ))}
                 </TableBody>
             </Table>
+            </div>
 
             {/* Create Modal */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>

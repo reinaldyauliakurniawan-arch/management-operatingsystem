@@ -112,7 +112,7 @@ export default function ToDoIndex({
             />
 
             {/* Stats */}
-            <div className="mb-xl grid grid-cols-3 gap-lg">
+            <div className="mb-xl grid grid-cols-1 sm:grid-cols-3 gap-lg">
                 {[
                     {
                         label: "Pending",
@@ -148,6 +148,7 @@ export default function ToDoIndex({
                 ))}
             </div>
 
+            <div className="overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -231,6 +232,7 @@ export default function ToDoIndex({
                     ))}
                 </TableBody>
             </Table>
+            </div>
 
             {/* Create Modal */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
