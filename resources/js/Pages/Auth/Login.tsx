@@ -28,7 +28,7 @@ export default function Login({
             <Head title="Masuk" />
 
             {status && (
-                <p className="mb-lg text-[13px] font-medium text-primary">
+                <p className="mb-lg text-[var(--font-base)] font-medium text-primary">
                     {status}
                 </p>
             )}
@@ -46,7 +46,7 @@ export default function Login({
                         aria-invalid={!!errors.email}
                     />
                     {errors.email && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.email}
                         </p>
                     )}
@@ -58,7 +58,7 @@ export default function Login({
                         {canResetPassword && (
                             <Link
                                 href={route("password.request")}
-                                className="text-[12px] text-text-muted hover:text-primary-text transition-colors"
+                                className="text-[var(--font-base)] text-text-muted hover:text-primary-text transition-colors"
                             >
                                 Lupa password?
                             </Link>
@@ -73,7 +73,7 @@ export default function Login({
                         aria-invalid={!!errors.password}
                     />
                     {errors.password && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.password}
                         </p>
                     )}
@@ -88,7 +88,7 @@ export default function Login({
                         }
                         className="h-4 w-4 rounded accent-primary"
                     />
-                    <span className="text-[13px] text-text-secondary">
+                    <span className="text-[var(--font-base)] text-text-secondary">
                         Ingat saya
                     </span>
                 </label>
@@ -97,7 +97,7 @@ export default function Login({
                     {processing ? "Masuk…" : "Masuk"}
                 </Button>
 
-                <p className="text-center text-[13px] text-text-muted">
+                <p className="text-center text-[var(--font-base)] text-text-muted">
                     Belum punya akun?{" "}
                     <Link
                         href={route("register")}

@@ -27,10 +27,10 @@ export default function UpdateProfileInformationForm({
 
     return (
         <section className={className}>
-            <h2 className="mb-xs text-[14px] font-semibold tracking-tight text-text-primary">
+            <h2 className="mb-xs text-[var(--font-base)] font-semibold tracking-tight text-text-primary">
                 Informasi Profil
             </h2>
-            <p className="mb-lg text-[13px] text-text-secondary">
+            <p className="mb-lg text-[var(--font-base)] text-text-secondary">
                 Perbarui nama dan alamat email akun kamu.
             </p>
 
@@ -46,7 +46,7 @@ export default function UpdateProfileInformationForm({
                         aria-invalid={!!errors.name}
                     />
                     {errors.name && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.name}
                         </p>
                     )}
@@ -64,7 +64,7 @@ export default function UpdateProfileInformationForm({
                         aria-invalid={!!errors.email}
                     />
                     {errors.email && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.email}
                         </p>
                     )}
@@ -72,7 +72,7 @@ export default function UpdateProfileInformationForm({
 
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div>
-                        <p className="text-[13px] text-text-secondary">
+                        <p className="text-[var(--font-base)] text-text-secondary">
                             Email belum diverifikasi.{" "}
                             <Link
                                 href={route("verification.send")}
@@ -84,7 +84,7 @@ export default function UpdateProfileInformationForm({
                             </Link>
                         </p>
                         {status === "verification-link-sent" && (
-                            <p className="mt-sm text-[13px] font-medium text-primary">
+                            <p className="mt-sm text-[var(--font-base)] font-medium text-primary">
                                 Link verifikasi baru sudah dikirim.
                             </p>
                         )}
@@ -96,7 +96,7 @@ export default function UpdateProfileInformationForm({
                         Simpan
                     </Button>
                     {recentlySuccessful && (
-                        <p className="text-[13px] text-primary">Tersimpan.</p>
+                        <p className="text-[var(--font-base)] text-primary">Tersimpan.</p>
                     )}
                 </div>
             </form>

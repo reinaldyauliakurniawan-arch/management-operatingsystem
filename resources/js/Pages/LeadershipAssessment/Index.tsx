@@ -153,7 +153,7 @@ export default function LeadershipAssessmentIndex({
             {/* Pending assessments for current user */}
             {pendingAssignments.length > 0 && (
                 <div className="mb-xl">
-                    <p className="mb-md text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                    <p className="mb-md text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                         Assessment Menunggu Kamu
                     </p>
                     <div className="flex flex-col gap-sm">
@@ -163,10 +163,10 @@ export default function LeadershipAssessmentIndex({
                                 className="flex items-center justify-between rounded-lg border border-border bg-surface px-lg py-md"
                             >
                                 <div>
-                                    <p className="text-[13px] font-medium text-text-primary">
+                                    <p className="text-[var(--font-base)] font-medium text-text-primary">
                                         {a.user.name}
                                     </p>
-                                    <p className="text-[12px] text-text-muted">
+                                    <p className="text-[var(--font-base)] text-text-muted">
                                         {a.type.name}
                                     </p>
                                 </div>
@@ -204,11 +204,11 @@ export default function LeadershipAssessmentIndex({
                         <div key={cycle.id}>
                             <div className="mb-md flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-[14px] font-semibold tracking-tight text-text-primary">
+                                    <h2 className="text-[var(--font-base)] font-semibold tracking-tight text-text-primary">
                                         {cycle.name}
                                     </h2>
                                     {cycle.period && (
-                                        <p className="text-[12px] text-text-muted">
+                                        <p className="text-[var(--font-base)] text-text-muted">
                                             {cycle.period}
                                         </p>
                                     )}
@@ -364,7 +364,7 @@ export default function LeadershipAssessmentIndex({
                                     aria-invalid={!!cycleForm.errors.name}
                                 />
                                 {cycleForm.errors.name && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {cycleForm.errors.name}
                                     </p>
                                 )}

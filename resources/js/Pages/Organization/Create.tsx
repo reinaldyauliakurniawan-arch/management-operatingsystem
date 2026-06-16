@@ -20,10 +20,10 @@ export default function OrganizationCreate() {
 
             <div className="mx-auto w-full max-w-md">
                 <div className="mb-xl">
-                    <h1 className="text-[24px] font-semibold tracking-tight text-text-primary">
+                    <h1 className="text-[var(--font-lg)] font-semibold tracking-tight text-text-primary">
                         Buat Organization
                     </h1>
-                    <p className="mt-xs text-[14px] text-text-secondary">
+                    <p className="mt-xs text-[var(--font-base)] text-text-secondary">
                         Mulai dengan membuat organization untuk tim kamu.
                     </p>
                 </div>
@@ -40,7 +40,7 @@ export default function OrganizationCreate() {
                             required
                         />
                         {errors.name && (
-                            <p className="text-[12px] text-error-text">
+                            <p className="text-[var(--font-base)] text-error-text">
                                 {errors.name}
                             </p>
                         )}

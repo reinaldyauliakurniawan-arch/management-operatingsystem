@@ -96,7 +96,7 @@ function SeatFitBadge({ fit }: { fit: string }) {
 function GwcDot({ value }: { value: boolean }) {
     return (
         <span
-            className={`inline-flex items-center gap-xs text-[12px] font-medium ${value ? "text-primary" : "text-error-text"}`}
+            className={`inline-flex items-center gap-xs text-[var(--font-base)] font-medium ${value ? "text-primary" : "text-error-text"}`}
         >
             <span
                 className={`inline-block size-1.5 rounded-full ${value ? "bg-primary" : "bg-error"}`}
@@ -114,7 +114,7 @@ function SymbolBadge({ symbol }: { symbol: "+" | "+/-" | "-" }) {
     };
     return (
         <span
-            className={`rounded-xs px-sm py-0.5 text-[11px] font-semibold ${styles[symbol]}`}
+            className={`rounded-xs px-sm py-0.5 text-[var(--font-sm)] font-semibold ${styles[symbol]}`}
         >
             {symbol}
         </span>
@@ -261,7 +261,7 @@ export default function PeopleAnalyzerIndex({
                         ))}
                     </Select>
                     {evalForm.errors.evaluatee_id && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {evalForm.errors.evaluatee_id}
                         </p>
                     )}
@@ -294,7 +294,7 @@ export default function PeopleAnalyzerIndex({
                                     key={key}
                                     className="flex cursor-pointer items-center justify-between"
                                 >
-                                    <span className="text-[13px] text-text-primary">
+                                    <span className="text-[var(--font-base)] text-text-primary">
                                         {labels[key]}
                                     </span>
                                     <div className="flex gap-sm">
@@ -308,7 +308,7 @@ export default function PeopleAnalyzerIndex({
                                                         opt === "Y",
                                                     )
                                                 }
-                                                className={`rounded-xs px-md py-xs text-[12px] font-semibold transition-colors ${
+                                                className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${
                                                     evalForm.data[key] ===
                                                     (opt === "Y")
                                                         ? opt === "Y"
@@ -367,7 +367,7 @@ export default function PeopleAnalyzerIndex({
                                 <button
                                     type="button"
                                     onClick={() => removeCoreValue(i)}
-                                    className="text-[12px] text-text-muted hover:text-error-text transition-colors"
+                                    className="text-[var(--font-base)] text-text-muted hover:text-error-text transition-colors"
                                 >
                                     ✕
                                 </button>
@@ -416,11 +416,11 @@ export default function PeopleAnalyzerIndex({
             {/* Standard info strip */}
             {standard && (
                 <div className="mb-xl flex flex-wrap items-center gap-lg rounded-lg border border-border bg-surface-subtle px-lg py-md">
-                    <p className="text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                    <p className="text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                         Bare Minimum Standard
                     </p>
                     <div className="flex flex-wrap gap-md">
-                        <span className="text-[13px] text-text-secondary">
+                        <span className="text-[var(--font-base)] text-text-secondary">
                             Core Values: min{" "}
                             <span className="font-semibold text-primary">
                                 {standard.min_plus}×(+)
@@ -434,7 +434,7 @@ export default function PeopleAnalyzerIndex({
                                 {standard.max_minus}×(-)
                             </span>
                         </span>
-                        <span className="text-[13px] text-text-secondary">
+                        <span className="text-[var(--font-base)] text-text-secondary">
                             GWC: Get={standard.gwc_get ? "Y" : "N"} · Want=
                             {standard.gwc_want ? "Y" : "N"} · Capacity=
                             {standard.gwc_capacity}
@@ -476,10 +476,10 @@ export default function PeopleAnalyzerIndex({
                         {evaluations.map((ev) => (
                             <TableRow key={ev.id}>
                                 <TableCell>
-                                    <p className="text-[13px] font-medium text-text-primary">
+                                    <p className="text-[var(--font-base)] font-medium text-text-primary">
                                         {ev.evaluatee.name}
                                     </p>
-                                    <p className="text-[12px] text-text-muted">
+                                    <p className="text-[var(--font-base)] text-text-muted">
                                         by {ev.evaluator.name}
                                     </p>
                                 </TableCell>
@@ -488,13 +488,13 @@ export default function PeopleAnalyzerIndex({
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex flex-col gap-xs">
-                                        <span className="text-[11px] text-text-muted">
+                                        <span className="text-[var(--font-sm)] text-text-muted">
                                             G: <GwcDot value={ev.gwc_get} />
                                         </span>
-                                        <span className="text-[11px] text-text-muted">
+                                        <span className="text-[var(--font-sm)] text-text-muted">
                                             W: <GwcDot value={ev.gwc_want} />
                                         </span>
-                                        <span className="text-[11px] text-text-muted">
+                                        <span className="text-[var(--font-sm)] text-text-muted">
                                             C:{" "}
                                             <GwcDot value={ev.gwc_capacity} />
                                         </span>
@@ -507,7 +507,7 @@ export default function PeopleAnalyzerIndex({
                                                 key={i}
                                                 className="flex items-center gap-xs"
                                             >
-                                                <span className="text-[12px] text-text-secondary">
+                                                <span className="text-[var(--font-base)] text-text-secondary">
                                                     {cv.value}
                                                 </span>
                                                 <SymbolBadge
@@ -638,10 +638,10 @@ export default function PeopleAnalyzerIndex({
                             <div className="flex flex-col gap-lg">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-[12px] text-text-muted">
+                                        <p className="text-[var(--font-base)] text-text-muted">
                                             Periode
                                         </p>
-                                        <p className="text-[13px] text-text-primary">
+                                        <p className="text-[var(--font-base)] text-text-primary">
                                             {detailEval.period ?? "—"}
                                         </p>
                                     </div>
@@ -654,7 +654,7 @@ export default function PeopleAnalyzerIndex({
                                 </div>
 
                                 <div>
-                                    <p className="mb-sm text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                                    <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                         GWC
                                     </p>
                                     <div className="flex flex-col gap-xs rounded-lg border border-border bg-surface-raised p-md">
@@ -676,7 +676,7 @@ export default function PeopleAnalyzerIndex({
                                                 key={label}
                                                 className="flex items-center justify-between"
                                             >
-                                                <span className="text-[13px] text-text-secondary">
+                                                <span className="text-[var(--font-base)] text-text-secondary">
                                                     {label}
                                                 </span>
                                                 <GwcDot value={val} />
@@ -686,7 +686,7 @@ export default function PeopleAnalyzerIndex({
                                 </div>
 
                                 <div>
-                                    <p className="mb-sm text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                                    <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                         Core Values
                                     </p>
                                     <div className="flex flex-col gap-sm">
@@ -696,7 +696,7 @@ export default function PeopleAnalyzerIndex({
                                                     key={i}
                                                     className="flex items-center justify-between rounded-lg border border-border px-md py-sm"
                                                 >
-                                                    <span className="text-[13px] text-text-primary">
+                                                    <span className="text-[var(--font-base)] text-text-primary">
                                                         {cv.value}
                                                     </span>
                                                     <SymbolBadge
@@ -712,16 +712,16 @@ export default function PeopleAnalyzerIndex({
 
                                 {detailEval.notes && (
                                     <div>
-                                        <p className="mb-sm text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                                        <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                             Catatan
                                         </p>
-                                        <p className="text-[13px] text-text-secondary whitespace-pre-line">
+                                        <p className="text-[var(--font-base)] text-text-secondary whitespace-pre-line">
                                             {detailEval.notes}
                                         </p>
                                     </div>
                                 )}
 
-                                <p className="text-[12px] text-text-muted">
+                                <p className="text-[var(--font-base)] text-text-muted">
                                     Dievaluasi oleh {detailEval.evaluator.name}
                                 </p>
                             </div>
@@ -749,7 +749,7 @@ export default function PeopleAnalyzerIndex({
                             onSubmit={submitStandard}
                             className="flex flex-col gap-lg"
                         >
-                            <p className="text-[13px] text-text-secondary">
+                            <p className="text-[var(--font-base)] text-text-secondary">
                                 Tentukan threshold minimum untuk lulus evaluasi.
                                 Skor dihitung dari core values dan GWC.
                             </p>
@@ -816,7 +816,7 @@ export default function PeopleAnalyzerIndex({
                                             key={key}
                                             className="flex items-center justify-between"
                                         >
-                                            <span className="text-[13px] text-text-secondary">
+                                            <span className="text-[var(--font-base)] text-text-secondary">
                                                 {label} harus Y?
                                             </span>
                                             <div className="flex gap-sm">
@@ -830,7 +830,7 @@ export default function PeopleAnalyzerIndex({
                                                                 opt === "Y",
                                                             )
                                                         }
-                                                        className={`rounded-xs px-md py-xs text-[12px] font-semibold transition-colors ${
+                                                        className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${
                                                             stdForm.data[
                                                                 key
                                                             ] ===
@@ -848,7 +848,7 @@ export default function PeopleAnalyzerIndex({
                                         </div>
                                     ))}
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[13px] text-text-secondary">
+                                        <span className="text-[var(--font-base)] text-text-secondary">
                                             Capacity harus Y?
                                         </span>
                                         <div className="flex gap-sm">
@@ -862,7 +862,7 @@ export default function PeopleAnalyzerIndex({
                                                             opt,
                                                         )
                                                     }
-                                                    className={`rounded-xs px-md py-xs text-[12px] font-semibold transition-colors ${
+                                                    className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${
                                                         stdForm.data
                                                             .gwc_capacity ===
                                                         opt

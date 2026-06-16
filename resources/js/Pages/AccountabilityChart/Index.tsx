@@ -61,20 +61,20 @@ function SeatCard({
             <div className="group w-[260px] rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-xs)] transition-all duration-200 hover:border-primary hover:bg-surface-subtle">
                 {/* role label + actions */}
                 <div className="mb-3 flex items-start justify-between">
-                    <span className="text-[11px] font-semibold uppercase tracking-widest text-primary opacity-70">
+                    <span className="text-[var(--font-sm)] font-semibold uppercase tracking-widest text-primary opacity-70">
                         {depth === 0 ? "Root" : `Level ${depth}`}
                     </span>
                     {(isLeader || isOrgAdmin) && (
                         <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                             <button
                                 onClick={() => onEdit(seat)}
-                                className="rounded px-2 py-0.5 text-[11px] font-medium text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
+                                className="rounded px-2 py-0.5 text-[var(--font-sm)] font-medium text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
                             >
                                 Edit
                             </button>
                             <button
                                 onClick={() => onDelete(seat.id)}
-                                className="rounded px-2 py-0.5 text-[11px] font-medium text-error hover:bg-error-subtle"
+                                className="rounded px-2 py-0.5 text-[var(--font-sm)] font-medium text-error hover:bg-error-subtle"
                             >
                                 Hapus
                             </button>
@@ -83,17 +83,17 @@ function SeatCard({
                 </div>
 
                 {/* title */}
-                <h3 className="text-[15px] font-semibold leading-snug tracking-tight text-text-primary">
+                <h3 className="text-[var(--font-md)] font-semibold leading-snug tracking-tight text-text-primary">
                     {seat.title}
                 </h3>
 
                 {/* person */}
                 {seat.user ? (
-                    <p className="mt-1 text-[13px] text-text-secondary">
+                    <p className="mt-1 text-[var(--font-base)] text-text-secondary">
                         {seat.user.name}
                     </p>
                 ) : (
-                    <p className="mt-1 text-[13px] italic text-text-muted">
+                    <p className="mt-1 text-[var(--font-base)] italic text-text-muted">
                         Belum terisi
                     </p>
                 )}
@@ -104,7 +104,7 @@ function SeatCard({
                         {seat.responsibilities.map((r, i) => (
                             <li
                                 key={i}
-                                className="flex items-start gap-2 text-[12px] leading-snug text-text-secondary"
+                                className="flex items-start gap-2 text-[var(--font-base)] leading-snug text-text-secondary"
                             >
                                 <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
                                 {r}
@@ -279,7 +279,7 @@ export default function AccountabilityChartIndex({
                     aria-invalid={!!errors.title}
                 />
                 {errors.title && (
-                    <p className="text-[12px] text-error-text">
+                    <p className="text-[var(--font-base)] text-error-text">
                         {errors.title}
                     </p>
                 )}
@@ -332,7 +332,7 @@ export default function AccountabilityChartIndex({
 
     const NewUserForm = () => (
         <div className="flex flex-col gap-lg">
-            <div className="rounded-sm bg-info-subtle px-md py-sm text-[12px] text-info-text">
+            <div className="rounded-sm bg-info-subtle px-md py-sm text-[var(--font-base)] text-info-text">
                 User baru akan dibuat dengan password default{" "}
                 <strong>member123</strong>. Mereka bisa mengubah password
                 sendiri setelah login.
@@ -346,7 +346,7 @@ export default function AccountabilityChartIndex({
                     aria-invalid={!!errors.new_user_name}
                 />
                 {errors.new_user_name && (
-                    <p className="text-[12px] text-error-text">
+                    <p className="text-[var(--font-base)] text-error-text">
                         {errors.new_user_name}
                     </p>
                 )}
@@ -361,7 +361,7 @@ export default function AccountabilityChartIndex({
                     aria-invalid={!!errors.new_user_email}
                 />
                 {errors.new_user_email && (
-                    <p className="text-[12px] text-error-text">
+                    <p className="text-[var(--font-base)] text-error-text">
                         {errors.new_user_email}
                     </p>
                 )}
@@ -386,7 +386,7 @@ export default function AccountabilityChartIndex({
                     aria-invalid={!!errors.title}
                 />
                 {errors.title && (
-                    <p className="text-[12px] text-error-text">
+                    <p className="text-[var(--font-base)] text-error-text">
                         {errors.title}
                     </p>
                 )}
@@ -422,7 +422,7 @@ export default function AccountabilityChartIndex({
                             <button
                                 type="button"
                                 onClick={() => toggleBigPicture(false)}
-                                className={`px-md py-xs text-[12px] font-medium transition-colors ${
+                                className={`px-md py-xs text-[var(--font-base)] font-medium transition-colors ${
                                     !bigPicture
                                         ? "bg-primary text-text-inverse"
                                         : "bg-surface text-text-secondary hover:bg-surface-overlay"
@@ -433,7 +433,7 @@ export default function AccountabilityChartIndex({
                             <button
                                 type="button"
                                 onClick={() => toggleBigPicture(true)}
-                                className={`px-md py-xs text-[12px] font-medium transition-colors ${
+                                className={`px-md py-xs text-[var(--font-base)] font-medium transition-colors ${
                                     bigPicture
                                         ? "bg-primary text-text-inverse"
                                         : "bg-surface text-text-secondary hover:bg-surface-overlay"
@@ -497,7 +497,7 @@ export default function AccountabilityChartIndex({
                             <button
                                 type="button"
                                 onClick={() => setTab("existing")}
-                                className={`flex-1 py-xs text-[12px] font-medium transition-colors ${
+                                className={`flex-1 py-xs text-[var(--font-base)] font-medium transition-colors ${
                                     tab === "existing"
                                         ? "bg-primary text-text-inverse"
                                         : "bg-surface text-text-secondary hover:bg-surface-overlay"
@@ -508,7 +508,7 @@ export default function AccountabilityChartIndex({
                             <button
                                 type="button"
                                 onClick={() => setTab("new")}
-                                className={`flex-1 py-xs text-[12px] font-medium transition-colors ${
+                                className={`flex-1 py-xs text-[var(--font-base)] font-medium transition-colors ${
                                     tab === "new"
                                         ? "bg-primary text-text-inverse"
                                         : "bg-surface text-text-secondary hover:bg-surface-overlay"

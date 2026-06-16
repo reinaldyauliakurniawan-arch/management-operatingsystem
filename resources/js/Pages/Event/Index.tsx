@@ -152,11 +152,11 @@ export default function EventIndex({
                 ].map((s) => (
                     <Card key={s.label}>
                         <CardContent>
-                            <p className="mb-sm text-[12px] font-medium uppercase tracking-wide text-text-muted">
+                            <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wide text-text-muted">
                                 {s.label}
                             </p>
                             <p
-                                className={`text-[32px] font-semibold leading-none tracking-tight ${s.valueClass}`}
+                                className={`text-[var(--font-2xl)] font-semibold leading-none tracking-tight ${s.valueClass}`}
                             >
                                 {s.value}
                             </p>
@@ -198,11 +198,11 @@ export default function EventIndex({
                         return (
                             <TableRow key={ev.id}>
                                 <TableCell>
-                                    <p className="text-[13px] font-medium text-text-primary">
+                                    <p className="text-[var(--font-base)] font-medium text-text-primary">
                                         {ev.name}
                                     </p>
                                     {ev.description && (
-                                        <p className="mt-0.5 text-[12px] text-text-muted">
+                                        <p className="mt-0.5 text-[var(--font-base)] text-text-muted">
                                             {ev.description.slice(0, 60)}
                                             {ev.description.length > 60
                                                 ? "…"
@@ -295,7 +295,7 @@ export default function EventIndex({
                                     aria-invalid={!!errors.name}
                                 />
                                 {errors.name && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {errors.name}
                                     </p>
                                 )}
@@ -336,7 +336,7 @@ export default function EventIndex({
                                         aria-invalid={!!errors.event_date}
                                     />
                                     {errors.event_date && (
-                                        <p className="text-[12px] text-error-text">
+                                        <p className="text-[var(--font-base)] text-error-text">
                                             {errors.event_date}
                                         </p>
                                     )}
@@ -368,8 +368,8 @@ export default function EventIndex({
                                                 data.assigned_user_ids.includes(
                                                     u.id,
                                                 )
-                                                    ? "rounded-xs bg-primary-subtle px-2 py-0.5 text-[12px] font-medium text-primary-text"
-                                                    : "rounded-xs bg-surface-raised px-2 py-0.5 text-[12px] font-medium text-text-secondary"
+                                                    ? "rounded-xs bg-primary-subtle px-2 py-0.5 text-[var(--font-base)] font-medium text-primary-text"
+                                                    : "rounded-xs bg-surface-raised px-2 py-0.5 text-[var(--font-base)] font-medium text-text-secondary"
                                             }
                                         >
                                             {u.name}
@@ -418,7 +418,7 @@ export default function EventIndex({
                                 >
                                     {detailEvent.type}
                                 </Badge>
-                                <span className="text-[12px] text-text-muted">
+                                <span className="text-[var(--font-base)] text-text-muted">
                                     {fmt(detailEvent.event_date)}
                                 </span>
                             </div>
@@ -428,12 +428,12 @@ export default function EventIndex({
                                 </p>
                             )}
                             <div>
-                                <p className="mb-md text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                                <p className="mb-md text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                     Daftar Peserta
                                 </p>
                                 <div className="flex flex-col gap-sm">
                                     {detailEvent.attendees.length === 0 && (
-                                        <p className="text-[13px] text-text-muted">
+                                        <p className="text-[var(--font-base)] text-text-muted">
                                             Belum ada peserta.
                                         </p>
                                     )}
@@ -442,7 +442,7 @@ export default function EventIndex({
                                             key={a.id}
                                             className="flex items-center gap-md rounded-sm bg-surface-subtle px-md py-sm"
                                         >
-                                            <span className="flex-1 text-[13px] text-text-primary">
+                                            <span className="flex-1 text-[var(--font-base)] text-text-primary">
                                                 {a.name}
                                             </span>
                                             {a.attended ? (
@@ -464,7 +464,7 @@ export default function EventIndex({
                                                             a.id,
                                                         )
                                                     }
-                                                    className="text-[11px]"
+                                                    className="text-[var(--font-sm)]"
                                                 >
                                                     Override
                                                 </Button>

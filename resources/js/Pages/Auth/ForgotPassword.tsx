@@ -17,13 +17,13 @@ export default function ForgotPassword({ status }: { status?: string }) {
         <GuestLayout>
             <Head title="Lupa Password" />
 
-            <p className="mb-lg text-[13px] text-text-secondary">
+            <p className="mb-lg text-[var(--font-base)] text-text-secondary">
                 Masukkan email kamu dan kami akan kirimkan link untuk reset
                 password.
             </p>
 
             {status && (
-                <p className="mb-lg text-[13px] font-medium text-primary">
+                <p className="mb-lg text-[var(--font-base)] font-medium text-primary">
                     {status}
                 </p>
             )}
@@ -40,7 +40,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                         aria-invalid={!!errors.email}
                     />
                     {errors.email && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.email}
                         </p>
                     )}

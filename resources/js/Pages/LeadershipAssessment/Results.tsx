@@ -53,12 +53,12 @@ export default function Results({
             {overallAvg !== null && (
                 <Card className="mb-xl">
                     <CardContent>
-                        <p className="text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                        <p className="text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                             Rata-rata Keseluruhan
                         </p>
-                        <p className="mt-sm text-[32px] font-semibold text-primary">
+                        <p className="mt-sm text-[var(--font-2xl)] font-semibold text-primary">
                             {overallAvg.toFixed(2)}
-                            <span className="text-[16px] text-text-muted">
+                            <span className="text-[var(--font-md)] text-text-muted">
                                 {" "}
                                 / 5
                             </span>
@@ -74,7 +74,7 @@ export default function Results({
 
             {byType.length === 0 ? (
                 <Card>
-                    <CardContent className="py-16 text-center text-[13px] text-text-muted">
+                    <CardContent className="py-16 text-center text-[var(--font-base)] text-text-muted">
                         Belum ada response untuk assessee ini.
                     </CardContent>
                 </Card>
@@ -84,7 +84,7 @@ export default function Results({
                         <Card key={group.type}>
                             <CardContent>
                                 <div className="mb-lg flex items-center justify-between">
-                                    <h2 className="text-[14px] font-semibold text-text-primary">
+                                    <h2 className="text-[var(--font-base)] font-semibold text-text-primary">
                                         {group.type}
                                     </h2>
                                     <Badge variant="info">
@@ -97,7 +97,7 @@ export default function Results({
                                             key={idx}
                                             className="flex items-center justify-between rounded-lg border border-border px-lg py-md"
                                         >
-                                            <span className="text-[13px] text-text-primary">
+                                            <span className="text-[var(--font-base)] text-text-primary">
                                                 {item.item}
                                             </span>
                                             <Badge variant="neutral">

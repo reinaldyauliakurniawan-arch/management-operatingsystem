@@ -360,7 +360,7 @@ export default function TeamsIndex({
                                             <Users className="size-4 text-text-muted" />
                                             <div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[15px] font-semibold text-text-primary">
+                                                    <span className="text-[var(--font-md)] font-semibold text-text-primary">
                                                         {team.name}
                                                     </span>
                                                     {team.id ===
@@ -373,7 +373,7 @@ export default function TeamsIndex({
                                                         {typeLabel[team.type]}
                                                     </Badge>
                                                 </div>
-                                                <p className="text-[12px] text-text-muted mt-0.5">
+                                                <p className="text-[var(--font-base)] text-text-muted mt-0.5">
                                                     {team.member_count} anggota
                                                     {team.leaders.length > 0 &&
                                                         ` · Leader: ${team.leaders.map((l) => l.name).join(", ")}`}
@@ -422,7 +422,7 @@ export default function TeamsIndex({
                                     {expandedTeam === team.id && (
                                         <div className="border-t border-border">
                                             {loadingTeam === team.id ? (
-                                                <p className="px-6 py-4 text-[13px] text-text-muted">
+                                                <p className="px-6 py-4 text-[var(--font-base)] text-text-muted">
                                                     Memuat anggota...
                                                 </p>
                                             ) : (
@@ -453,7 +453,7 @@ export default function TeamsIndex({
                                                                         colSpan={
                                                                             4
                                                                         }
-                                                                        className="text-center text-[13px] text-text-muted py-6"
+                                                                        className="text-center text-[var(--font-base)] text-text-muted py-6"
                                                                     >
                                                                         Belum
                                                                         ada
@@ -611,7 +611,7 @@ export default function TeamsIndex({
                                                     </Badge>
                                                 )}
                                             </TableCell>
-                                            <TableCell className="text-text-muted text-[13px]">
+                                            <TableCell className="text-text-muted text-[var(--font-base)]">
                                                 {new Date(
                                                     u.created_at,
                                                 ).toLocaleDateString("id-ID", {
@@ -712,7 +712,7 @@ export default function TeamsIndex({
                                     aria-invalid={!!teamForm.errors.name}
                                 />
                                 {teamForm.errors.name && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {teamForm.errors.name}
                                     </p>
                                 )}
@@ -759,7 +759,7 @@ export default function TeamsIndex({
                                     ))}
                                 </Select>
                                 {teamForm.errors.leader_user_id && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {teamForm.errors.leader_user_id}
                                     </p>
                                 )}
@@ -835,7 +835,7 @@ export default function TeamsIndex({
                                     ))}
                                 </Select>
                                 {memberForm.errors.user_id && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {memberForm.errors.user_id}
                                     </p>
                                 )}
@@ -956,7 +956,7 @@ export default function TeamsIndex({
                                     aria-invalid={!!userForm.errors.name}
                                 />
                                 {userForm.errors.name && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {userForm.errors.name}
                                     </p>
                                 )}
@@ -976,7 +976,7 @@ export default function TeamsIndex({
                                     aria-invalid={!!userForm.errors.email}
                                 />
                                 {userForm.errors.email && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {userForm.errors.email}
                                     </p>
                                 )}
@@ -996,7 +996,7 @@ export default function TeamsIndex({
                                     aria-invalid={!!userForm.errors.password}
                                 />
                                 {userForm.errors.password && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {userForm.errors.password}
                                     </p>
                                 )}
@@ -1110,7 +1110,7 @@ export default function TeamsIndex({
                                     aria-invalid={!!editUserForm.errors.name}
                                 />
                                 {editUserForm.errors.name && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {editUserForm.errors.name}
                                     </p>
                                 )}
@@ -1129,7 +1129,7 @@ export default function TeamsIndex({
                                     aria-invalid={!!editUserForm.errors.email}
                                 />
                                 {editUserForm.errors.email && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {editUserForm.errors.email}
                                     </p>
                                 )}
@@ -1205,7 +1205,7 @@ export default function TeamsIndex({
                                     }
                                 />
                                 {resetPasswordForm.errors.password && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {resetPasswordForm.errors.password}
                                     </p>
                                 )}

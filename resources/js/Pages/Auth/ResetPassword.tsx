@@ -42,7 +42,7 @@ export default function ResetPassword({
                         aria-invalid={!!errors.email}
                     />
                     {errors.email && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.email}
                         </p>
                     )}
@@ -60,7 +60,7 @@ export default function ResetPassword({
                         aria-invalid={!!errors.password}
                     />
                     {errors.password && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.password}
                         </p>
                     )}
@@ -81,7 +81,7 @@ export default function ResetPassword({
                         aria-invalid={!!errors.password_confirmation}
                     />
                     {errors.password_confirmation && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.password_confirmation}
                         </p>
                     )}

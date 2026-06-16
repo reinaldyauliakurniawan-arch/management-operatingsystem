@@ -135,11 +135,11 @@ export default function ToDoIndex({
                 ].map((stat) => (
                     <Card key={stat.label}>
                         <CardContent>
-                            <p className="mb-sm text-[12px] font-medium tracking-wide text-text-muted uppercase">
+                            <p className="mb-sm text-[var(--font-base)] font-medium tracking-wide text-text-muted uppercase">
                                 {stat.label}
                             </p>
                             <p
-                                className={`text-[32px] font-semibold tracking-tight leading-none ${stat.valueClass}`}
+                                className={`text-[var(--font-2xl)] font-semibold tracking-tight leading-none ${stat.valueClass}`}
                             >
                                 {stat.value}
                             </p>
@@ -187,7 +187,7 @@ export default function ToDoIndex({
                             </TableCell>
                             <TableCell>
                                 <span
-                                    className={`text-[13px] font-medium text-text-primary ${todo.is_completed ? "line-through" : ""}`}
+                                    className={`text-[var(--font-base)] font-medium text-text-primary ${todo.is_completed ? "line-through" : ""}`}
                                 >
                                     {todo.title}
                                 </span>
@@ -257,7 +257,7 @@ export default function ToDoIndex({
                                     required
                                 />
                                 {errors.title && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {errors.title}
                                     </p>
                                 )}

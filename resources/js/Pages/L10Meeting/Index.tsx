@@ -87,10 +87,10 @@ export default function L10Index({
             {ongoing && (
                 <div className="mb-xl flex items-center justify-between rounded-lg border border-warning bg-warning-subtle px-xl py-md">
                     <div>
-                        <p className="text-[13px] font-semibold text-warning-text">
+                        <p className="text-[var(--font-base)] font-semibold text-warning-text">
                             Meeting sedang berlangsung
                         </p>
-                        <p className="mt-xs text-[12px] text-warning-text">
+                        <p className="mt-xs text-[var(--font-base)] text-warning-text">
                             {ongoing.title ?? "L10 Meeting"} · Dimulai{" "}
                             {fmt(ongoing.started_at)}
                         </p>
@@ -122,11 +122,11 @@ export default function L10Index({
                 ].map((s) => (
                     <Card key={s.label}>
                         <CardContent>
-                            <p className="mb-sm text-[12px] font-medium uppercase tracking-wide text-text-muted">
+                            <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wide text-text-muted">
                                 {s.label}
                             </p>
                             <p
-                                className={`text-[32px] font-semibold leading-none tracking-tight ${s.valueClass}`}
+                                className={`text-[var(--font-2xl)] font-semibold leading-none tracking-tight ${s.valueClass}`}
                             >
                                 {s.value}
                             </p>
@@ -168,7 +168,7 @@ export default function L10Index({
                     {meetingList.map((m) => (
                         <TableRow key={m.id}>
                             <TableCell>
-                                <p className="text-[13px] font-medium text-text-primary">
+                                <p className="text-[var(--font-base)] font-medium text-text-primary">
                                     {m.title ?? "L10 Meeting"}
                                 </p>
                             </TableCell>

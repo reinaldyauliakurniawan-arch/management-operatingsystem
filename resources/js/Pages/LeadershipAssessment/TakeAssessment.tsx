@@ -102,13 +102,13 @@ export default function TakeAssessment({
                 <form onSubmit={submit} className="flex flex-col gap-xl">
                     {assignments.map((assignment) => (
                         <div key={assignment.id}>
-                            <p className="mb-md text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                            <p className="mb-md text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                 {assignment.leadership_type.name}
                             </p>
                             {assignment.leadership_type.items.map((item) => (
                                 <Card key={item.id} className="mb-lg">
                                     <CardContent>
-                                        <p className="mb-lg text-[14px] font-semibold tracking-tight text-text-primary">
+                                        <p className="mb-lg text-[var(--font-base)] font-semibold tracking-tight text-text-primary">
                                             {item.title}
                                         </p>
                                         <div className="flex flex-col gap-sm">
@@ -138,13 +138,13 @@ export default function TakeAssessment({
                                                             }`}
                                                         >
                                                             <p
-                                                                className={`text-[12px] font-semibold uppercase tracking-wider mb-xs ${selected ? "text-primary-text" : "text-text-muted"}`}
+                                                                className={`text-[var(--font-base)] font-semibold uppercase tracking-wider mb-xs ${selected ? "text-primary-text" : "text-text-muted"}`}
                                                             >
                                                                 Level{" "}
                                                                 {rubric.level}
                                                             </p>
                                                             <p
-                                                                className={`text-[13px] leading-relaxed ${selected ? "text-primary-text" : "text-text-secondary"}`}
+                                                                className={`text-[var(--font-base)] leading-relaxed ${selected ? "text-primary-text" : "text-text-secondary"}`}
                                                             >
                                                                 {
                                                                     rubric.description

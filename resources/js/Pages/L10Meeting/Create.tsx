@@ -77,7 +77,7 @@ export default function L10Create({ members }: { members: User[] }) {
                                     aria-invalid={!!errors.scheduled_at}
                                 />
                                 {errors.scheduled_at && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {errors.scheduled_at}
                                     </p>
                                 )}
@@ -87,7 +87,7 @@ export default function L10Create({ members }: { members: User[] }) {
                                 <Label>Peserta</Label>
                                 <div className="flex flex-col gap-xs rounded-lg border border-border bg-surface-raised p-md">
                                     {members.length === 0 ? (
-                                        <p className="text-[13px] text-text-muted">
+                                        <p className="text-[var(--font-base)] text-text-muted">
                                             Belum ada anggota tim.
                                         </p>
                                     ) : (
@@ -106,7 +106,7 @@ export default function L10Create({ members }: { members: User[] }) {
                                                     }
                                                     className="h-4 w-4 rounded accent-primary"
                                                 />
-                                                <span className="text-[13px] text-text-primary">
+                                                <span className="text-[var(--font-base)] text-text-primary">
                                                     {m.name}
                                                 </span>
                                             </label>

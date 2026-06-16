@@ -102,7 +102,7 @@ function SectionTitle({
 }) {
     return (
         <div className="flex items-center gap-2 mb-4">
-            <h3 className="text-[18px] font-semibold leading-6 text-primary">
+            <h3 className="text-[var(--font-md)] font-semibold leading-6 text-primary">
                 {title}
             </h3>
             <Icon className="size-4 text-text-muted ml-auto" />
@@ -112,7 +112,7 @@ function SectionTitle({
 
 function Empty({ canEdit }: { canEdit: boolean }) {
     return (
-        <p className="text-[13px] italic text-text-muted">
+        <p className="text-[var(--font-base)] italic text-text-muted">
             Belum diisi.{canEdit && " Klik Edit untuk menambahkan."}
         </p>
     );
@@ -135,33 +135,33 @@ function MetricBar({
         <div className="flex flex-wrap items-center gap-6 mb-6 pb-6 border-b border-border">
             {date && (
                 <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-0.5">
+                    <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-0.5">
                         Target
                     </p>
-                    <p className="text-[14px] font-semibold text-text-primary">
+                    <p className="text-[var(--font-base)] font-semibold text-text-primary">
                         {formatDate(date)}
                     </p>
                 </div>
             )}
             <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-0.5">
+                <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-0.5">
                     Revenue
                 </p>
-                <p className="text-[18px] font-bold text-text-primary">
+                <p className="text-[var(--font-md)] font-bold text-text-primary">
                     {displayValue(revenue)}
                 </p>
             </div>
             <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-0.5">
+                <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-0.5">
                     Profit
                 </p>
-                <p className="text-[18px] font-bold text-text-primary">
+                <p className="text-[var(--font-md)] font-bold text-text-primary">
                     {displayValue(profit)}
                 </p>
             </div>
             {measurables != null && measurables !== "" && (
                 <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-0.5">
+                    <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-0.5">
                         {measurablesLabel ?? "Measurables"}
                     </p>
                     <div className="flex flex-col gap-0.5">
@@ -170,7 +170,7 @@ function MetricBar({
                             .map((m, i) => (
                                 <p
                                     key={i}
-                                    className="text-[18px] font-bold text-text-primary"
+                                    className="text-[var(--font-md)] font-bold text-text-primary"
                                 >
                                     {m.trim()}
                                 </p>
@@ -223,7 +223,7 @@ function ArrayFieldEditor({
             <button
                 type="button"
                 onClick={add}
-                className="flex items-center gap-1 text-[13px] text-primary hover:underline mt-1 w-fit"
+                className="flex items-center gap-1 text-[var(--font-base)] text-primary hover:underline mt-1 w-fit"
             >
                 <Plus className="size-3.5" />
                 Tambah item
@@ -429,7 +429,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={cn(
-                                "px-6 py-2 rounded-full text-[14px] font-medium transition-all capitalize",
+                                "px-6 py-2 rounded-full text-[var(--font-base)] font-medium transition-all capitalize",
                                 activeTab === tab
                                     ? "bg-primary text-white shadow-sm"
                                     : "text-text-secondary hover:text-text-primary",
@@ -444,7 +444,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
             {!vto ? (
                 <Card>
                     <CardContent className="py-16 text-center">
-                        <p className="text-[14px] text-text-muted">
+                        <p className="text-[var(--font-base)] text-text-muted">
                             VTO belum dibuat.{" "}
                             {isOrgAdmin &&
                                 "Klik tombol di bawah untuk memulai."}
@@ -494,7 +494,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                             className="flex items-start"
                                         >
                                             <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 mr-3 shrink-0" />
-                                            <span className="text-[14px] leading-[22px]">
+                                            <span className="text-[var(--font-base)] leading-[22px]">
                                                 {cv}
                                             </span>
                                         </li>
@@ -528,11 +528,11 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                             </div>
                             <div className="space-y-4">
                                 <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-1">
+                                    <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
                                         Purpose / Cause / Passion
                                     </p>
                                     {vto.core_focus_purpose ? (
-                                        <p className="text-[14px] leading-[22px]">
+                                        <p className="text-[var(--font-base)] leading-[22px]">
                                             {vto.core_focus_purpose}
                                         </p>
                                     ) : (
@@ -540,11 +540,11 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                     )}
                                 </div>
                                 <div className="pt-4 border-t border-border">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-1">
+                                    <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
                                         Niche
                                     </p>
                                     {vto.core_focus_niche ? (
-                                        <p className="text-[14px] leading-[22px]">
+                                        <p className="text-[var(--font-base)] leading-[22px]">
                                             {vto.core_focus_niche}
                                         </p>
                                     ) : (
@@ -577,7 +577,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                             </div>
                             {vto.ten_year_target ? (
                                 <div className="flex items-center justify-center py-8 text-center">
-                                    <p className="text-[24px] font-bold leading-8 text-primary">
+                                    <p className="text-[var(--font-lg)] font-bold leading-8 text-primary">
                                         {vto.ten_year_target}
                                     </p>
                                 </div>
@@ -609,11 +609,11 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                             </div>
                             <div className="space-y-4">
                                 <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-1">
+                                    <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
                                         Target Market
                                     </p>
                                     {vto.target_market ? (
-                                        <p className="text-[14px] leading-[22px]">
+                                        <p className="text-[var(--font-base)] leading-[22px]">
                                             {vto.target_market}
                                         </p>
                                     ) : (
@@ -622,11 +622,11 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                                     <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-1">
+                                        <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
                                             3 Uniques
                                         </p>
                                         {vto.three_uniques ? (
-                                            <p className="text-[13px] leading-[20px]">
+                                            <p className="text-[var(--font-base)] leading-[20px]">
                                                 {vto.three_uniques}
                                             </p>
                                         ) : (
@@ -634,11 +634,11 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                         )}
                                     </div>
                                     <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-1">
+                                        <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
                                             Guarantee
                                         </p>
                                         {vto.guarantee ? (
-                                            <p className="text-[13px] italic leading-[20px]">
+                                            <p className="text-[var(--font-base)] italic leading-[20px]">
                                                 "{vto.guarantee}"
                                             </p>
                                         ) : (
@@ -680,7 +680,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                         />
                         {(vto.three_year_look ?? []).length > 0 ? (
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-3">
+                                <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-3">
                                     Yang terlihat nanti
                                 </p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
@@ -690,7 +690,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                             className="flex items-center gap-3"
                                         >
                                             <CheckCircle2 className="size-4 text-primary shrink-0" />
-                                            <span className="text-[14px] leading-[22px]">
+                                            <span className="text-[var(--font-base)] leading-[22px]">
                                                 {item}
                                             </span>
                                         </div>
@@ -730,14 +730,14 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                         />
                         {(vto.one_year_goals ?? []).length > 0 ? (
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-3">
+                                <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-3">
                                     Goals Tahun Ini
                                 </p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     {vto.one_year_goals.map((goal, i) => (
                                         <p
                                             key={i}
-                                            className="text-[14px] leading-[22px] py-2 px-3 bg-surface-subtle rounded-lg border border-border"
+                                            className="text-[var(--font-base)] leading-[22px] py-2 px-3 bg-surface-subtle rounded-lg border border-border"
                                         >
                                             {i + 1}. {goal}
                                         </p>
@@ -752,7 +752,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                     {/* Rocks — link to module */}
                     <GlassCard>
                         <div className="p-6 border-b border-border flex items-center justify-between bg-surface-subtle">
-                            <h3 className="text-[18px] font-semibold text-primary">
+                            <h3 className="text-[var(--font-md)] font-semibold text-primary">
                                 Rocks (90-Day Priorities)
                             </h3>
                             <Button
@@ -767,7 +767,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                             </Button>
                         </div>
                         <div className="p-6">
-                            <p className="text-[13px] text-text-muted">
+                            <p className="text-[var(--font-base)] text-text-muted">
                                 Rocks dikelola di modul Rocks dan ditinjau
                                 setiap L10 Meeting. Klik "Lihat semua Rocks"
                                 untuk detail per quarter.
@@ -778,7 +778,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                     {/* Issues — link to module */}
                     <GlassCard>
                         <div className="p-6 border-b border-border flex items-center justify-between bg-surface-subtle">
-                            <h3 className="text-[18px] font-semibold text-primary">
+                            <h3 className="text-[var(--font-md)] font-semibold text-primary">
                                 Issues List (IDS)
                             </h3>
                             <Button
@@ -791,7 +791,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                             </Button>
                         </div>
                         <div className="p-6">
-                            <p className="text-[13px] text-text-muted">
+                            <p className="text-[var(--font-base)] text-text-muted">
                                 Issues diidentifikasi, didiskusikan, dan
                                 diselesaikan (IDS) dalam L10 Meeting. Klik
                                 "Lihat semua Issues" untuk daftar lengkap.

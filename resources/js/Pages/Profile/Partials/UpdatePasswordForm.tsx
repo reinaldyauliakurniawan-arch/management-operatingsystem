@@ -46,10 +46,10 @@ export default function UpdatePasswordForm({
 
     return (
         <section className={className}>
-            <h2 className="mb-xs text-[14px] font-semibold tracking-tight text-text-primary">
+            <h2 className="mb-xs text-[var(--font-base)] font-semibold tracking-tight text-text-primary">
                 Ubah Password
             </h2>
-            <p className="mb-lg text-[13px] text-text-secondary">
+            <p className="mb-lg text-[var(--font-base)] text-text-secondary">
                 Gunakan password yang panjang dan acak agar akun tetap aman.
             </p>
 
@@ -68,7 +68,7 @@ export default function UpdatePasswordForm({
                         aria-invalid={!!errors.current_password}
                     />
                     {errors.current_password && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.current_password}
                         </p>
                     )}
@@ -86,7 +86,7 @@ export default function UpdatePasswordForm({
                         aria-invalid={!!errors.password}
                     />
                     {errors.password && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.password}
                         </p>
                     )}
@@ -107,7 +107,7 @@ export default function UpdatePasswordForm({
                         aria-invalid={!!errors.password_confirmation}
                     />
                     {errors.password_confirmation && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.password_confirmation}
                         </p>
                     )}
@@ -118,7 +118,7 @@ export default function UpdatePasswordForm({
                         Simpan
                     </Button>
                     {recentlySuccessful && (
-                        <p className="text-[13px] text-primary">Tersimpan.</p>
+                        <p className="text-[var(--font-base)] text-primary">Tersimpan.</p>
                     )}
                 </div>
             </form>

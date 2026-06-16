@@ -37,7 +37,7 @@ export default function Register() {
                         aria-invalid={!!errors.name}
                     />
                     {errors.name && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.name}
                         </p>
                     )}
@@ -55,7 +55,7 @@ export default function Register() {
                         aria-invalid={!!errors.email}
                     />
                     {errors.email && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.email}
                         </p>
                     )}
@@ -73,7 +73,7 @@ export default function Register() {
                         aria-invalid={!!errors.password}
                     />
                     {errors.password && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.password}
                         </p>
                     )}
@@ -95,7 +95,7 @@ export default function Register() {
                         aria-invalid={!!errors.password_confirmation}
                     />
                     {errors.password_confirmation && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.password_confirmation}
                         </p>
                     )}
@@ -105,7 +105,7 @@ export default function Register() {
                     {processing ? "Mendaftar…" : "Daftar"}
                 </Button>
 
-                <p className="text-center text-[13px] text-text-muted">
+                <p className="text-center text-[var(--font-base)] text-text-muted">
                     Sudah punya akun?{" "}
                     <Link
                         href={route("login")}

@@ -50,10 +50,10 @@ export default function DeleteUserForm({
 
     return (
         <section className={className}>
-            <h2 className="mb-xs text-[14px] font-semibold tracking-tight text-text-primary">
+            <h2 className="mb-xs text-[var(--font-base)] font-semibold tracking-tight text-text-primary">
                 Hapus Akun
             </h2>
-            <p className="mb-lg text-[13px] text-text-secondary">
+            <p className="mb-lg text-[var(--font-base)] text-text-secondary">
                 Setelah akun dihapus, semua data akan dihapus permanen. Pastikan
                 kamu sudah mengunduh data yang diperlukan.
             </p>
@@ -68,7 +68,7 @@ export default function DeleteUserForm({
                         <DialogTitle>Hapus Akun</DialogTitle>
                     </DialogHeader>
                     <DialogBody>
-                        <p className="mb-lg text-[13px] text-text-secondary">
+                        <p className="mb-lg text-[var(--font-base)] text-text-secondary">
                             Aksi ini tidak bisa dibatalkan. Masukkan password
                             untuk konfirmasi.
                         </p>
@@ -90,7 +90,7 @@ export default function DeleteUserForm({
                                     aria-invalid={!!errors.password}
                                 />
                                 {errors.password && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {errors.password}
                                     </p>
                                 )}

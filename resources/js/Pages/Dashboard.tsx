@@ -87,16 +87,16 @@ function StatCard({
     const inner = (
         <Card>
             <CardContent>
-                <p className="mb-sm text-[12px] font-medium uppercase tracking-wide text-text-muted">
+                <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wide text-text-muted">
                     {label}
                 </p>
                 <p
-                    className={`text-[24px] font-semibold leading-none tracking-tight ${valueColor}`}
+                    className={`text-[var(--font-lg)] font-semibold leading-none tracking-tight ${valueColor}`}
                 >
                     {value}
                 </p>
                 {sub && (
-                    <p className="mt-xs text-[12px] text-text-muted">{sub}</p>
+                    <p className="mt-xs text-[var(--font-base)] text-text-muted">{sub}</p>
                 )}
             </CardContent>
         </Card>
@@ -112,7 +112,7 @@ function StatCard({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
     return (
-        <p className="mb-md text-[12px] font-medium uppercase tracking-wider text-text-muted">
+        <p className="mb-md text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
             {children}
         </p>
     );
@@ -212,16 +212,16 @@ export default function Dashboard({
                         {/* Upcoming meeting */}
                         <Card>
                             <CardContent>
-                                <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                                <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                     L10 Terdekat
                                 </p>
                                 {upcomingMeeting ? (
                                     <div>
-                                        <p className="text-[16px] font-semibold tracking-tight text-text-primary">
+                                        <p className="text-[var(--font-md)] font-semibold tracking-tight text-text-primary">
                                             {upcomingMeeting.title ??
                                                 "L10 Meeting"}
                                         </p>
-                                        <p className="mt-xs text-[13px] text-text-secondary">
+                                        <p className="mt-xs text-[var(--font-base)] text-text-secondary">
                                             {fmtDatetime(
                                                 upcomingMeeting.scheduled_at,
                                             )}
@@ -233,7 +233,7 @@ export default function Dashboard({
                                         </Badge>
                                     </div>
                                 ) : (
-                                    <p className="text-[13px] text-text-muted">
+                                    <p className="text-[var(--font-base)] text-text-muted">
                                         Tidak ada meeting terjadwal.
                                     </p>
                                 )}
@@ -243,12 +243,12 @@ export default function Dashboard({
                         {/* Top leaderboard per role */}
                         <Card>
                             <CardContent>
-                                <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                                <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                     Top Leaderboard
                                 </p>
                                 {Object.keys(leaderboardTop3ByRole).length ===
                                 0 ? (
-                                    <p className="text-[13px] text-text-muted">
+                                    <p className="text-[var(--font-base)] text-text-muted">
                                         Belum ada data.
                                     </p>
                                 ) : (
@@ -257,7 +257,7 @@ export default function Dashboard({
                                             leaderboardTop3ByRole,
                                         ).map(([roleKey, entries]) => (
                                             <div key={roleKey}>
-                                                <p className="mb-xs text-[11px] font-medium uppercase text-text-muted">
+                                                <p className="mb-xs text-[var(--font-sm)] font-medium uppercase text-text-muted">
                                                     {roleKey}
                                                 </p>
                                                 <div className="flex flex-col gap-xs">
@@ -267,14 +267,14 @@ export default function Dashboard({
                                                             className="flex items-center gap-md"
                                                         >
                                                             <span
-                                                                className={`w-5 text-[13px] font-semibold ${idx === 0 ? "text-warning-text" : "text-text-muted"}`}
+                                                                className={`w-5 text-[var(--font-base)] font-semibold ${idx === 0 ? "text-warning-text" : "text-text-muted"}`}
                                                             >
                                                                 #{idx + 1}
                                                             </span>
-                                                            <span className="flex-1 text-[13px] text-text-primary">
+                                                            <span className="flex-1 text-[var(--font-base)] text-text-primary">
                                                                 {e.name}
                                                             </span>
-                                                            <span className="text-[13px] font-semibold text-primary">
+                                                            <span className="text-[var(--font-base)] font-semibold text-primary">
                                                                 {e.score}%
                                                             </span>
                                                         </div>
@@ -290,11 +290,11 @@ export default function Dashboard({
                         {/* Upcoming events */}
                         <Card>
                             <CardContent>
-                                <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                                <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                     Events (7 hari)
                                 </p>
                                 {upcomingEvents.length === 0 ? (
-                                    <p className="text-[13px] text-text-muted">
+                                    <p className="text-[var(--font-base)] text-text-muted">
                                         Tidak ada event mendatang.
                                     </p>
                                 ) : (
@@ -313,10 +313,10 @@ export default function Dashboard({
                                                 >
                                                     {ev.type}
                                                 </Badge>
-                                                <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] text-text-primary">
+                                                <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[var(--font-base)] text-text-primary">
                                                     {ev.name}
                                                 </span>
-                                                <span className="shrink-0 text-[12px] text-text-muted">
+                                                <span className="shrink-0 text-[var(--font-base)] text-text-muted">
                                                     {fmt(ev.event_date)}
                                                 </span>
                                             </div>
@@ -342,7 +342,7 @@ export default function Dashboard({
                                             key={rock.id}
                                             className="flex items-center justify-between rounded-lg border border-border px-lg py-md"
                                         >
-                                            <span className="text-[13px] text-text-primary">
+                                            <span className="text-[var(--font-base)] text-text-primary">
                                                 {rock.title}
                                             </span>
                                             <Badge
@@ -433,7 +433,7 @@ export default function Dashboard({
             )}
             {!isLeader && !isMember && !isTutor && (
                 <Card>
-                    <CardContent className="py-xl text-center text-[14px] text-text-muted">
+                    <CardContent className="py-xl text-center text-[var(--font-base)] text-text-muted">
                         Akunmu belum terdaftar sebagai anggota team. Hubungi
                         leader untuk mendapatkan akses.
                     </CardContent>
@@ -469,22 +469,22 @@ function MemberBottomSection({
         <div className="grid grid-cols-2 gap-lg">
             <Card>
                 <CardContent>
-                    <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                    <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                         Skor Leaderboard
                     </p>
                     {selfLeaderboard ? (
                         <>
-                            <p className="text-[24px] font-semibold leading-none tracking-tight text-primary">
+                            <p className="text-[var(--font-lg)] font-semibold leading-none tracking-tight text-primary">
                                 {selfLeaderboard.score}%
                             </p>
-                            <p className="mt-sm text-[13px] text-text-secondary">
+                            <p className="mt-sm text-[var(--font-base)] text-text-secondary">
                                 {selfLeaderboard.rank !== null
                                     ? `Rank #${selfLeaderboard.rank} dari ${selfLeaderboard.total}`
                                     : `Dari ${selfLeaderboard.total} peserta`}
                             </p>
                         </>
                     ) : (
-                        <p className="text-[13px] text-text-muted">
+                        <p className="text-[var(--font-base)] text-text-muted">
                             Belum ada data leaderboard.
                         </p>
                     )}
@@ -493,11 +493,11 @@ function MemberBottomSection({
 
             <Card>
                 <CardContent>
-                    <p className="mb-lg text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                    <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                         Events Mendatang
                     </p>
                     {upcomingEvents.length === 0 ? (
-                        <p className="text-[13px] text-text-muted">
+                        <p className="text-[var(--font-base)] text-text-muted">
                             Tidak ada event.
                         </p>
                     ) : (
@@ -516,10 +516,10 @@ function MemberBottomSection({
                                     >
                                         {ev.type}
                                     </Badge>
-                                    <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] text-text-primary">
+                                    <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[var(--font-base)] text-text-primary">
                                         {ev.name}
                                     </span>
-                                    <span className="shrink-0 text-[12px] text-text-muted">
+                                    <span className="shrink-0 text-[var(--font-base)] text-text-muted">
                                         {fmt(ev.event_date)}
                                     </span>
                                 </div>
@@ -532,13 +532,13 @@ function MemberBottomSection({
             {upcomingMeeting && (
                 <Card className="col-span-2">
                     <CardContent>
-                        <p className="mb-sm text-[12px] font-medium uppercase tracking-wider text-text-muted">
+                        <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                             L10 Terdekat
                         </p>
-                        <p className="text-[16px] font-semibold tracking-tight text-text-primary">
+                        <p className="text-[var(--font-md)] font-semibold tracking-tight text-text-primary">
                             {upcomingMeeting.title ?? "L10 Meeting"}
                         </p>
-                        <p className="mt-xs text-[13px] text-text-secondary">
+                        <p className="mt-xs text-[var(--font-base)] text-text-secondary">
                             {fmtDatetime(upcomingMeeting.scheduled_at)} ·{" "}
                             {countdown(upcomingMeeting.scheduled_at)}
                         </p>

@@ -19,7 +19,7 @@ export default function ConfirmPassword() {
         <GuestLayout>
             <Head title="Konfirmasi Password" />
 
-            <p className="mb-lg text-[13px] text-text-secondary">
+            <p className="mb-lg text-[var(--font-base)] text-text-secondary">
                 Area aman. Konfirmasi password kamu untuk melanjutkan.
             </p>
 
@@ -35,7 +35,7 @@ export default function ConfirmPassword() {
                         aria-invalid={!!errors.password}
                     />
                     {errors.password && (
-                        <p className="text-[12px] text-error-text">
+                        <p className="text-[var(--font-base)] text-error-text">
                             {errors.password}
                         </p>
                     )}

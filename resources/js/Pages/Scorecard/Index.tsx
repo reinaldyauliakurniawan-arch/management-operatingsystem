@@ -267,10 +267,10 @@ export default function ScorecardIndex({
                     {metricList.map((metric) => (
                         <TableRow key={metric.id}>
                             <TableCell className="sticky left-0 z-10 bg-surface">
-                                <p className="text-[13px] font-medium text-text-primary">
+                                <p className="text-[var(--font-base)] font-medium text-text-primary">
                                     {metric.title}
                                 </p>
-                                <p className="mt-0.5 text-[11px] text-text-muted capitalize">
+                                <p className="mt-0.5 text-[var(--font-sm)] text-text-muted capitalize">
                                     {metric.frequency}
                                 </p>
                             </TableCell>
@@ -359,7 +359,7 @@ export default function ScorecardIndex({
                                     required
                                 />
                                 {errors.title && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {errors.title}
                                     </p>
                                 )}
@@ -488,12 +488,12 @@ export default function ScorecardIndex({
                                         !!settingsForm.errors.q1_start_date
                                     }
                                 />
-                                <p className="text-[12px] text-text-muted">
+                                <p className="text-[var(--font-base)] text-text-muted">
                                     Tanggal mulai Q1. Q2/Q3/Q4 dihitung otomatis
                                     per 13 minggu.
                                 </p>
                                 {settingsForm.errors.q1_start_date && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {settingsForm.errors.q1_start_date}
                                     </p>
                                 )}
@@ -515,7 +515,7 @@ export default function ScorecardIndex({
                                         </option>
                                     ))}
                                 </Select>
-                                <p className="text-[12px] text-text-muted">
+                                <p className="text-[var(--font-base)] text-text-muted">
                                     Header kolom tabel akan menyesuaikan hari
                                     ini.
                                 </p>

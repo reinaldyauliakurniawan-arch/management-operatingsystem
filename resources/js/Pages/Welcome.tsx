@@ -8,13 +8,13 @@ export default function Welcome({ auth }: PageProps) {
             <Head title="Just Speak English — Management OS" />
             <div className="flex min-h-screen flex-col items-center justify-center bg-surface-subtle">
                 <div className="text-center">
-                    <p className="text-[12px] font-medium uppercase tracking-widest text-text-muted">
+                    <p className="text-[var(--font-base)] font-medium uppercase tracking-widest text-text-muted">
                         Just Speak English Course
                     </p>
-                    <h1 className="mt-xs text-[28px] font-semibold tracking-tight text-text-primary">
+                    <h1 className="mt-xs text-[var(--font-xl)] font-semibold tracking-tight text-text-primary">
                         Management OS
                     </h1>
-                    <p className="mt-sm text-[14px] text-text-secondary">
+                    <p className="mt-sm text-[var(--font-base)] text-text-secondary">
                         Sistem operasional manajemen tim internal.
                     </p>
 

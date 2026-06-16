@@ -122,11 +122,11 @@ export default function IDSIndex({
                 ].map((stat) => (
                     <Card key={stat.label}>
                         <CardContent>
-                            <p className="mb-sm text-[12px] font-medium tracking-wide text-text-muted uppercase">
+                            <p className="mb-sm text-[var(--font-base)] font-medium tracking-wide text-text-muted uppercase">
                                 {stat.label}
                             </p>
                             <p
-                                className={`text-[32px] font-semibold tracking-tight leading-none ${stat.valueClass}`}
+                                className={`text-[var(--font-2xl)] font-semibold tracking-tight leading-none ${stat.valueClass}`}
                             >
                                 {stat.value}
                             </p>
@@ -169,17 +169,17 @@ export default function IDSIndex({
                         >
                             <TableCell className="w-12">
                                 <span
-                                    className={`text-[13px] font-semibold ${priorityClass(issue.priority)}`}
+                                    className={`text-[var(--font-base)] font-semibold ${priorityClass(issue.priority)}`}
                                 >
                                     {issue.priority}
                                 </span>
                             </TableCell>
                             <TableCell>
-                                <p className="text-[13px] font-medium text-text-primary">
+                                <p className="text-[var(--font-base)] font-medium text-text-primary">
                                     {issue.title}
                                 </p>
                                 {issue.description && (
-                                    <p className="mt-0.5 text-[12px] text-text-muted">
+                                    <p className="mt-0.5 text-[var(--font-base)] text-text-muted">
                                         {issue.description.slice(0, 80)}
                                         {issue.description.length > 80
                                             ? "…"
@@ -254,7 +254,7 @@ export default function IDSIndex({
                                     required
                                 />
                                 {errors.title && (
-                                    <p className="text-[12px] text-error-text">
+                                    <p className="text-[var(--font-base)] text-error-text">
                                         {errors.title}
                                     </p>
                                 )}

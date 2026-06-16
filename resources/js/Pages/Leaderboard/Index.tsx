@@ -185,7 +185,7 @@ export default function LeaderboardIndex({
             {/* Filter */}
             <div className="mb-xl rounded-[var(--radius-lg)] border border-border bg-surface p-6 flex flex-col md:flex-row items-start md:items-end gap-6">
                 <div className="flex flex-col gap-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                    <span className="text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
                         Periode Cepat
                     </span>
                     <div className="flex bg-surface-subtle p-1 rounded-full border border-border gap-1">
@@ -205,7 +205,7 @@ export default function LeaderboardIndex({
                                         setDateFrom(`${year}${q.from}`);
                                         setDateTo(`${year}${q.to}`);
                                     }}
-                                    className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all ${
+                                    className={`px-4 py-1.5 rounded-full text-[var(--font-base)] font-medium transition-all ${
                                         isActive
                                             ? "bg-surface shadow-[var(--shadow-xs)] border border-border text-primary font-semibold"
                                             : "text-text-secondary hover:text-text-primary"
@@ -269,10 +269,10 @@ export default function LeaderboardIndex({
                 {grouped.map((group) => (
                     <div key={group.role}>
                         <div className="mb-3 flex items-center justify-between px-1">
-                            <h2 className="text-[16px] font-semibold tracking-tight text-text-primary">
+                            <h2 className="text-[var(--font-md)] font-semibold tracking-tight text-text-primary">
                                 {roleLabels[group.role]} Rank
                             </h2>
-                            <div className="flex items-center gap-2 text-[11px] text-text-muted">
+                            <div className="flex items-center gap-2 text-[var(--font-sm)] text-text-muted">
                                 <span className="h-2 w-2 rounded-full bg-primary" />
                                 {group.entries.length} peserta
                             </div>
@@ -281,16 +281,16 @@ export default function LeaderboardIndex({
                             <table className="w-full border-collapse">
                                 <thead>
                                     <tr className="border-b border-border bg-surface-subtle">
-                                        <th className="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-widest text-text-secondary w-20">
+                                        <th className="px-6 py-4 text-left text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary w-20">
                                             # Rank
                                         </th>
-                                        <th className="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                                        <th className="px-6 py-4 text-left text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
                                             Nama
                                         </th>
-                                        <th className="px-6 py-4 text-center text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                                        <th className="px-6 py-4 text-center text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
                                             Score
                                         </th>
-                                        <th className="px-6 py-4 text-right text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                                        <th className="px-6 py-4 text-right text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
                                             Action
                                         </th>
                                     </tr>
@@ -301,31 +301,31 @@ export default function LeaderboardIndex({
                                             <tr className="transition-colors duration-150 hover:bg-surface-subtle">
                                                 <td className="px-6 py-5">
                                                     {idx === 0 ? (
-                                                        <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-white">
+                                                        <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[var(--font-base)] font-bold text-white">
                                                             1
-                                                            <span className="absolute -right-1 -top-2 text-[13px]">
+                                                            <span className="absolute -right-1 -top-2 text-[var(--font-base)]">
                                                                 🏆
                                                             </span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-[14px] font-semibold text-text-secondary">
+                                                        <span className="text-[var(--font-base)] font-semibold text-text-secondary">
                                                             {idx + 1}
                                                         </span>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-5">
-                                                    <p className="text-[14px] font-semibold text-text-primary">
+                                                    <p className="text-[var(--font-base)] font-semibold text-text-primary">
                                                         {entry.name}
                                                     </p>
-                                                    <p className="text-[12px] text-text-secondary capitalize">
+                                                    <p className="text-[var(--font-base)] text-text-secondary capitalize">
                                                         {entry.role}
                                                     </p>
                                                 </td>
                                                 <td className="px-6 py-5 text-center">
                                                     <div className="flex flex-col items-center gap-1">
-                                                        <span className="text-[18px] font-bold text-primary">
+                                                        <span className="text-[var(--font-md)] font-bold text-primary">
                                                             {entry.score}
-                                                            <span className="text-[13px] font-medium text-text-secondary">
+                                                            <span className="text-[var(--font-base)] font-medium text-text-secondary">
                                                                 {" "}
                                                                 / 100
                                                             </span>
@@ -361,7 +361,7 @@ export default function LeaderboardIndex({
                                                                     : entry.user_id,
                                                             )
                                                         }
-                                                        className={`rounded-full border px-4 py-1.5 text-[13px] font-medium transition-all ${
+                                                        className={`rounded-full border px-4 py-1.5 text-[var(--font-base)] font-medium transition-all ${
                                                             expanded ===
                                                             entry.user_id
                                                                 ? "border-primary bg-primary text-white"
@@ -388,7 +388,7 @@ export default function LeaderboardIndex({
                                                                         key={
                                                                             b.parameter
                                                                         }
-                                                                        className="flex items-center justify-between text-[13px]"
+                                                                        className="flex items-center justify-between text-[var(--font-base)]"
                                                                     >
                                                                         <span className="text-text-secondary">
                                                                             {
@@ -418,7 +418,7 @@ export default function LeaderboardIndex({
                                                             {entry.breakdown
                                                                 .length ===
                                                                 0 && (
-                                                                <p className="text-[13px] text-text-muted">
+                                                                <p className="text-[var(--font-base)] text-text-muted">
                                                                     Belum ada
                                                                     parameter
                                                                     untuk role
@@ -461,14 +461,14 @@ export default function LeaderboardIndex({
                                 key={card.label}
                                 className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-surface p-6"
                             >
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-subtle text-[22px]">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-subtle text-[var(--font-lg)]">
                                     {card.icon}
                                 </div>
                                 <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+                                    <p className="text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
                                         {card.label}
                                     </p>
-                                    <p className="text-[18px] font-bold text-text-primary">
+                                    <p className="text-[var(--font-md)] font-bold text-text-primary">
                                         {card.value}
                                     </p>
                                 </div>
@@ -487,7 +487,7 @@ export default function LeaderboardIndex({
                     <DialogBody className="flex flex-col gap-xl">
                         {/* existing parameters */}
                         <div>
-                            <p className="mb-sm text-[12px] font-medium tracking-wider text-text-muted uppercase">
+                            <p className="mb-sm text-[var(--font-base)] font-medium tracking-wider text-text-muted uppercase">
                                 Parameter Aktif
                             </p>
                             <div className="flex flex-col gap-sm">
@@ -513,7 +513,7 @@ export default function LeaderboardIndex({
                                                     </Badge>
                                                 )}
                                             </p>
-                                            <p className="text-[12px] text-text-muted">
+                                            <p className="text-[var(--font-base)] text-text-muted">
                                                 Max {p.max_points} pts ·{" "}
                                                 {p.assigned_roles
                                                     .map((r) => roleLabels[r])
@@ -534,7 +534,7 @@ export default function LeaderboardIndex({
 
                         {/* add new parameter */}
                         <div>
-                            <p className="mb-sm text-[12px] font-medium tracking-wider text-text-muted uppercase">
+                            <p className="mb-sm text-[var(--font-base)] font-medium tracking-wider text-text-muted uppercase">
                                 Tambah Parameter Baru
                             </p>
                             <form
@@ -645,8 +645,8 @@ export default function LeaderboardIndex({
                                                     paramForm.data.assigned_roles.includes(
                                                         r,
                                                     )
-                                                        ? "rounded-xs bg-primary-subtle px-2 py-0.5 text-[12px] font-medium text-primary-text"
-                                                        : "rounded-xs bg-surface-raised px-2 py-0.5 text-[12px] font-medium text-text-secondary"
+                                                        ? "rounded-xs bg-primary-subtle px-2 py-0.5 text-[var(--font-base)] font-medium text-primary-text"
+                                                        : "rounded-xs bg-surface-raised px-2 py-0.5 text-[var(--font-base)] font-medium text-text-secondary"
                                                 }
                                             >
                                                 {roleLabels[r]}

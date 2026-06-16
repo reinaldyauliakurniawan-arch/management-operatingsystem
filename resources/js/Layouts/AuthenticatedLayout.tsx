@@ -138,14 +138,14 @@ export default function Authenticated({
                 <div className="border-b border-border p-md">
                     {sidebarOpen ? (
                         <div>
-                            <p className="mb-0.5 text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
+                            <p className="mb-0.5 text-[var(--font-sm)] font-medium uppercase tracking-[0.06em] text-text-muted">
                                 Active Team
                             </p>
                             {userTeams.length > 1 ? (
                                 <select
                                     value={activeTeamId ?? ""}
                                     onChange={(e) => switchTeam(e.target.value)}
-                                    className="w-full bg-surface-raised border border-border rounded-lg px-sm py-xs text-[13px] text-text-primary outline-none appearance-none"
+                                    className="w-full bg-surface-raised border border-border rounded-lg px-sm py-xs text-[var(--font-base)] text-text-primary outline-none appearance-none"
                                 >
                                     {userTeams.map((t: any) => (
                                         <option key={t.id} value={t.id}>
@@ -154,14 +154,14 @@ export default function Authenticated({
                                     ))}
                                 </select>
                             ) : (
-                                <p className="text-[13px] font-medium text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
+                                <p className="text-[var(--font-base)] font-medium text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
                                     {activeTeam?.name ?? "—"}
                                 </p>
                             )}
                         </div>
                     ) : (
                         <div className="flex justify-center">
-                            <span className="text-[14px] font-semibold text-primary">
+                            <span className="text-[var(--font-base)] font-semibold text-primary">
                                 {activeTeam?.name?.[0]?.toUpperCase() ?? "J"}
                             </span>
                         </div>
@@ -173,7 +173,7 @@ export default function Authenticated({
                     {navGroups.map((group) => (
                         <div key={group.label} className="mb-sm">
                             {sidebarOpen && (
-                                <p className="px-sm mb-xs mt-md text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
+                                <p className="px-sm mb-xs mt-md text-[var(--font-sm)] font-medium uppercase tracking-[0.06em] text-text-muted">
                                     {group.label}
                                 </p>
                             )}
@@ -191,9 +191,9 @@ export default function Authenticated({
                                                         ? item.label
                                                         : undefined
                                                 }
-                                                className={`flex items-center gap-sm rounded-sm text-[13px] no-underline whitespace-nowrap overflow-hidden transition-[background,color] duration-100 border-l-2 ${
+                                                className={`flex items-center gap-sm rounded-sm text-[var(--font-base)] no-underline whitespace-nowrap overflow-hidden transition-[background,color] duration-100 border-l-2 ${
                                                     isActive
-                                                        ? "pl-[6px] pr-sm py-[6px] font-medium text-primary bg-primary-subtle border-primary"
+                                                        ? "pl-[6px] pr-sm py-[6px] font-medium text-white bg-primary border-primary"
                                                         : "px-sm py-[6px] font-normal text-text-secondary bg-transparent border-transparent hover:bg-surface-overlay hover:text-text-primary"
                                                 } ${!sidebarOpen ? "justify-center" : ""}`}
                                             >
@@ -215,17 +215,17 @@ export default function Authenticated({
                     {sidebarOpen ? (
                         <div className="flex items-center justify-between gap-sm">
                             <div className="min-w-0">
-                                <p className="text-[13px] font-medium text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
+                                <p className="text-[var(--font-base)] font-medium text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
                                     {user.name}
                                 </p>
-                                <p className="text-[11px] text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
+                                <p className="text-[var(--font-sm)] text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
                                     {user.email}
                                 </p>
                             </div>
                             <div className="flex gap-sm">
                                 <Link
                                     href={route("profile.edit")}
-                                    className="text-[11px] text-text-muted bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-text-primary"
+                                    className="text-[var(--font-sm)] text-text-muted bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-text-primary"
                                 >
                                     Profil
                                 </Link>
@@ -233,7 +233,7 @@ export default function Authenticated({
                                     href={route("logout")}
                                     method="post"
                                     as="button"
-                                    className="text-[11px] text-text-muted bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-error-text"
+                                    className="text-[var(--font-sm)] text-text-muted bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-error-text"
                                 >
                                     Logout
                                 </Link>
@@ -242,7 +242,7 @@ export default function Authenticated({
                     ) : (
                         <div className="flex justify-center">
                             <div className="size-7 rounded-full bg-primary-subtle flex items-center justify-center">
-                                <span className="text-[11px] font-semibold text-primary">
+                                <span className="text-[var(--font-sm)] font-semibold text-primary">
                                     {user.name?.[0]?.toUpperCase()}
                                 </span>
                             </div>
@@ -288,7 +288,7 @@ export default function Authenticated({
                             />
                         </svg>
                     </button>
-                    <span className="text-[13px] text-text-muted">
+                    <span className="text-[var(--font-base)] text-text-muted">
                         {activeTeam?.name}
                     </span>
                 </header>
