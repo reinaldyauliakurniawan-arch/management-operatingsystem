@@ -21,7 +21,9 @@ class AccountabilityChartController extends Controller
 
     public function apiSeats(Request $request)
     {
-        $orgId = session("active_organization_id");
+        $orgId  = session("active_organization_id");
+        $teamId = session("active_team_id");
+        $bigPicture = $request->boolean("big_picture");
 
         $withRelations = [
             "user",
@@ -51,12 +53,15 @@ class AccountabilityChartController extends Controller
 
     public function apiUsers(Request $request)
     {
-        $teamId = session("active_team_id");
+        $orgId = session("active_organization_id");
 
-        $users = $teamId
-            ? User::whereHas("teamMemberships", fn($q) => $q->where("team_id", $teamId))
-                ->get(["id", "name"])
-            : User::all(["id", "name"]);
+        $teamIds = Team::withoutGlobalScopes()
+            ->where("organization_id", $orgId)
+            ->pluck("id");
+
+        $users = User::whereHas("teamMemberships", fn($q) => $q->whereIn("team_id", $teamIds))
+            ->orderBy("name")
+            ->get(["id", "name"]);
 
         return response()->json(["users" => $users]);
     }

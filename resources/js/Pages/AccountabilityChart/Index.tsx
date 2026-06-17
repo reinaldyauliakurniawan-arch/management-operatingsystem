@@ -3,6 +3,7 @@ import { Head, usePage } from "@inertiajs/react";
 import axios from "axios";
 import {
     ReactFlow,
+    ReactFlowProvider,
     Node,
     Edge,
     Background,
@@ -10,6 +11,8 @@ import {
     MiniMap,
     useNodesState,
     useEdgesState,
+    Handle,
+    Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
@@ -46,8 +49,6 @@ interface User {
     name: string;
 }
 
-// ─── Convert seats tree → React Flow nodes + edges ───────────────────────────
-
 const NODE_W = 220;
 const NODE_H = 80;
 const GAP_X = 40;
@@ -69,8 +70,6 @@ function buildNodesEdges(
     nodes: Node[],
     edges: Edge[],
     isEditable: boolean,
-    onEdit: (seat: Seat) => void,
-    onDelete: (id: number) => void,
 ) {
     const subtreeW = measureSubtreeWidth(seat);
     const cx = x + subtreeW / 2 - NODE_W / 2;
@@ -79,16 +78,17 @@ function buildNodesEdges(
         id: String(seat.id),
         type: "seatNode",
         position: { x: cx, y },
-        data: { seat, isEditable, onEdit, onDelete },
-        style: { width: NODE_W },
+        data: { seat, isEditable },
+        style: { width: NODE_W, cursor: "default" },
+        draggable: false,
+        selectable: true,
+        focusable: false,
     });
 
     if (seat.children && seat.children.length > 0) {
         let childX = x;
         for (const child of seat.children) {
             const childW = measureSubtreeWidth(child);
-            const childCx = childX + childW / 2 - NODE_W / 2;
-
             edges.push({
                 id: `e${seat.id}-${child.id}`,
                 source: String(seat.id),
@@ -96,7 +96,6 @@ function buildNodesEdges(
                 type: "smoothstep",
                 style: { stroke: "#94a3b8", strokeWidth: 2 },
             });
-
             buildNodesEdges(
                 child,
                 childX,
@@ -104,8 +103,6 @@ function buildNodesEdges(
                 nodes,
                 edges,
                 isEditable,
-                onEdit,
-                onDelete,
             );
             childX += childW + GAP_X;
         }
@@ -115,49 +112,60 @@ function buildNodesEdges(
 function seatsToFlow(
     seats: Seat[],
     isEditable: boolean,
-    onEdit: (seat: Seat) => void,
-    onDelete: (id: number) => void,
 ): { nodes: Node[]; edges: Edge[] } {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
     let x = 0;
     for (const seat of seats) {
         const w = measureSubtreeWidth(seat);
-        buildNodesEdges(seat, x, 0, nodes, edges, isEditable, onEdit, onDelete);
+        buildNodesEdges(seat, x, 0, nodes, edges, isEditable);
         x += w + GAP_X * 2;
     }
     return { nodes, edges };
 }
 
-// ─── Custom Node ─────────────────────────────────────────────────────────────
+const seatCallbacksRef = {
+    onEdit: (_seat: Seat) => {},
+    onDelete: (_id: number) => {},
+};
 
 function SeatNode({ data }: { data: any }) {
-    const { seat, isEditable, onEdit, onDelete } = data as {
-        seat: Seat;
-        isEditable: boolean;
-        onEdit: (seat: Seat) => void;
-        onDelete: (id: number) => void;
-    };
-
+    const { seat, isEditable } = data as { seat: Seat; isEditable: boolean };
     return (
         <div
-            className="group rounded-lg border border-border bg-surface p-4 shadow-sm hover:border-primary hover:bg-surface-subtle transition-all"
+            className="rounded-lg border border-border bg-surface p-4 shadow-sm hover:border-primary hover:bg-surface-subtle transition-all"
             style={{ width: NODE_W, minHeight: NODE_H }}
         >
+            <Handle
+                type="target"
+                position={Position.Top}
+                style={{ opacity: 0 }}
+            />
+            <Handle
+                type="source"
+                position={Position.Bottom}
+                style={{ opacity: 0 }}
+            />
             <div className="flex items-start justify-between mb-1">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-primary opacity-60">
                     {seat.title || "—"}
                 </span>
                 {isEditable && (
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1">
                         <button
-                            onClick={() => onEdit(seat)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                seatCallbacksRef.onEdit(seat);
+                            }}
                             className="rounded px-1.5 py-0.5 text-[11px] font-medium text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
                         >
                             Edit
                         </button>
                         <button
-                            onClick={() => onDelete(seat.id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                seatCallbacksRef.onDelete(seat.id);
+                            }}
                             className="rounded px-1.5 py-0.5 text-[11px] font-medium text-error hover:bg-error-subtle"
                         >
                             Hapus
@@ -190,8 +198,6 @@ function SeatNode({ data }: { data: any }) {
 }
 
 const nodeTypes = { seatNode: SeatNode };
-
-// ─── Sub-forms ────────────────────────────────────────────────────────────────
 
 function ExistingUserForm({
     title,
@@ -255,7 +261,7 @@ function ExistingUserForm({
                 >
                     <option value="">— Belum terisi —</option>
                     {users.map((u) => (
-                        <option key={u.id} value={u.id}>
+                        <option key={u.id} value={u.id.toString()}>
                             {u.name}
                         </option>
                     ))}
@@ -386,17 +392,55 @@ function NewUserForm({
     );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+function FlowCanvas({
+    rootSeats,
+    isEditable,
+}: {
+    rootSeats: Seat[];
+    isEditable: boolean;
+}) {
+    const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+    useEffect(() => {
+        const { nodes: n, edges: e } = seatsToFlow(rootSeats, isEditable);
+        setNodes(n);
+        setEdges(e);
+    }, [rootSeats, isEditable]);
+
+    return (
+        <div style={{ width: "100%", height: "100%" }}>
+            <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                nodeTypes={nodeTypes}
+                fitView
+                fitViewOptions={{ padding: 0.2 }}
+                nodesDraggable={false}
+                nodesConnectable={false}
+                elementsSelectable={false}
+                panOnDrag={true}
+                zoomOnScroll={true}
+            >
+                <Background color="#e2e8f0" gap={20} />
+                <Controls showInteractive={false} />
+                <MiniMap nodeStrokeWidth={3} zoomable pannable />
+            </ReactFlow>
+        </div>
+    );
+}
 
 export default function AccountabilityChartIndex() {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
     const isOrgAdmin = auth.user?.is_org_admin;
+    const isEditable = isLeader || isOrgAdmin;
 
     const [seats, setSeats] = useState<Seat[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
-    const [bigPicture, setBigPicture] = useState(false);
 
     const [createOpen, setCreateOpen] = useState(false);
     const [editSeat, setEditSeat] = useState<Seat | null>(null);
@@ -413,9 +457,6 @@ export default function AccountabilityChartIndex() {
     const [fNewEmail, setFNewEmail] = useState("");
     const [fNewRole, setFNewRole] = useState("member");
 
-    const [nodes, setNodes, onNodesChange] = useNodesState([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
     const openEdit = useCallback((seat: Seat) => {
         setFTitle(seat.title);
         setFResp(seat.responsibilities?.join("\n") ?? "");
@@ -429,27 +470,17 @@ export default function AccountabilityChartIndex() {
         setDeleteId(id);
     }, []);
 
+    seatCallbacksRef.onEdit = openEdit;
+    seatCallbacksRef.onDelete = handleDelete;
+
     const fetchSeats = useCallback(async () => {
         try {
-            const res = await axios.get(
-                `/api/accountability-chart/seats?big_picture=${bigPicture ? 1 : 0}`,
-            );
-            const fetchedSeats: Seat[] = res.data.seats;
-            setSeats(fetchedSeats);
-            const rootSeats = fetchedSeats.filter((s) => s.parent_id === null);
-            const isEditable = (isLeader || isOrgAdmin) && !bigPicture;
-            const { nodes: n, edges: e } = seatsToFlow(
-                rootSeats,
-                isEditable,
-                openEdit,
-                handleDelete,
-            );
-            setNodes(n);
-            setEdges(e);
+            const res = await axios.get("/api/accountability-chart/seats");
+            setSeats(res.data.seats);
         } catch (err) {
             console.error("Failed to fetch seats", err);
         }
-    }, [bigPicture, isLeader, isOrgAdmin, openEdit, handleDelete]);
+    }, []);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -470,6 +501,8 @@ export default function AccountabilityChartIndex() {
     const allSeats = (function flatten(list: Seat[] = []): Seat[] {
         return list.flatMap((s) => [s, ...flatten(s.children ?? [])]);
     })(seats);
+
+    const rootSeats = seats.filter((s) => s.parent_id === null);
 
     const resetForm = () => {
         setFTitle("");
@@ -579,42 +612,21 @@ export default function AccountabilityChartIndex() {
     return (
         <AuthenticatedLayout>
             <Head title="Accountability Chart" />
-
             <PageHeader
                 title="Accountability Chart"
                 subtitle="Struktur organisasi — siapa di seat apa"
                 action={
-                    <div className="flex items-center gap-sm">
-                        <div className="flex rounded-sm border border-border overflow-hidden">
-                            <button
-                                type="button"
-                                onClick={() => setBigPicture(false)}
-                                className={`px-md py-xs text-[var(--font-base)] font-medium transition-colors ${!bigPicture ? "bg-primary text-text-inverse" : "bg-surface text-text-secondary hover:bg-surface-overlay"}`}
+                    isEditable ? (
+                        <div className="flex items-center gap-sm">
+                            <Button
+                                variant="secondary"
+                                onClick={generateFromTeams}
                             >
-                                Tim Saya
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setBigPicture(true)}
-                                className={`px-md py-xs text-[var(--font-base)] font-medium transition-colors ${bigPicture ? "bg-primary text-text-inverse" : "bg-surface text-text-secondary hover:bg-surface-overlay"}`}
-                            >
-                                Seluruh Org
-                            </button>
+                                Generate dari Tim
+                            </Button>
+                            <Button onClick={openCreate}>+ Tambah Seat</Button>
                         </div>
-                        {(isLeader || isOrgAdmin) && !bigPicture && (
-                            <>
-                                <Button
-                                    variant="secondary"
-                                    onClick={generateFromTeams}
-                                >
-                                    Generate dari Tim
-                                </Button>
-                                <Button onClick={openCreate}>
-                                    + Tambah Seat
-                                </Button>
-                            </>
-                        )}
-                    </div>
+                    ) : undefined
                 }
             />
 
@@ -624,17 +636,13 @@ export default function AccountabilityChartIndex() {
                         Memuat chart…
                     </CardContent>
                 </Card>
-            ) : nodes.length === 0 ? (
+            ) : rootSeats.length === 0 ? (
                 <Card>
                     <CardContent className="py-16">
                         <EmptyState
-                            title={
-                                bigPicture
-                                    ? "Belum ada chart"
-                                    : "Chart tim belum dibuat"
-                            }
+                            title="Belum ada chart"
                             description={
-                                isLeader || isOrgAdmin
+                                isEditable
                                     ? "Tambah seat pertama atau generate dari data tim."
                                     : "Struktur belum dibuat oleh leader."
                             }
@@ -646,26 +654,15 @@ export default function AccountabilityChartIndex() {
                     style={{ height: "70vh" }}
                     className="rounded-[var(--radius-lg)] border border-border overflow-hidden"
                 >
-                    <ReactFlow
-                        nodes={nodes}
-                        edges={edges}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        nodeTypes={nodeTypes}
-                        fitView
-                        fitViewOptions={{ padding: 0.2 }}
-                        nodesDraggable={false}
-                        nodesConnectable={false}
-                        elementsSelectable={false}
-                    >
-                        <Background color="#e2e8f0" gap={20} />
-                        <Controls showInteractive={false} />
-                        <MiniMap nodeStrokeWidth={3} zoomable pannable />
-                    </ReactFlow>
+                    <ReactFlowProvider>
+                        <FlowCanvas
+                            rootSeats={rootSeats}
+                            isEditable={isEditable}
+                        />
+                    </ReactFlowProvider>
                 </div>
             )}
 
-            {/* Create Modal */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                 <DialogContent size="md">
                     <DialogHeader>
@@ -737,7 +734,6 @@ export default function AccountabilityChartIndex() {
                 </DialogContent>
             </Dialog>
 
-            {/* Edit Modal */}
             <Dialog
                 open={!!editSeat}
                 onOpenChange={(open) => !open && setEditSeat(null)}
