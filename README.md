@@ -1,4 +1,4 @@
-# Manual Book — Management Operating System (Just Speak)
+# Manual Book — Management Operating System (Just Speak) by Reinaldy
 
 ---
 
