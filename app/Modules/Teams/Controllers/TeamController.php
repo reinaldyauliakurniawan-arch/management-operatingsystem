@@ -25,6 +25,7 @@ class TeamController extends Controller
         $teams = Team::withoutGlobalScopes()
             ->with(["members.user"])
             ->where("organization_id", $orgId)
+            ->whereNull("deleted_at")
             ->get()
             ->map(
                 fn($team) => [
@@ -251,15 +252,22 @@ class TeamController extends Controller
         return back()->with("message", "Leader di-assign.");
     }
 
-    public function destroy(Team $team)
+    public function destroy(int $team)
     {
         $this->requireOrgAdmin();
 
-        // Soft delete — data historis tetap
-        $team->delete();
+        $teamModel = Team::withoutGlobalScopes()->findOrFail($team);
+
+        // Hard delete seats terkait
+        \App\Modules\AccountabilityChart\Models\Seat::withoutGlobalScopes()
+            ->where("team_id", $teamModel->id)
+            ->delete();
+
+        // Hard delete team
+        $teamModel->delete();
 
         // Jika ini active team, clear session
-        if (session("active_team_id") === $team->id) {
+        if (session("active_team_id") === $teamModel->id) {
             session()->forget(["active_team_id", "active_organization_id"]);
         }
 

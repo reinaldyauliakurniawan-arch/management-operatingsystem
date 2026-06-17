@@ -3,14 +3,13 @@
 namespace App\Modules\Teams\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasOrganization;
 use App\Models\Organization;
 use App\Models\User;
 
 class Team extends Model
 {
-    use SoftDeletes, HasOrganization;
+    use HasOrganization;
 
     protected $fillable = [
         'organization_id',

@@ -4,12 +4,11 @@ namespace App\Modules\AccountabilityChart\Models;
 
 use App\Traits\HasTeam;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 
 class Seat extends Model
 {
-    use SoftDeletes, HasTeam;
+    use HasTeam;
 
     protected $fillable = [
         'team_id',

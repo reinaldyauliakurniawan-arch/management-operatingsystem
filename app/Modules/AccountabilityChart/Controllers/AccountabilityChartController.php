@@ -16,15 +16,12 @@ class AccountabilityChartController extends Controller
 {
     public function index(Request $request)
     {
-        $teamId = session("active_team_id");
-        $orgId = session("active_organization_id");
-        $bigPicture = $request->boolean("big_picture", false);
+        return Inertia::render("AccountabilityChart/Index");
+    }
 
-        \Log::info('ACC CHART DEBUG', [
-            'teamId' => $teamId,
-            'orgId' => $orgId,
-            'userId' => $request->user()?->id,
-        ]);
+    public function apiSeats(Request $request)
+    {
+        $orgId = session("active_organization_id");
 
         $withRelations = [
             "user",
@@ -36,38 +33,32 @@ class AccountabilityChartController extends Controller
             "children.children.children.user",
         ];
 
-        if ($bigPicture && $orgId) {
-            $teamIds = Team::withoutGlobalScopes()->where("organization_id", $orgId)->pluck("id");
-            $seats = Seat::withoutGlobalScopes()
-                ->with($withRelations)
-                ->whereIn("team_id", $teamIds)
-                ->whereNull("parent_id")
-                ->orderBy("id")
-                ->get();
-        } else {
-            $teamIds = Team::withoutGlobalScopes()
-                ->where("organization_id", $orgId)
-                ->pluck("id");
-            $seats = Seat::withoutGlobalScopes()
-                ->with($withRelations)
-                ->whereIn("team_id", $teamIds)
-                ->whereNull("parent_id")
-                ->orderBy("id")
-                ->get();
-        }
+        $teamIds = Team::withoutGlobalScopes()
+            ->where("organization_id", $orgId)
+            ->pluck("id");
+
+        $seats = Seat::withoutGlobalScopes()
+            ->with($withRelations)
+            ->whereIn("team_id", $teamIds)
+            ->whereNull("parent_id")
+            ->orderBy("id")
+            ->get();
+
+        return response()->json([
+            "seats" => SeatResource::collection($seats)->resolve(),
+        ]);
+    }
+
+    public function apiUsers(Request $request)
+    {
+        $teamId = session("active_team_id");
 
         $users = $teamId
-            ? User::whereHas(
-                "teamMemberships",
-                fn($q) => $q->where("team_id", $teamId),
-            )->get(["id", "name"])
+            ? User::whereHas("teamMemberships", fn($q) => $q->where("team_id", $teamId))
+                ->get(["id", "name"])
             : User::all(["id", "name"]);
 
-        return Inertia::render("AccountabilityChart/Index", [
-            "seats" => SeatResource::collection($seats)->resolve(),
-            "users" => $users,
-            "bigPicture" => $bigPicture,
-        ]);
+        return response()->json(["users" => $users]);
     }
 
     public function store(
@@ -76,149 +67,138 @@ class AccountabilityChartController extends Controller
         CreateUserAndAddToTeam $createUser,
     ) {
         $teamId = session("active_team_id");
-        $role = $request
-            ->user()
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        $role = $request->user()->teamMemberships()->where("team_id", $teamId)->value("role");
 
         if ($role !== "leader" && !$request->user()->is_org_admin) {
-            abort(403, "Hanya leader atau org admin yang bisa menambah seat.");
+            return response()->json(["message" => "Forbidden"], 403);
         }
 
-        // New user flow
         if ($request->boolean("create_new_user")) {
             $request->validate([
-                "new_user_name" => "required|string|max:255",
-                "new_user_email" => "required|email|unique:users,email",
-                "new_user_role" => "required|in:leader,member,tutor",
-                "title" => "required|string|max:255",
-                "parent_id" => "nullable|exists:seats,id",
+                "new_user_name"    => "required|string|max:255",
+                "new_user_email"   => "required|email|unique:users,email",
+                "new_user_role"    => "required|in:leader,member,tutor",
+                "title"            => "required|string|max:255",
+                "parent_id"        => "nullable|exists:seats,id",
                 "responsibilities" => "nullable|array",
             ]);
 
-            $newUser = $createUser->execute(
-                [
-                    "name" => $request->new_user_name,
-                    "email" => $request->new_user_email,
-                    "role" => $request->new_user_role,
-                ],
-                $teamId,
-            );
+            $newUser = $createUser->execute([
+                "name"  => $request->new_user_name,
+                "email" => $request->new_user_email,
+                "role"  => $request->new_user_role,
+            ], $teamId);
 
             $createSeat->execute([
-                "title" => $request->title,
-                "parent_id" => $request->parent_id,
-                "user_id" => $newUser->id,
+                "title"            => $request->title,
+                "parent_id"        => $request->parent_id,
+                "user_id"          => $newUser->id,
                 "responsibilities" => $request->responsibilities,
             ]);
 
-            return back()->with("message", "User dan seat berhasil dibuat.");
+            return response()->json(["message" => "User dan seat berhasil dibuat."]);
         }
 
-        // Existing user flow
         $validated = $request->validate([
-            "title" => "required|string|max:255",
-            "parent_id" => "nullable|exists:seats,id",
-            "user_id" => "nullable|exists:users,id",
+            "title"            => "required|string|max:255",
+            "parent_id"        => "nullable|exists:seats,id",
+            "user_id"          => "nullable|exists:users,id",
             "responsibilities" => "nullable|array",
         ]);
 
         $createSeat->execute($validated);
 
-        return back()->with("message", "Seat added");
+        return response()->json(["message" => "Seat added"]);
     }
 
     public function update(Request $request, int $seat)
     {
         $teamId = session("active_team_id");
-        $role = $request
-            ->user()
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        $role = $request->user()->teamMemberships()->where("team_id", $teamId)->value("role");
 
         if ($role !== "leader" && !$request->user()->is_org_admin) {
-            abort(403);
+            return response()->json(["message" => "Forbidden"], 403);
         }
 
         $validated = $request->validate([
-            "title" => "sometimes|string|max:255",
-            "parent_id" => "nullable|exists:seats,id",
-            "user_id" => "nullable|exists:users,id",
+            "title"            => "sometimes|string|max:255",
+            "parent_id"        => "nullable|exists:seats,id",
+            "user_id"          => "nullable|exists:users,id",
             "responsibilities" => "nullable|array",
         ]);
 
         $seatModel = Seat::withoutGlobalScopes()->findOrFail($seat);
         $seatModel->update($validated);
-        return back()->with("message", "Seat updated");
+
+        return response()->json(["message" => "Seat updated"]);
     }
 
     public function generateFromTeams(Request $request)
     {
-        $teamId = session('active_team_id');
-        $orgId = session('active_organization_id');
-        $role = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $teamId = session("active_team_id");
+        $orgId  = session("active_organization_id");
+        $role   = $request->user()->teamMemberships()->where("team_id", $teamId)->value("role");
 
-        if ($role !== 'leader' && !$request->user()->is_org_admin) {
-            abort(403, 'Hanya leader atau org admin yang bisa generate chart.');
+        if ($role !== "leader" && !$request->user()->is_org_admin) {
+            return response()->json(["message" => "Forbidden"], 403);
         }
 
-        // Ambil semua team dalam org, urutkan parent dulu
         $teams = Team::withoutGlobalScopes()
-            ->with(['members' => fn($q) => $q->where('role', 'leader'), 'members.user'])
-            ->where('organization_id', $orgId)
-            ->orderBy('parent_team_id')
+            ->with(["members", "members.user"])
+            ->where("organization_id", $orgId)
+            ->orderBy("parent_team_id")
             ->get();
 
         $teamToSeat = [];
 
         foreach ($teams as $team) {
-            // Cek apakah seat dengan nama ini sudah ada untuk team ini
-            $existing = Seat::withoutGlobalScopes()
-                ->where('team_id', $team->id)
-                ->first();
-
+            $existing = Seat::withoutGlobalScopes()->where("team_id", $team->id)->whereNull("parent_id")->first();
             if ($existing) {
                 $teamToSeat[$team->id] = $existing->id;
                 continue;
             }
 
-            $leader = $team->members->first();
+            $leader       = $team->members->where("role", "leader")->first();
             $parentSeatId = $team->parent_team_id ? ($teamToSeat[$team->parent_team_id] ?? null) : null;
 
-            $seat = Seat::create([
-                'team_id'         => $team->id,
-                'title'           => $team->name,
-                'user_id'         => $leader?->user_id ?? null,
-                'parent_id'       => $parentSeatId,
-                'responsibilities' => [],
+            // Buat seat untuk team (diisi leader)
+            $teamSeat = Seat::create([
+                "team_id"          => $team->id,
+                "title"            => $team->name,
+                "user_id"          => $leader?->user_id ?? null,
+                "parent_id"        => $parentSeatId,
+                "responsibilities" => [],
             ]);
 
-            $teamToSeat[$team->id] = $seat->id;
+            $teamToSeat[$team->id] = $teamSeat->id;
+
+            // Buat seat untuk setiap member (non-leader)
+            foreach ($team->members->where("role", "!=", "leader") as $member) {
+                Seat::create([
+                    "team_id"          => $team->id,
+                    "title"            => "",
+                    "user_id"          => $member->user_id,
+                    "parent_id"        => $teamSeat->id,
+                    "responsibilities" => [],
+                ]);
+            }
         }
 
-        return back()->with('message', 'Chart berhasil di-generate dari data tim.');
+        return response()->json(["message" => "Chart berhasil di-generate dari data tim."]);
     }
 
     public function destroy(int $seat)
     {
-        \Log::info('DESTROY SEAT', ['seat_id' => $seat]);
         $teamId = session("active_team_id");
-        $role = request()
-            ->user()
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        $role   = request()->user()->teamMemberships()->where("team_id", $teamId)->value("role");
 
         if ($role !== "leader" && !request()->user()->is_org_admin) {
-            abort(403);
+            return response()->json(["message" => "Forbidden"], 403);
         }
 
         $seatModel = Seat::withoutGlobalScopes()->findOrFail($seat);
-        \Log::info('FOUND SEAT', ['id' => $seatModel->id, 'title' => $seatModel->title]);
-        $result = $seatModel->delete();
-        \Log::info('DELETE RESULT', ['result' => $result]);
-        return back()->with("message", "Seat deleted");
+        $seatModel->delete();
+
+        return response()->json(["message" => "Seat deleted"]);
     }
 }

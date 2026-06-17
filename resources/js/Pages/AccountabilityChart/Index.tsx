@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Head, usePage, router, useForm } from "@inertiajs/react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Head, usePage } from "@inertiajs/react";
+import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
 import { Button } from "@/Components/ui/button";
-import { Badge } from "@/Components/ui/badge";
 import { Card, CardContent } from "@/Components/ui/card";
 import {
     Dialog,
@@ -35,28 +35,42 @@ interface User {
     name: string;
 }
 
+// ─── Sub-forms (top-level agar tidak re-mount saat parent re-render) ──────────
+
 function ExistingUserForm({
-    data,
-    setData,
-    errors,
+    title,
+    setTitle,
+    responsibilities,
+    setResponsibilities,
+    userId,
+    setUserId,
+    parentId,
+    setParentId,
     users,
     allSeats,
     editSeatId,
+    errors,
 }: {
-    data: any;
-    setData: (key: string, value: any) => void;
-    errors: any;
+    title: string;
+    setTitle: (v: string) => void;
+    responsibilities: string;
+    setResponsibilities: (v: string) => void;
+    userId: string;
+    setUserId: (v: string) => void;
+    parentId: string;
+    setParentId: (v: string) => void;
     users: User[];
     allSeats: Seat[];
     editSeatId?: number;
+    errors: Record<string, string>;
 }) {
     return (
         <div className="flex flex-col gap-lg">
             <div className="flex flex-col gap-xs">
                 <Label>Nama Seat / Posisi *</Label>
                 <Input
-                    value={data.title}
-                    onChange={(e) => setData("title", e.target.value)}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     placeholder="Misal: Head of Marketing"
                     aria-invalid={!!errors.title}
                 />
@@ -69,10 +83,8 @@ function ExistingUserForm({
             <div className="flex flex-col gap-xs">
                 <Label>Responsibilities (satu per baris)</Label>
                 <Textarea
-                    value={data.responsibilities}
-                    onChange={(e) =>
-                        setData("responsibilities", e.target.value)
-                    }
+                    value={responsibilities}
+                    onChange={(e) => setResponsibilities(e.target.value)}
                     placeholder={
                         "Contoh:\nManage marketing budget\nLead campaign strategy"
                     }
@@ -82,8 +94,8 @@ function ExistingUserForm({
             <div className="flex flex-col gap-xs">
                 <Label>User (opsional)</Label>
                 <Select
-                    value={data.user_id}
-                    onChange={(e) => setData("user_id", e.target.value)}
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
                 >
                     <option value="">— Belum terisi —</option>
                     {users.map((u) => (
@@ -96,8 +108,8 @@ function ExistingUserForm({
             <div className="flex flex-col gap-xs">
                 <Label>Parent Seat (opsional)</Label>
                 <Select
-                    value={data.parent_id}
-                    onChange={(e) => setData("parent_id", e.target.value)}
+                    value={parentId}
+                    onChange={(e) => setParentId(e.target.value)}
                 >
                     <option value="">— Root —</option>
                     {allSeats
@@ -114,28 +126,43 @@ function ExistingUserForm({
 }
 
 function NewUserForm({
-    data,
-    setData,
-    errors,
+    title,
+    setTitle,
+    newName,
+    setNewName,
+    newEmail,
+    setNewEmail,
+    newRole,
+    setNewRole,
+    parentId,
+    setParentId,
     allSeats,
+    errors,
 }: {
-    data: any;
-    setData: (key: string, value: any) => void;
-    errors: any;
+    title: string;
+    setTitle: (v: string) => void;
+    newName: string;
+    setNewName: (v: string) => void;
+    newEmail: string;
+    setNewEmail: (v: string) => void;
+    newRole: string;
+    setNewRole: (v: string) => void;
+    parentId: string;
+    setParentId: (v: string) => void;
     allSeats: Seat[];
+    errors: Record<string, string>;
 }) {
     return (
         <div className="flex flex-col gap-lg">
             <div className="rounded-sm bg-info-subtle px-md py-sm text-[var(--font-base)] text-info-text">
                 User baru akan dibuat dengan password default{" "}
-                <strong>member123</strong>. Mereka bisa mengubah password
-                sendiri setelah login.
+                <strong>member123</strong>.
             </div>
             <div className="flex flex-col gap-xs">
                 <Label>Nama Lengkap *</Label>
                 <Input
-                    value={data.new_user_name}
-                    onChange={(e) => setData("new_user_name", e.target.value)}
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
                     placeholder="Nama lengkap"
                     aria-invalid={!!errors.new_user_name}
                 />
@@ -149,8 +176,8 @@ function NewUserForm({
                 <Label>Email *</Label>
                 <Input
                     type="email"
-                    value={data.new_user_email}
-                    onChange={(e) => setData("new_user_email", e.target.value)}
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
                     placeholder="email@perusahaan.com"
                     aria-invalid={!!errors.new_user_email}
                 />
@@ -163,8 +190,8 @@ function NewUserForm({
             <div className="flex flex-col gap-xs">
                 <Label>Role di Team *</Label>
                 <Select
-                    value={data.new_user_role}
-                    onChange={(e) => setData("new_user_role", e.target.value)}
+                    value={newRole}
+                    onChange={(e) => setNewRole(e.target.value)}
                 >
                     <option value="member">Member</option>
                     <option value="tutor">Tutor</option>
@@ -174,8 +201,8 @@ function NewUserForm({
             <div className="flex flex-col gap-xs">
                 <Label>Nama Seat / Posisi *</Label>
                 <Input
-                    value={data.title}
-                    onChange={(e) => setData("title", e.target.value)}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     placeholder="Misal: Head of Marketing"
                     aria-invalid={!!errors.title}
                 />
@@ -188,8 +215,8 @@ function NewUserForm({
             <div className="flex flex-col gap-xs">
                 <Label>Parent Seat (opsional)</Label>
                 <Select
-                    value={data.parent_id}
-                    onChange={(e) => setData("parent_id", e.target.value)}
+                    value={parentId}
+                    onChange={(e) => setParentId(e.target.value)}
                 >
                     <option value="">— Root —</option>
                     {allSeats.map((s) => (
@@ -202,6 +229,8 @@ function NewUserForm({
         </div>
     );
 }
+
+// ─── Seat Card (visual tree node) ────────────────────────────────────────────
 
 function SeatCard({
     seat,
@@ -219,15 +248,10 @@ function SeatCard({
     depth?: number;
 }) {
     const hasChildren = (seat.children ?? []).length > 0;
-
     return (
         <div className="flex flex-col items-center">
-            {/* connector from parent */}
             {depth > 0 && <div className="h-10 w-px bg-border" />}
-
-            {/* Card */}
             <div className="group w-[260px] rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-xs)] transition-all duration-200 hover:border-primary hover:bg-surface-subtle">
-                {/* role label + actions */}
                 <div className="mb-3 flex items-start justify-between">
                     <span className="text-[var(--font-sm)] font-semibold uppercase tracking-widest text-primary opacity-70">
                         {depth === 0 ? "Root" : `Level ${depth}`}
@@ -249,13 +273,9 @@ function SeatCard({
                         </div>
                     )}
                 </div>
-
-                {/* title */}
                 <h3 className="text-[var(--font-md)] font-semibold leading-snug tracking-tight text-text-primary">
                     {seat.title}
                 </h3>
-
-                {/* person */}
                 {seat.user ? (
                     <p className="mt-1 text-[var(--font-base)] text-text-secondary">
                         {seat.user.name}
@@ -265,8 +285,6 @@ function SeatCard({
                         Belum terisi
                     </p>
                 )}
-
-                {/* responsibilities */}
                 {seat.responsibilities && seat.responsibilities.length > 0 && (
                     <ul className="mt-4 space-y-1.5 border-t border-border pt-4">
                         {seat.responsibilities.map((r, i) => (
@@ -281,25 +299,18 @@ function SeatCard({
                     </ul>
                 )}
             </div>
-
-            {/* children subtree */}
             {hasChildren && (
                 <div className="flex flex-col items-center">
-                    {/* vertical down to horizontal bar */}
                     <div className="h-10 w-px bg-border" />
                     <div className="relative flex items-start">
-                        {/* horizontal bar */}
                         {seat.children.length > 1 && (
                             <div
                                 className="absolute top-0 h-px bg-border"
-                                style={{
-                                    left: "130px",
-                                    right: "130px",
-                                }}
+                                style={{ left: "130px", right: "130px" }}
                             />
                         )}
                         <div className="flex gap-8">
-                            {(seat.children ?? []).map((child) => (
+                            {seat.children.map((child) => (
                                 <SeatCard
                                     key={child.id}
                                     seat={child}
@@ -318,151 +329,188 @@ function SeatCard({
     );
 }
 
-export default function AccountabilityChartIndex({
-    seats: initialSeats,
-    users,
-    bigPicture: initialBigPicture,
-}: {
-    seats: Seat[];
-    users: User[];
-    bigPicture: boolean;
-}) {
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function AccountabilityChartIndex() {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
     const isOrgAdmin = auth.user?.is_org_admin;
 
-    const [seats, setSeats] = useState<Seat[]>(initialSeats);
-    useEffect(() => {
-        setSeats(initialSeats);
-    }, [initialSeats]);
+    // ── Data state ──
+    const [seats, setSeats] = useState<Seat[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [bigPicture, setBigPicture] = useState(false);
+
+    // ── Modal state ──
     const [createOpen, setCreateOpen] = useState(false);
     const [editSeat, setEditSeat] = useState<Seat | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [tab, setTab] = useState<"existing" | "new">("existing");
-    const [bigPicture, setBigPicture] = useState(initialBigPicture);
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const [submitAsNew, setSubmitAsNew] = React.useState(false);
-    const { data, setData, post, put, processing, reset, errors, transform } =
-        useForm({
-            title: "",
-            responsibilities: "",
-            user_id: "" as string | number,
-            parent_id: "" as string | number,
-            // new user fields
-            create_new_user: false,
-            new_user_name: "",
-            new_user_email: "",
-            new_user_role: "member" as string,
-        });
+    // ── Form fields (uncontrolled per field agar kursor tidak lompat) ──
+    const [fTitle, setFTitle] = useState("");
+    const [fResp, setFResp] = useState("");
+    const [fUserId, setFUserId] = useState("");
+    const [fParentId, setFParentId] = useState("");
+    const [fNewName, setFNewName] = useState("");
+    const [fNewEmail, setFNewEmail] = useState("");
+    const [fNewRole, setFNewRole] = useState("member");
 
-    transform((d) => ({
-        ...d,
-        responsibilities: d.responsibilities
-            ? d.responsibilities
-                  .split("\n")
-                  .map((s: string) => s.trim())
-                  .filter(Boolean)
-            : [],
-        create_new_user: submitAsNew,
-    }));
+    // ── Fetch helpers ──
+    const fetchSeats = useCallback(async () => {
+        try {
+            const res = await axios.get(
+                `/api/accountability-chart/seats?big_picture=${bigPicture ? 1 : 0}`,
+            );
+            setSeats(res.data.seats);
+        } catch (e) {
+            console.error("Failed to fetch seats", e);
+        }
+    }, [bigPicture]);
 
-    const toggleBigPicture = (val: boolean) => {
-        setBigPicture(val);
-        router.get(
-            route("accountability.index"),
-            { big_picture: val ? 1 : 0 },
-            { preserveState: true, replace: true },
+    const fetchUsers = useCallback(async () => {
+        try {
+            const res = await axios.get("/api/accountability-chart/users");
+            setUsers(res.data.users);
+        } catch (e) {
+            console.error("Failed to fetch users", e);
+        }
+    }, []);
+
+    useEffect(() => {
+        setLoading(true);
+        Promise.all([fetchSeats(), fetchUsers()]).finally(() =>
+            setLoading(false),
         );
-    };
+    }, [fetchSeats, fetchUsers]);
 
-    const generateFromTeams = () => {
-        router.post(
-            route("accountability-chart.generate"),
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    router.reload({ only: ["seats"] });
-                },
-            },
-        );
+    // ── Flatten seats for parent selector ──
+    const allSeats = (function flatten(list: Seat[] = []): Seat[] {
+        return list.flatMap((s) => [s, ...flatten(s.children ?? [])]);
+    })(seats);
+
+    // ── Helpers ──
+    const resetForm = () => {
+        setFTitle("");
+        setFResp("");
+        setFUserId("");
+        setFParentId("");
+        setFNewName("");
+        setFNewEmail("");
+        setFNewRole("member");
+        setErrors({});
     };
 
     const openCreate = () => {
-        reset();
+        resetForm();
         setTab("existing");
         setCreateOpen(true);
     };
 
     const openEdit = (seat: Seat) => {
-        setData({
-            title: seat.title,
-            responsibilities: seat.responsibilities?.join("\n") ?? "",
-            user_id: seat.user?.id ?? "",
-            parent_id: seat.parent_id ?? "",
-            create_new_user: false,
-            new_user_name: "",
-            new_user_email: "",
-            new_user_role: "member",
-        });
+        setFTitle(seat.title);
+        setFResp(seat.responsibilities?.join("\n") ?? "");
+        setFUserId(seat.user?.id?.toString() ?? "");
+        setFParentId(seat.parent_id?.toString() ?? "");
+        setErrors({});
         setEditSeat(seat);
     };
 
-    const submit = (e: React.FormEvent) => {
-        e.preventDefault();
+    // ── Submit create ──
+    const submitCreate = async () => {
+        setProcessing(true);
+        setErrors({});
+        try {
+            const payload =
+                tab === "new"
+                    ? {
+                          create_new_user: true,
+                          new_user_name: fNewName,
+                          new_user_email: fNewEmail,
+                          new_user_role: fNewRole,
+                          title: fTitle,
+                          parent_id: fParentId || null,
+                          responsibilities: fResp
+                              ? fResp
+                                    .split("\n")
+                                    .map((s) => s.trim())
+                                    .filter(Boolean)
+                              : [],
+                      }
+                    : {
+                          create_new_user: false,
+                          title: fTitle,
+                          responsibilities: fResp
+                              ? fResp
+                                    .split("\n")
+                                    .map((s) => s.trim())
+                                    .filter(Boolean)
+                              : [],
+                          user_id: fUserId || null,
+                          parent_id: fParentId || null,
+                      };
 
-        if (editSeat) {
-            put(route("accountability-chart.update", editSeat.id), {
-                onSuccess: () => {
-                    setEditSeat(null);
-                    reset();
-                },
-            });
-        } else {
-            const isNew = tab === "new";
-            router.post(
-                route("accountability-chart.store"),
-                {
-                    ...data,
-                    responsibilities: data.responsibilities
-                        ? data.responsibilities
-                              .split("\n")
-                              .map((s: string) => s.trim())
-                              .filter(Boolean)
-                        : [],
-                    create_new_user: isNew,
-                },
-                {
-                    onSuccess: () => {
-                        setCreateOpen(false);
-                        reset();
-                    },
-                },
-            );
+            await axios.post("/api/accountability-chart", payload);
+            setCreateOpen(false);
+            resetForm();
+            await fetchSeats();
+        } catch (e: any) {
+            if (e.response?.data?.errors) setErrors(e.response.data.errors);
+        } finally {
+            setProcessing(false);
         }
     };
 
-    const removeSeatFromTree = (list: Seat[], id: number): Seat[] => {
-        return list
-            .filter((s) => s.id !== id)
-            .map((s) => ({
-                ...s,
-                children: removeSeatFromTree(s.children ?? [], id),
-            }));
+    // ── Submit edit ──
+    const submitEdit = async () => {
+        if (!editSeat) return;
+        setProcessing(true);
+        setErrors({});
+        try {
+            await axios.patch(`/api/accountability-chart/${editSeat.id}`, {
+                title: fTitle,
+                responsibilities: fResp
+                    ? fResp
+                          .split("\n")
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                    : [],
+                user_id: fUserId || null,
+                parent_id: fParentId || null,
+            });
+            setEditSeat(null);
+            resetForm();
+            await fetchSeats();
+        } catch (e: any) {
+            if (e.response?.data?.errors) setErrors(e.response.data.errors);
+        } finally {
+            setProcessing(false);
+        }
     };
 
-    const destroy = (id: number) => {
-        router.delete(route("accountability-chart.destroy", id), {
-            onSuccess: () => {
-                setDeleteId(null);
-                window.location.href = window.location.href;
-            },
-        });
+    // ── Delete ──
+    const destroy = async (id: number) => {
+        try {
+            await axios.delete(`/api/accountability-chart/${id}`);
+            setDeleteId(null);
+            await fetchSeats();
+        } catch (e) {
+            console.error("Delete failed", e);
+        }
     };
 
-    const allSeats = (function flatten(list: Seat[] = []): Seat[] {
-        return (list ?? []).flatMap((s) => [s, ...flatten(s.children ?? [])]);
-    })(seats ?? []);
+    // ── Generate from teams ──
+    const generateFromTeams = async () => {
+        try {
+            await axios.post("/api/accountability-chart/generate-from-teams");
+            await fetchSeats();
+        } catch (e) {
+            console.error("Generate failed", e);
+        }
+    };
 
     return (
         <AuthenticatedLayout>
@@ -473,27 +521,18 @@ export default function AccountabilityChartIndex({
                 subtitle="Struktur organisasi — siapa di seat apa"
                 action={
                     <div className="flex items-center gap-sm">
-                        {/* View toggle */}
                         <div className="flex rounded-sm border border-border overflow-hidden">
                             <button
                                 type="button"
-                                onClick={() => toggleBigPicture(false)}
-                                className={`px-md py-xs text-[var(--font-base)] font-medium transition-colors ${
-                                    !bigPicture
-                                        ? "bg-primary text-text-inverse"
-                                        : "bg-surface text-text-secondary hover:bg-surface-overlay"
-                                }`}
+                                onClick={() => setBigPicture(false)}
+                                className={`px-md py-xs text-[var(--font-base)] font-medium transition-colors ${!bigPicture ? "bg-primary text-text-inverse" : "bg-surface text-text-secondary hover:bg-surface-overlay"}`}
                             >
                                 Tim Saya
                             </button>
                             <button
                                 type="button"
-                                onClick={() => toggleBigPicture(true)}
-                                className={`px-md py-xs text-[var(--font-base)] font-medium transition-colors ${
-                                    bigPicture
-                                        ? "bg-primary text-text-inverse"
-                                        : "bg-surface text-text-secondary hover:bg-surface-overlay"
-                                }`}
+                                onClick={() => setBigPicture(true)}
+                                className={`px-md py-xs text-[var(--font-base)] font-medium transition-colors ${bigPicture ? "bg-primary text-text-inverse" : "bg-surface text-text-secondary hover:bg-surface-overlay"}`}
                             >
                                 Seluruh Org
                             </button>
@@ -515,7 +554,13 @@ export default function AccountabilityChartIndex({
                 }
             />
 
-            {seats.length === 0 ? (
+            {loading ? (
+                <Card>
+                    <CardContent className="py-16 text-center text-text-secondary">
+                        Memuat chart…
+                    </CardContent>
+                </Card>
+            ) : seats.length === 0 ? (
                 <Card>
                     <CardContent className="py-16">
                         <EmptyState
@@ -526,7 +571,7 @@ export default function AccountabilityChartIndex({
                             }
                             description={
                                 isLeader || isOrgAdmin
-                                    ? "Tambah seat pertama untuk membangun struktur."
+                                    ? "Tambah seat pertama atau generate dari data tim."
                                     : "Struktur belum dibuat oleh leader."
                             }
                         />
@@ -558,49 +603,52 @@ export default function AccountabilityChartIndex({
                         <DialogTitle>Tambah Seat</DialogTitle>
                     </DialogHeader>
                     <DialogBody>
-                        {/* Tab switcher */}
                         <div className="mb-lg flex rounded-sm border border-border overflow-hidden">
                             <button
                                 type="button"
                                 onClick={() => setTab("existing")}
-                                className={`flex-1 py-xs text-[var(--font-base)] font-medium transition-colors ${
-                                    tab === "existing"
-                                        ? "bg-primary text-text-inverse"
-                                        : "bg-surface text-text-secondary hover:bg-surface-overlay"
-                                }`}
+                                className={`flex-1 py-xs text-[var(--font-base)] font-medium transition-colors ${tab === "existing" ? "bg-primary text-text-inverse" : "bg-surface text-text-secondary hover:bg-surface-overlay"}`}
                             >
                                 User yang Ada
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setTab("new")}
-                                className={`flex-1 py-xs text-[var(--font-base)] font-medium transition-colors ${
-                                    tab === "new"
-                                        ? "bg-primary text-text-inverse"
-                                        : "bg-surface text-text-secondary hover:bg-surface-overlay"
-                                }`}
+                                className={`flex-1 py-xs text-[var(--font-base)] font-medium transition-colors ${tab === "new" ? "bg-primary text-text-inverse" : "bg-surface text-text-secondary hover:bg-surface-overlay"}`}
                             >
                                 Buat User Baru
                             </button>
                         </div>
-                        <form id="seat-create-form" onSubmit={submit}>
-                            {tab === "existing" ? (
-                                <ExistingUserForm
-                                    data={data}
-                                    setData={setData}
-                                    errors={errors}
-                                    users={users}
-                                    allSeats={allSeats}
-                                />
-                            ) : (
-                                <NewUserForm
-                                    data={data}
-                                    setData={setData}
-                                    errors={errors}
-                                    allSeats={allSeats}
-                                />
-                            )}
-                        </form>
+                        {tab === "existing" ? (
+                            <ExistingUserForm
+                                title={fTitle}
+                                setTitle={setFTitle}
+                                responsibilities={fResp}
+                                setResponsibilities={setFResp}
+                                userId={fUserId}
+                                setUserId={setFUserId}
+                                parentId={fParentId}
+                                setParentId={setFParentId}
+                                users={users}
+                                allSeats={allSeats}
+                                errors={errors}
+                            />
+                        ) : (
+                            <NewUserForm
+                                title={fTitle}
+                                setTitle={setFTitle}
+                                newName={fNewName}
+                                setNewName={setFNewName}
+                                newEmail={fNewEmail}
+                                setNewEmail={setFNewEmail}
+                                newRole={fNewRole}
+                                setNewRole={setFNewRole}
+                                parentId={fParentId}
+                                setParentId={setFParentId}
+                                allSeats={allSeats}
+                                errors={errors}
+                            />
+                        )}
                     </DialogBody>
                     <DialogFooter>
                         <Button
@@ -609,11 +657,7 @@ export default function AccountabilityChartIndex({
                         >
                             Batal
                         </Button>
-                        <Button
-                            type="submit"
-                            form="seat-create-form"
-                            disabled={processing}
-                        >
+                        <Button onClick={submitCreate} disabled={processing}>
                             {processing
                                 ? "Menyimpan…"
                                 : tab === "new"
@@ -634,16 +678,20 @@ export default function AccountabilityChartIndex({
                         <DialogTitle>Edit Seat</DialogTitle>
                     </DialogHeader>
                     <DialogBody>
-                        <form id="seat-edit-form" onSubmit={submit}>
-                            <ExistingUserForm
-                                data={data}
-                                setData={setData}
-                                errors={errors}
-                                users={users}
-                                allSeats={allSeats}
-                                editSeatId={editSeat?.id}
-                            />
-                        </form>
+                        <ExistingUserForm
+                            title={fTitle}
+                            setTitle={setFTitle}
+                            responsibilities={fResp}
+                            setResponsibilities={setFResp}
+                            userId={fUserId}
+                            setUserId={setFUserId}
+                            parentId={fParentId}
+                            setParentId={setFParentId}
+                            users={users}
+                            allSeats={allSeats}
+                            editSeatId={editSeat?.id}
+                            errors={errors}
+                        />
                     </DialogBody>
                     <DialogFooter>
                         <Button
@@ -652,11 +700,7 @@ export default function AccountabilityChartIndex({
                         >
                             Batal
                         </Button>
-                        <Button
-                            type="submit"
-                            form="seat-edit-form"
-                            disabled={processing}
-                        >
+                        <Button onClick={submitEdit} disabled={processing}>
                             {processing ? "Menyimpan…" : "Update"}
                         </Button>
                     </DialogFooter>
