@@ -7,6 +7,10 @@ Route::get("/accountability-chart", [
     AccountabilityChartController::class,
     "index",
 ])->name("accountability.index");
+Route::post("/accountability-chart/generate-from-teams", [
+    AccountabilityChartController::class,
+    "generateFromTeams",
+])->name("accountability-chart.generate");
 Route::post("/accountability-chart", [
     AccountabilityChartController::class,
     "store",
@@ -19,7 +23,3 @@ Route::delete("/accountability-chart/{seat}", [
     AccountabilityChartController::class,
     "destroy",
 ])->name("accountability-chart.destroy");
-Route::post("/accountability-chart/generate-from-teams", [
-    AccountabilityChartController::class,
-    "generateFromTeams",
-])->name("accountability-chart.generate");

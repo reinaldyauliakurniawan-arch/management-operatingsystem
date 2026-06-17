@@ -22,8 +22,8 @@ class SeatResource extends JsonResource
                 ]
                 : null,
             "children" => SeatResource::collection(
-                $this->whenLoaded("children", $this->children, collect()),
-            )->collection->values(),
+                $this->whenLoaded("children", $this->children ?? collect(), collect()),
+            )->resolve(),
         ];
     }
 }

@@ -39,4 +39,9 @@ class Seat extends Model
     {
         return $this->hasMany(Seat::class, 'parent_id');
     }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->withoutGlobalScopes()->where($field ?? $this->getRouteKeyName(), $value)->firstOrFail();
+    }
 }

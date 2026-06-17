@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Head, usePage, router, useForm } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
@@ -218,7 +218,7 @@ function SeatCard({
     onEdit: (seat: Seat) => void;
     depth?: number;
 }) {
-    const hasChildren = seat.children.length > 0;
+    const hasChildren = (seat.children ?? []).length > 0;
 
     return (
         <div className="flex flex-col items-center">
@@ -299,7 +299,7 @@ function SeatCard({
                             />
                         )}
                         <div className="flex gap-8">
-                            {seat.children.map((child) => (
+                            {(seat.children ?? []).map((child) => (
                                 <SeatCard
                                     key={child.id}
                                     seat={child}
@@ -319,7 +319,7 @@ function SeatCard({
 }
 
 export default function AccountabilityChartIndex({
-    seats,
+    seats: initialSeats,
     users,
     bigPicture: initialBigPicture,
 }: {
@@ -331,6 +331,10 @@ export default function AccountabilityChartIndex({
     const isLeader = auth.teamRole === "leader";
     const isOrgAdmin = auth.user?.is_org_admin;
 
+    const [seats, setSeats] = useState<Seat[]>(initialSeats);
+    useEffect(() => {
+        setSeats(initialSeats);
+    }, [initialSeats]);
     const [createOpen, setCreateOpen] = useState(false);
     const [editSeat, setEditSeat] = useState<Seat | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -377,6 +381,9 @@ export default function AccountabilityChartIndex({
             {},
             {
                 preserveScroll: true,
+                onSuccess: () => {
+                    router.reload({ only: ["seats"] });
+                },
             },
         );
     };
@@ -435,10 +442,21 @@ export default function AccountabilityChartIndex({
         }
     };
 
+    const removeSeatFromTree = (list: Seat[], id: number): Seat[] => {
+        return list
+            .filter((s) => s.id !== id)
+            .map((s) => ({
+                ...s,
+                children: removeSeatFromTree(s.children ?? [], id),
+            }));
+    };
+
     const destroy = (id: number) => {
         router.delete(route("accountability-chart.destroy", id), {
-            preserveScroll: true,
-            onSuccess: () => setDeleteId(null),
+            onSuccess: () => {
+                setDeleteId(null);
+                window.location.href = window.location.href;
+            },
         });
     };
 
@@ -482,14 +500,12 @@ export default function AccountabilityChartIndex({
                         </div>
                         {(isLeader || isOrgAdmin) && !bigPicture && (
                             <>
-                                {seats.length === 0 && (
-                                    <Button
-                                        variant="secondary"
-                                        onClick={generateFromTeams}
-                                    >
-                                        ⚡ Generate dari Tim
-                                    </Button>
-                                )}
+                                <Button
+                                    variant="secondary"
+                                    onClick={generateFromTeams}
+                                >
+                                    Generate dari Tim
+                                </Button>
                                 <Button onClick={openCreate}>
                                     + Tambah Seat
                                 </Button>

@@ -20,18 +20,37 @@ class AccountabilityChartController extends Controller
         $orgId = session("active_organization_id");
         $bigPicture = $request->boolean("big_picture", false);
 
+        \Log::info('ACC CHART DEBUG', [
+            'teamId' => $teamId,
+            'orgId' => $orgId,
+            'userId' => $request->user()?->id,
+        ]);
+
+        $withRelations = [
+            "user",
+            "children" => fn($q) => $q->withoutGlobalScopes(),
+            "children.user",
+            "children.children" => fn($q) => $q->withoutGlobalScopes(),
+            "children.children.user",
+            "children.children.children" => fn($q) => $q->withoutGlobalScopes(),
+            "children.children.children.user",
+        ];
+
         if ($bigPicture && $orgId) {
-            $teamIds = Team::where("organization_id", $orgId)->pluck("id");
+            $teamIds = Team::withoutGlobalScopes()->where("organization_id", $orgId)->pluck("id");
             $seats = Seat::withoutGlobalScopes()
-                ->with(["user", "children.user", "children.children.user", "children.children.children"])
+                ->with($withRelations)
                 ->whereIn("team_id", $teamIds)
                 ->whereNull("parent_id")
                 ->orderBy("id")
                 ->get();
         } else {
+            $teamIds = Team::withoutGlobalScopes()
+                ->where("organization_id", $orgId)
+                ->pluck("id");
             $seats = Seat::withoutGlobalScopes()
-                ->with(["user", "children.user", "children.children.user", "children.children.children"])
-                ->where("team_id", $teamId)
+                ->with($withRelations)
+                ->whereIn("team_id", $teamIds)
                 ->whereNull("parent_id")
                 ->orderBy("id")
                 ->get();
@@ -45,7 +64,7 @@ class AccountabilityChartController extends Controller
             : User::all(["id", "name"]);
 
         return Inertia::render("AccountabilityChart/Index", [
-            "seats" => SeatResource::collection($seats)->collection->values(),
+            "seats" => SeatResource::collection($seats)->resolve(),
             "users" => $users,
             "bigPicture" => $bigPicture,
         ]);
@@ -110,7 +129,7 @@ class AccountabilityChartController extends Controller
         return back()->with("message", "Seat added");
     }
 
-    public function update(Request $request, Seat $seat)
+    public function update(Request $request, int $seat)
     {
         $teamId = session("active_team_id");
         $role = $request
@@ -130,7 +149,8 @@ class AccountabilityChartController extends Controller
             "responsibilities" => "nullable|array",
         ]);
 
-        $seat->update($validated);
+        $seatModel = Seat::withoutGlobalScopes()->findOrFail($seat);
+        $seatModel->update($validated);
         return back()->with("message", "Seat updated");
     }
 
@@ -157,7 +177,6 @@ class AccountabilityChartController extends Controller
             // Cek apakah seat dengan nama ini sudah ada untuk team ini
             $existing = Seat::withoutGlobalScopes()
                 ->where('team_id', $team->id)
-                ->whereNull('parent_id')
                 ->first();
 
             if ($existing) {
@@ -182,8 +201,9 @@ class AccountabilityChartController extends Controller
         return back()->with('message', 'Chart berhasil di-generate dari data tim.');
     }
 
-    public function destroy(Seat $seat)
+    public function destroy(int $seat)
     {
+        \Log::info('DESTROY SEAT', ['seat_id' => $seat]);
         $teamId = session("active_team_id");
         $role = request()
             ->user()
@@ -195,7 +215,10 @@ class AccountabilityChartController extends Controller
             abort(403);
         }
 
-        $seat->delete();
+        $seatModel = Seat::withoutGlobalScopes()->findOrFail($seat);
+        \Log::info('FOUND SEAT', ['id' => $seatModel->id, 'title' => $seatModel->title]);
+        $result = $seatModel->delete();
+        \Log::info('DELETE RESULT', ['result' => $result]);
         return back()->with("message", "Seat deleted");
     }
 }
