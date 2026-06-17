@@ -19,3 +19,7 @@ Route::delete("/accountability-chart/{seat}", [
     AccountabilityChartController::class,
     "destroy",
 ])->name("accountability-chart.destroy");
+Route::post("/accountability-chart/generate-from-teams", [
+    AccountabilityChartController::class,
+    "generateFromTeams",
+])->name("accountability-chart.generate");

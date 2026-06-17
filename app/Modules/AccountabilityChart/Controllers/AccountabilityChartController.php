@@ -134,6 +134,54 @@ class AccountabilityChartController extends Controller
         return back()->with("message", "Seat updated");
     }
 
+    public function generateFromTeams(Request $request)
+    {
+        $teamId = session('active_team_id');
+        $orgId = session('active_organization_id');
+        $role = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if ($role !== 'leader' && !$request->user()->is_org_admin) {
+            abort(403, 'Hanya leader atau org admin yang bisa generate chart.');
+        }
+
+        // Ambil semua team dalam org, urutkan parent dulu
+        $teams = Team::withoutGlobalScopes()
+            ->with(['members' => fn($q) => $q->where('role', 'leader'), 'members.user'])
+            ->where('organization_id', $orgId)
+            ->orderBy('parent_team_id')
+            ->get();
+
+        $teamToSeat = [];
+
+        foreach ($teams as $team) {
+            // Cek apakah seat dengan nama ini sudah ada untuk team ini
+            $existing = Seat::withoutGlobalScopes()
+                ->where('team_id', $team->id)
+                ->whereNull('parent_id')
+                ->first();
+
+            if ($existing) {
+                $teamToSeat[$team->id] = $existing->id;
+                continue;
+            }
+
+            $leader = $team->members->first();
+            $parentSeatId = $team->parent_team_id ? ($teamToSeat[$team->parent_team_id] ?? null) : null;
+
+            $seat = Seat::create([
+                'team_id'         => $team->id,
+                'title'           => $team->name,
+                'user_id'         => $leader?->user_id ?? null,
+                'parent_id'       => $parentSeatId,
+                'responsibilities' => [],
+            ]);
+
+            $teamToSeat[$team->id] = $seat->id;
+        }
+
+        return back()->with('message', 'Chart berhasil di-generate dari data tim.');
+    }
+
     public function destroy(Seat $seat)
     {
         $teamId = session("active_team_id");

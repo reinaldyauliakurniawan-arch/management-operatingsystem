@@ -35,6 +35,174 @@ interface User {
     name: string;
 }
 
+function ExistingUserForm({
+    data,
+    setData,
+    errors,
+    users,
+    allSeats,
+    editSeatId,
+}: {
+    data: any;
+    setData: (key: string, value: any) => void;
+    errors: any;
+    users: User[];
+    allSeats: Seat[];
+    editSeatId?: number;
+}) {
+    return (
+        <div className="flex flex-col gap-lg">
+            <div className="flex flex-col gap-xs">
+                <Label>Nama Seat / Posisi *</Label>
+                <Input
+                    value={data.title}
+                    onChange={(e) => setData("title", e.target.value)}
+                    placeholder="Misal: Head of Marketing"
+                    aria-invalid={!!errors.title}
+                />
+                {errors.title && (
+                    <p className="text-[var(--font-base)] text-error-text">
+                        {errors.title}
+                    </p>
+                )}
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Responsibilities (satu per baris)</Label>
+                <Textarea
+                    value={data.responsibilities}
+                    onChange={(e) =>
+                        setData("responsibilities", e.target.value)
+                    }
+                    placeholder={
+                        "Contoh:\nManage marketing budget\nLead campaign strategy"
+                    }
+                    rows={3}
+                />
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>User (opsional)</Label>
+                <Select
+                    value={data.user_id}
+                    onChange={(e) => setData("user_id", e.target.value)}
+                >
+                    <option value="">— Belum terisi —</option>
+                    {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                            {u.name}
+                        </option>
+                    ))}
+                </Select>
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Parent Seat (opsional)</Label>
+                <Select
+                    value={data.parent_id}
+                    onChange={(e) => setData("parent_id", e.target.value)}
+                >
+                    <option value="">— Root —</option>
+                    {allSeats
+                        .filter((s) => s.id !== editSeatId)
+                        .map((s) => (
+                            <option key={s.id} value={s.id}>
+                                {s.title}
+                            </option>
+                        ))}
+                </Select>
+            </div>
+        </div>
+    );
+}
+
+function NewUserForm({
+    data,
+    setData,
+    errors,
+    allSeats,
+}: {
+    data: any;
+    setData: (key: string, value: any) => void;
+    errors: any;
+    allSeats: Seat[];
+}) {
+    return (
+        <div className="flex flex-col gap-lg">
+            <div className="rounded-sm bg-info-subtle px-md py-sm text-[var(--font-base)] text-info-text">
+                User baru akan dibuat dengan password default{" "}
+                <strong>member123</strong>. Mereka bisa mengubah password
+                sendiri setelah login.
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Nama Lengkap *</Label>
+                <Input
+                    value={data.new_user_name}
+                    onChange={(e) => setData("new_user_name", e.target.value)}
+                    placeholder="Nama lengkap"
+                    aria-invalid={!!errors.new_user_name}
+                />
+                {errors.new_user_name && (
+                    <p className="text-[var(--font-base)] text-error-text">
+                        {errors.new_user_name}
+                    </p>
+                )}
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Email *</Label>
+                <Input
+                    type="email"
+                    value={data.new_user_email}
+                    onChange={(e) => setData("new_user_email", e.target.value)}
+                    placeholder="email@perusahaan.com"
+                    aria-invalid={!!errors.new_user_email}
+                />
+                {errors.new_user_email && (
+                    <p className="text-[var(--font-base)] text-error-text">
+                        {errors.new_user_email}
+                    </p>
+                )}
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Role di Team *</Label>
+                <Select
+                    value={data.new_user_role}
+                    onChange={(e) => setData("new_user_role", e.target.value)}
+                >
+                    <option value="member">Member</option>
+                    <option value="tutor">Tutor</option>
+                    <option value="leader">Leader</option>
+                </Select>
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Nama Seat / Posisi *</Label>
+                <Input
+                    value={data.title}
+                    onChange={(e) => setData("title", e.target.value)}
+                    placeholder="Misal: Head of Marketing"
+                    aria-invalid={!!errors.title}
+                />
+                {errors.title && (
+                    <p className="text-[var(--font-base)] text-error-text">
+                        {errors.title}
+                    </p>
+                )}
+            </div>
+            <div className="flex flex-col gap-xs">
+                <Label>Parent Seat (opsional)</Label>
+                <Select
+                    value={data.parent_id}
+                    onChange={(e) => setData("parent_id", e.target.value)}
+                >
+                    <option value="">— Root —</option>
+                    {allSeats.map((s) => (
+                        <option key={s.id} value={s.id}>
+                            {s.title}
+                        </option>
+                    ))}
+                </Select>
+            </div>
+        </div>
+    );
+}
+
 function SeatCard({
     seat,
     isLeader,
@@ -203,6 +371,16 @@ export default function AccountabilityChartIndex({
         );
     };
 
+    const generateFromTeams = () => {
+        router.post(
+            route("accountability-chart.generate"),
+            {},
+            {
+                preserveScroll: true,
+            },
+        );
+    };
+
     const openCreate = () => {
         reset();
         setTab("existing");
@@ -268,146 +446,6 @@ export default function AccountabilityChartIndex({
         return (list ?? []).flatMap((s) => [s, ...flatten(s.children ?? [])]);
     })(seats ?? []);
 
-    const ExistingUserForm = () => (
-        <div className="flex flex-col gap-lg">
-            <div className="flex flex-col gap-xs">
-                <Label>Nama Seat / Posisi *</Label>
-                <Input
-                    value={data.title}
-                    onChange={(e) => setData("title", e.target.value)}
-                    placeholder="Misal: Head of Marketing"
-                    aria-invalid={!!errors.title}
-                />
-                {errors.title && (
-                    <p className="text-[var(--font-base)] text-error-text">
-                        {errors.title}
-                    </p>
-                )}
-            </div>
-            <div className="flex flex-col gap-xs">
-                <Label>Responsibilities (satu per baris)</Label>
-                <Textarea
-                    value={data.responsibilities}
-                    onChange={(e) =>
-                        setData("responsibilities", e.target.value)
-                    }
-                    placeholder={
-                        "Contoh:\nManage marketing budget\nLead campaign strategy"
-                    }
-                    rows={3}
-                />
-            </div>
-            <div className="flex flex-col gap-xs">
-                <Label>User (opsional)</Label>
-                <Select
-                    value={data.user_id}
-                    onChange={(e) => setData("user_id", e.target.value)}
-                >
-                    <option value="">— Belum terisi —</option>
-                    {users.map((u) => (
-                        <option key={u.id} value={u.id}>
-                            {u.name}
-                        </option>
-                    ))}
-                </Select>
-            </div>
-            <div className="flex flex-col gap-xs">
-                <Label>Parent Seat (opsional)</Label>
-                <Select
-                    value={data.parent_id}
-                    onChange={(e) => setData("parent_id", e.target.value)}
-                >
-                    <option value="">— Root —</option>
-                    {allSeats
-                        .filter((s) => s.id !== editSeat?.id)
-                        .map((s) => (
-                            <option key={s.id} value={s.id}>
-                                {s.title}
-                            </option>
-                        ))}
-                </Select>
-            </div>
-        </div>
-    );
-
-    const NewUserForm = () => (
-        <div className="flex flex-col gap-lg">
-            <div className="rounded-sm bg-info-subtle px-md py-sm text-[var(--font-base)] text-info-text">
-                User baru akan dibuat dengan password default{" "}
-                <strong>member123</strong>. Mereka bisa mengubah password
-                sendiri setelah login.
-            </div>
-            <div className="flex flex-col gap-xs">
-                <Label>Nama Lengkap *</Label>
-                <Input
-                    value={data.new_user_name}
-                    onChange={(e) => setData("new_user_name", e.target.value)}
-                    placeholder="Nama lengkap"
-                    aria-invalid={!!errors.new_user_name}
-                />
-                {errors.new_user_name && (
-                    <p className="text-[var(--font-base)] text-error-text">
-                        {errors.new_user_name}
-                    </p>
-                )}
-            </div>
-            <div className="flex flex-col gap-xs">
-                <Label>Email *</Label>
-                <Input
-                    type="email"
-                    value={data.new_user_email}
-                    onChange={(e) => setData("new_user_email", e.target.value)}
-                    placeholder="email@perusahaan.com"
-                    aria-invalid={!!errors.new_user_email}
-                />
-                {errors.new_user_email && (
-                    <p className="text-[var(--font-base)] text-error-text">
-                        {errors.new_user_email}
-                    </p>
-                )}
-            </div>
-            <div className="flex flex-col gap-xs">
-                <Label>Role di Team *</Label>
-                <Select
-                    value={data.new_user_role}
-                    onChange={(e) => setData("new_user_role", e.target.value)}
-                >
-                    <option value="member">Member</option>
-                    <option value="tutor">Tutor</option>
-                    <option value="leader">Leader</option>
-                </Select>
-            </div>
-            <div className="flex flex-col gap-xs">
-                <Label>Nama Seat / Posisi *</Label>
-                <Input
-                    value={data.title}
-                    onChange={(e) => setData("title", e.target.value)}
-                    placeholder="Misal: Head of Marketing"
-                    aria-invalid={!!errors.title}
-                />
-                {errors.title && (
-                    <p className="text-[var(--font-base)] text-error-text">
-                        {errors.title}
-                    </p>
-                )}
-            </div>
-            <div className="flex flex-col gap-xs">
-                <Label>Parent Seat (opsional)</Label>
-                <Select
-                    value={data.parent_id}
-                    onChange={(e) => setData("parent_id", e.target.value)}
-                >
-                    <option value="">— Root —</option>
-                    {allSeats.map((s) => (
-                        <option key={s.id} value={s.id}>
-                            {s.title}
-                        </option>
-                    ))}
-                </Select>
-            </div>
-        </div>
-    );
-
     return (
         <AuthenticatedLayout>
             <Head title="Accountability Chart" />
@@ -443,7 +481,19 @@ export default function AccountabilityChartIndex({
                             </button>
                         </div>
                         {(isLeader || isOrgAdmin) && !bigPicture && (
-                            <Button onClick={openCreate}>+ Tambah Seat</Button>
+                            <>
+                                {seats.length === 0 && (
+                                    <Button
+                                        variant="secondary"
+                                        onClick={generateFromTeams}
+                                    >
+                                        ⚡ Generate dari Tim
+                                    </Button>
+                                )}
+                                <Button onClick={openCreate}>
+                                    + Tambah Seat
+                                </Button>
+                            </>
                         )}
                     </div>
                 }
@@ -519,9 +569,20 @@ export default function AccountabilityChartIndex({
                         </div>
                         <form id="seat-create-form" onSubmit={submit}>
                             {tab === "existing" ? (
-                                <ExistingUserForm />
+                                <ExistingUserForm
+                                    data={data}
+                                    setData={setData}
+                                    errors={errors}
+                                    users={users}
+                                    allSeats={allSeats}
+                                />
                             ) : (
-                                <NewUserForm />
+                                <NewUserForm
+                                    data={data}
+                                    setData={setData}
+                                    errors={errors}
+                                    allSeats={allSeats}
+                                />
                             )}
                         </form>
                     </DialogBody>
@@ -558,7 +619,14 @@ export default function AccountabilityChartIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form id="seat-edit-form" onSubmit={submit}>
-                            <ExistingUserForm />
+                            <ExistingUserForm
+                                data={data}
+                                setData={setData}
+                                errors={errors}
+                                users={users}
+                                allSeats={allSeats}
+                                editSeatId={editSeat?.id}
+                            />
                         </form>
                     </DialogBody>
                     <DialogFooter>

@@ -12,7 +12,8 @@ import {
     DialogBody,
     DialogFooter,
 } from "@/Components/ui/dialog";
-import { Textarea } from "@/Components/ui/textarea";
+import { RichTextEditor } from "@/Components/ui/rich-text-editor";
+import { sanitizeHtml, isHtmlEmpty } from "@/Lib/sanitize-html";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import { cn } from "@/Lib/utils";
@@ -531,10 +532,15 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                     <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
                                         Purpose / Cause / Passion
                                     </p>
-                                    {vto.core_focus_purpose ? (
-                                        <p className="text-[var(--font-base)] leading-[22px]">
-                                            {vto.core_focus_purpose}
-                                        </p>
+                                    {!isHtmlEmpty(vto.core_focus_purpose) ? (
+                                        <div
+                                            className="rich-text-content text-[var(--font-base)] leading-[22px]"
+                                            dangerouslySetInnerHTML={{
+                                                __html: sanitizeHtml(
+                                                    vto.core_focus_purpose,
+                                                ),
+                                            }}
+                                        />
                                     ) : (
                                         <Empty canEdit={canEdit} />
                                     )}
@@ -543,10 +549,15 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                     <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
                                         Niche
                                     </p>
-                                    {vto.core_focus_niche ? (
-                                        <p className="text-[var(--font-base)] leading-[22px]">
-                                            {vto.core_focus_niche}
-                                        </p>
+                                    {!isHtmlEmpty(vto.core_focus_niche) ? (
+                                        <div
+                                            className="rich-text-content text-[var(--font-base)] leading-[22px]"
+                                            dangerouslySetInnerHTML={{
+                                                __html: sanitizeHtml(
+                                                    vto.core_focus_niche,
+                                                ),
+                                            }}
+                                        />
                                     ) : (
                                         <Empty canEdit={canEdit} />
                                     )}
@@ -612,10 +623,32 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                     <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
                                         Target Market
                                     </p>
-                                    {vto.target_market ? (
-                                        <p className="text-[var(--font-base)] leading-[22px]">
-                                            {vto.target_market}
-                                        </p>
+                                    {!isHtmlEmpty(vto.target_market) ? (
+                                        <div
+                                            className="rich-text-content text-[var(--font-base)] leading-[22px]"
+                                            dangerouslySetInnerHTML={{
+                                                __html: sanitizeHtml(
+                                                    vto.target_market,
+                                                ),
+                                            }}
+                                        />
+                                    ) : (
+                                        <Empty canEdit={canEdit} />
+                                    )}
+                                </div>
+                                <div className="pt-4 border-t border-border">
+                                    <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
+                                        Proven Process
+                                    </p>
+                                    {!isHtmlEmpty(vto.proven_process) ? (
+                                        <div
+                                            className="rich-text-content text-[var(--font-base)] leading-[22px]"
+                                            dangerouslySetInnerHTML={{
+                                                __html: sanitizeHtml(
+                                                    vto.proven_process,
+                                                ),
+                                            }}
+                                        />
                                     ) : (
                                         <Empty canEdit={canEdit} />
                                     )}
@@ -625,10 +658,15 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                                         <p className="text-[var(--font-sm)] font-semibold uppercase tracking-wider text-text-muted mb-1">
                                             3 Uniques
                                         </p>
-                                        {vto.three_uniques ? (
-                                            <p className="text-[var(--font-base)] leading-[20px]">
-                                                {vto.three_uniques}
-                                            </p>
+                                        {!isHtmlEmpty(vto.three_uniques) ? (
+                                            <div
+                                                className="rich-text-content text-[var(--font-base)] leading-[20px]"
+                                                dangerouslySetInnerHTML={{
+                                                    __html: sanitizeHtml(
+                                                        vto.three_uniques,
+                                                    ),
+                                                }}
+                                            />
                                         ) : (
                                             <Empty canEdit={canEdit} />
                                         )}
@@ -831,23 +869,17 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                             <div className="flex flex-col gap-md">
                                 <div className="flex flex-col gap-xs">
                                     <Label>Purpose / Cause / Passion</Label>
-                                    <Textarea
+                                    <RichTextEditor
                                         value={coreFocusPurpose}
-                                        onChange={(e) =>
-                                            setCoreFocusPurpose(e.target.value)
-                                        }
-                                        rows={3}
+                                        onChange={setCoreFocusPurpose}
                                         placeholder="Mengapa organisasi ini ada?"
                                     />
                                 </div>
                                 <div className="flex flex-col gap-xs">
                                     <Label>Niche</Label>
-                                    <Textarea
+                                    <RichTextEditor
                                         value={coreFocusNiche}
-                                        onChange={(e) =>
-                                            setCoreFocusNiche(e.target.value)
-                                        }
-                                        rows={3}
+                                        onChange={setCoreFocusNiche}
                                         placeholder="Apa yang paling kami kuasai?"
                                     />
                                 </div>
@@ -871,34 +903,25 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                             <div className="flex flex-col gap-md">
                                 <div className="flex flex-col gap-xs">
                                     <Label>Target Market</Label>
-                                    <Textarea
+                                    <RichTextEditor
                                         value={targetMarket}
-                                        onChange={(e) =>
-                                            setTargetMarket(e.target.value)
-                                        }
-                                        rows={2}
+                                        onChange={setTargetMarket}
                                         placeholder="Siapa pelanggan ideal kami?"
                                     />
                                 </div>
                                 <div className="flex flex-col gap-xs">
                                     <Label>3 Uniques</Label>
-                                    <Textarea
+                                    <RichTextEditor
                                         value={threeUniques}
-                                        onChange={(e) =>
-                                            setThreeUniques(e.target.value)
-                                        }
-                                        rows={3}
+                                        onChange={setThreeUniques}
                                         placeholder="Apa yang membuat kami unik?"
                                     />
                                 </div>
                                 <div className="flex flex-col gap-xs">
                                     <Label>Proven Process</Label>
-                                    <Textarea
+                                    <RichTextEditor
                                         value={provenProcess}
-                                        onChange={(e) =>
-                                            setProvenProcess(e.target.value)
-                                        }
-                                        rows={2}
+                                        onChange={setProvenProcess}
                                         placeholder="Jelaskan proses terbukti kami"
                                     />
                                 </div>
