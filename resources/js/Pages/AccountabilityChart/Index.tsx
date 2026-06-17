@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Head, usePage } from "@inertiajs/react";
 import axios from "axios";
+import {
+    ReactFlow,
+    Node,
+    Edge,
+    Background,
+    Controls,
+    MiniMap,
+    useNodesState,
+    useEdgesState,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
 import { Button } from "@/Components/ui/button";
@@ -35,7 +46,152 @@ interface User {
     name: string;
 }
 
-// ─── Sub-forms (top-level agar tidak re-mount saat parent re-render) ──────────
+// ─── Convert seats tree → React Flow nodes + edges ───────────────────────────
+
+const NODE_W = 220;
+const NODE_H = 80;
+const GAP_X = 40;
+const GAP_Y = 100;
+
+function measureSubtreeWidth(seat: Seat): number {
+    if (!seat.children || seat.children.length === 0) return NODE_W;
+    const childrenWidth = seat.children.reduce(
+        (sum, child) => sum + measureSubtreeWidth(child) + GAP_X,
+        -GAP_X,
+    );
+    return Math.max(NODE_W, childrenWidth);
+}
+
+function buildNodesEdges(
+    seat: Seat,
+    x: number,
+    y: number,
+    nodes: Node[],
+    edges: Edge[],
+    isEditable: boolean,
+    onEdit: (seat: Seat) => void,
+    onDelete: (id: number) => void,
+) {
+    const subtreeW = measureSubtreeWidth(seat);
+    const cx = x + subtreeW / 2 - NODE_W / 2;
+
+    nodes.push({
+        id: String(seat.id),
+        type: "seatNode",
+        position: { x: cx, y },
+        data: { seat, isEditable, onEdit, onDelete },
+        style: { width: NODE_W },
+    });
+
+    if (seat.children && seat.children.length > 0) {
+        let childX = x;
+        for (const child of seat.children) {
+            const childW = measureSubtreeWidth(child);
+            const childCx = childX + childW / 2 - NODE_W / 2;
+
+            edges.push({
+                id: `e${seat.id}-${child.id}`,
+                source: String(seat.id),
+                target: String(child.id),
+                type: "smoothstep",
+                style: { stroke: "#94a3b8", strokeWidth: 2 },
+            });
+
+            buildNodesEdges(
+                child,
+                childX,
+                y + NODE_H + GAP_Y,
+                nodes,
+                edges,
+                isEditable,
+                onEdit,
+                onDelete,
+            );
+            childX += childW + GAP_X;
+        }
+    }
+}
+
+function seatsToFlow(
+    seats: Seat[],
+    isEditable: boolean,
+    onEdit: (seat: Seat) => void,
+    onDelete: (id: number) => void,
+): { nodes: Node[]; edges: Edge[] } {
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+    let x = 0;
+    for (const seat of seats) {
+        const w = measureSubtreeWidth(seat);
+        buildNodesEdges(seat, x, 0, nodes, edges, isEditable, onEdit, onDelete);
+        x += w + GAP_X * 2;
+    }
+    return { nodes, edges };
+}
+
+// ─── Custom Node ─────────────────────────────────────────────────────────────
+
+function SeatNode({ data }: { data: any }) {
+    const { seat, isEditable, onEdit, onDelete } = data as {
+        seat: Seat;
+        isEditable: boolean;
+        onEdit: (seat: Seat) => void;
+        onDelete: (id: number) => void;
+    };
+
+    return (
+        <div
+            className="group rounded-lg border border-border bg-surface p-4 shadow-sm hover:border-primary hover:bg-surface-subtle transition-all"
+            style={{ width: NODE_W, minHeight: NODE_H }}
+        >
+            <div className="flex items-start justify-between mb-1">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-primary opacity-60">
+                    {seat.title || "—"}
+                </span>
+                {isEditable && (
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                            onClick={() => onEdit(seat)}
+                            className="rounded px-1.5 py-0.5 text-[11px] font-medium text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
+                        >
+                            Edit
+                        </button>
+                        <button
+                            onClick={() => onDelete(seat.id)}
+                            className="rounded px-1.5 py-0.5 text-[11px] font-medium text-error hover:bg-error-subtle"
+                        >
+                            Hapus
+                        </button>
+                    </div>
+                )}
+            </div>
+            {seat.user ? (
+                <p className="text-sm font-medium text-text-primary">
+                    {seat.user.name}
+                </p>
+            ) : (
+                <p className="text-sm italic text-text-muted">Belum terisi</p>
+            )}
+            {seat.responsibilities && seat.responsibilities.length > 0 && (
+                <ul className="mt-2 space-y-1 border-t border-border pt-2">
+                    {seat.responsibilities.map((r, i) => (
+                        <li
+                            key={i}
+                            className="flex items-start gap-1.5 text-[11px] text-text-secondary leading-snug"
+                        >
+                            <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary" />
+                            {r}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+}
+
+const nodeTypes = { seatNode: SeatNode };
+
+// ─── Sub-forms ────────────────────────────────────────────────────────────────
 
 function ExistingUserForm({
     title,
@@ -230,105 +386,6 @@ function NewUserForm({
     );
 }
 
-// ─── Seat Card (visual tree node) ────────────────────────────────────────────
-
-function SeatCard({
-    seat,
-    isLeader,
-    isOrgAdmin,
-    onDelete,
-    onEdit,
-    depth = 0,
-}: {
-    seat: Seat;
-    isLeader: boolean;
-    isOrgAdmin: boolean;
-    onDelete: (id: number) => void;
-    onEdit: (seat: Seat) => void;
-    depth?: number;
-}) {
-    const hasChildren = (seat.children ?? []).length > 0;
-    return (
-        <div className="flex flex-col items-center">
-            {depth > 0 && <div className="h-10 w-px bg-border" />}
-            <div className="group w-[260px] rounded-[var(--radius-lg)] border border-border bg-surface p-5 shadow-[var(--shadow-xs)] transition-all duration-200 hover:border-primary hover:bg-surface-subtle">
-                <div className="mb-3 flex items-start justify-between">
-                    <span className="text-[var(--font-sm)] font-semibold uppercase tracking-widest text-primary opacity-70">
-                        {depth === 0 ? "Root" : `Level ${depth}`}
-                    </span>
-                    {(isLeader || isOrgAdmin) && (
-                        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            <button
-                                onClick={() => onEdit(seat)}
-                                className="rounded px-2 py-0.5 text-[var(--font-sm)] font-medium text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
-                            >
-                                Edit
-                            </button>
-                            <button
-                                onClick={() => onDelete(seat.id)}
-                                className="rounded px-2 py-0.5 text-[var(--font-sm)] font-medium text-error hover:bg-error-subtle"
-                            >
-                                Hapus
-                            </button>
-                        </div>
-                    )}
-                </div>
-                <h3 className="text-[var(--font-md)] font-semibold leading-snug tracking-tight text-text-primary">
-                    {seat.title}
-                </h3>
-                {seat.user ? (
-                    <p className="mt-1 text-[var(--font-base)] text-text-secondary">
-                        {seat.user.name}
-                    </p>
-                ) : (
-                    <p className="mt-1 text-[var(--font-base)] italic text-text-muted">
-                        Belum terisi
-                    </p>
-                )}
-                {seat.responsibilities && seat.responsibilities.length > 0 && (
-                    <ul className="mt-4 space-y-1.5 border-t border-border pt-4">
-                        {seat.responsibilities.map((r, i) => (
-                            <li
-                                key={i}
-                                className="flex items-start gap-2 text-[var(--font-base)] leading-snug text-text-secondary"
-                            >
-                                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                                {r}
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </div>
-            {hasChildren && (
-                <div className="flex flex-col items-center">
-                    <div className="h-10 w-px bg-border" />
-                    <div className="relative flex items-start">
-                        {seat.children.length > 1 && (
-                            <div
-                                className="absolute top-0 h-px bg-border"
-                                style={{ left: "130px", right: "130px" }}
-                            />
-                        )}
-                        <div className="flex gap-8">
-                            {seat.children.map((child) => (
-                                <SeatCard
-                                    key={child.id}
-                                    seat={child}
-                                    isLeader={isLeader}
-                                    isOrgAdmin={isOrgAdmin}
-                                    onDelete={onDelete}
-                                    onEdit={onEdit}
-                                    depth={depth + 1}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
-
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AccountabilityChartIndex() {
@@ -336,13 +393,11 @@ export default function AccountabilityChartIndex() {
     const isLeader = auth.teamRole === "leader";
     const isOrgAdmin = auth.user?.is_org_admin;
 
-    // ── Data state ──
     const [seats, setSeats] = useState<Seat[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [bigPicture, setBigPicture] = useState(false);
 
-    // ── Modal state ──
     const [createOpen, setCreateOpen] = useState(false);
     const [editSeat, setEditSeat] = useState<Seat | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -350,7 +405,6 @@ export default function AccountabilityChartIndex() {
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // ── Form fields (uncontrolled per field agar kursor tidak lompat) ──
     const [fTitle, setFTitle] = useState("");
     const [fResp, setFResp] = useState("");
     const [fUserId, setFUserId] = useState("");
@@ -359,17 +413,43 @@ export default function AccountabilityChartIndex() {
     const [fNewEmail, setFNewEmail] = useState("");
     const [fNewRole, setFNewRole] = useState("member");
 
-    // ── Fetch helpers ──
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+    const openEdit = useCallback((seat: Seat) => {
+        setFTitle(seat.title);
+        setFResp(seat.responsibilities?.join("\n") ?? "");
+        setFUserId(seat.user?.id?.toString() ?? "");
+        setFParentId(seat.parent_id?.toString() ?? "");
+        setErrors({});
+        setEditSeat(seat);
+    }, []);
+
+    const handleDelete = useCallback((id: number) => {
+        setDeleteId(id);
+    }, []);
+
     const fetchSeats = useCallback(async () => {
         try {
             const res = await axios.get(
                 `/api/accountability-chart/seats?big_picture=${bigPicture ? 1 : 0}`,
             );
-            setSeats(res.data.seats);
-        } catch (e) {
-            console.error("Failed to fetch seats", e);
+            const fetchedSeats: Seat[] = res.data.seats;
+            setSeats(fetchedSeats);
+            const rootSeats = fetchedSeats.filter((s) => s.parent_id === null);
+            const isEditable = (isLeader || isOrgAdmin) && !bigPicture;
+            const { nodes: n, edges: e } = seatsToFlow(
+                rootSeats,
+                isEditable,
+                openEdit,
+                handleDelete,
+            );
+            setNodes(n);
+            setEdges(e);
+        } catch (err) {
+            console.error("Failed to fetch seats", err);
         }
-    }, [bigPicture]);
+    }, [bigPicture, isLeader, isOrgAdmin, openEdit, handleDelete]);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -387,12 +467,10 @@ export default function AccountabilityChartIndex() {
         );
     }, [fetchSeats, fetchUsers]);
 
-    // ── Flatten seats for parent selector ──
     const allSeats = (function flatten(list: Seat[] = []): Seat[] {
         return list.flatMap((s) => [s, ...flatten(s.children ?? [])]);
     })(seats);
 
-    // ── Helpers ──
     const resetForm = () => {
         setFTitle("");
         setFResp("");
@@ -410,16 +488,6 @@ export default function AccountabilityChartIndex() {
         setCreateOpen(true);
     };
 
-    const openEdit = (seat: Seat) => {
-        setFTitle(seat.title);
-        setFResp(seat.responsibilities?.join("\n") ?? "");
-        setFUserId(seat.user?.id?.toString() ?? "");
-        setFParentId(seat.parent_id?.toString() ?? "");
-        setErrors({});
-        setEditSeat(seat);
-    };
-
-    // ── Submit create ──
     const submitCreate = async () => {
         setProcessing(true);
         setErrors({});
@@ -452,7 +520,6 @@ export default function AccountabilityChartIndex() {
                           user_id: fUserId || null,
                           parent_id: fParentId || null,
                       };
-
             await axios.post("/api/accountability-chart", payload);
             setCreateOpen(false);
             resetForm();
@@ -464,7 +531,6 @@ export default function AccountabilityChartIndex() {
         }
     };
 
-    // ── Submit edit ──
     const submitEdit = async () => {
         if (!editSeat) return;
         setProcessing(true);
@@ -491,7 +557,6 @@ export default function AccountabilityChartIndex() {
         }
     };
 
-    // ── Delete ──
     const destroy = async (id: number) => {
         try {
             await axios.delete(`/api/accountability-chart/${id}`);
@@ -502,7 +567,6 @@ export default function AccountabilityChartIndex() {
         }
     };
 
-    // ── Generate from teams ──
     const generateFromTeams = async () => {
         try {
             await axios.post("/api/accountability-chart/generate-from-teams");
@@ -560,7 +624,7 @@ export default function AccountabilityChartIndex() {
                         Memuat chart…
                     </CardContent>
                 </Card>
-            ) : seats.length === 0 ? (
+            ) : nodes.length === 0 ? (
                 <Card>
                     <CardContent className="py-16">
                         <EmptyState
@@ -578,21 +642,26 @@ export default function AccountabilityChartIndex() {
                     </CardContent>
                 </Card>
             ) : (
-                <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-border bg-surface-subtle p-2xl">
-                    <div className="flex min-w-max flex-col items-center pb-16">
-                        {seats
-                            .filter((s) => s.parent_id === null)
-                            .map((seat) => (
-                                <SeatCard
-                                    key={seat.id}
-                                    seat={seat}
-                                    isLeader={isLeader && !bigPicture}
-                                    isOrgAdmin={isOrgAdmin && !bigPicture}
-                                    onDelete={(id) => setDeleteId(id)}
-                                    onEdit={openEdit}
-                                />
-                            ))}
-                    </div>
+                <div
+                    style={{ height: "70vh" }}
+                    className="rounded-[var(--radius-lg)] border border-border overflow-hidden"
+                >
+                    <ReactFlow
+                        nodes={nodes}
+                        edges={edges}
+                        onNodesChange={onNodesChange}
+                        onEdgesChange={onEdgesChange}
+                        nodeTypes={nodeTypes}
+                        fitView
+                        fitViewOptions={{ padding: 0.2 }}
+                        nodesDraggable={false}
+                        nodesConnectable={false}
+                        elementsSelectable={false}
+                    >
+                        <Background color="#e2e8f0" gap={20} />
+                        <Controls showInteractive={false} />
+                        <MiniMap nodeStrokeWidth={3} zoomable pannable />
+                    </ReactFlow>
                 </div>
             )}
 
