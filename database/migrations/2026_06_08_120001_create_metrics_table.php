@@ -10,11 +10,12 @@ return new class extends Migration
     {
         Schema::create('metrics', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->onDelete('cascade');
+            $table->foreignId('team_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->foreignId('owner_id')->constrained('users');
             $table->decimal('goal_value', 15, 2);
             $table->string('comparison_operator')->default('>='); // >=, <=, ==
+            $table->string('frequency')->default('weekly'); // weekly, monthly
             $table->foreignId('created_by')->nullable()->constrained('users');
             $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->softDeletes();

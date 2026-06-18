@@ -10,11 +10,16 @@ return new class extends Migration
     {
         Schema::create('meetings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->onDelete('cascade');
+            $table->foreignId('team_id')->constrained()->onDelete('cascade');
             $table->string('type')->default('L10');
+            $table->string('title')->nullable();
+            $table->timestamp('scheduled_at')->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('ended_at')->nullable();
             $table->decimal('rating', 3, 1)->nullable();
+            $table->text('segue_notes')->nullable();
+            $table->text('headlines_notes')->nullable();
+            $table->text('conclude_notes')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users');
             $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->softDeletes();

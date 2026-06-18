@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('vto_plans', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->onDelete('cascade');
+            $table->foreignId('organization_id')->nullable()->unique()->constrained()->onDelete('cascade');
 
             // Vision
             $table->json('core_values')->nullable();
@@ -26,16 +26,16 @@ return new class extends Migration
 
             // 3-Year Picture
             $table->date('three_year_date')->nullable();
-            $table->decimal('three_year_revenue', 15, 2)->nullable();
-            $table->decimal('three_year_profit', 15, 2)->nullable();
-            $table->integer('three_year_measurables')->nullable();
+            $table->string('three_year_revenue', 100)->nullable();
+            $table->string('three_year_profit', 100)->nullable();
+            $table->string('three_year_measurables', 500)->nullable();
             $table->json('three_year_look')->nullable();
 
             // 1-Year Plan
             $table->date('one_year_date')->nullable();
-            $table->decimal('one_year_revenue', 15, 2)->nullable();
-            $table->decimal('one_year_profit', 15, 2)->nullable();
-            $table->integer('one_year_measurables')->nullable();
+            $table->string('one_year_revenue', 100)->nullable();
+            $table->string('one_year_profit', 100)->nullable();
+            $table->string('one_year_measurables', 500)->nullable();
             $table->json('one_year_goals')->nullable();
 
             $table->foreignId('created_by')->nullable()->constrained('users');

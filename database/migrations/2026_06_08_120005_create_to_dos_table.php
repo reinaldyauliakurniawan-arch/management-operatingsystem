@@ -8,13 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('seats', function (Blueprint $table) {
+        Schema::create('to_dos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->onDelete('cascade');
+            $table->foreignId('team_id')->constrained()->onDelete('cascade');
             $table->string('title');
-            $table->foreignId('parent_id')->nullable()->constrained('seats')->onDelete('cascade');
-            $table->json('responsibilities')->nullable();
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('owner_id')->constrained('users');
+            $table->foreignId('meeting_id')->nullable()->constrained('meetings')->nullOnDelete();
+            $table->date('due_date');
+            $table->boolean('is_completed')->default(false);
             $table->foreignId('created_by')->nullable()->constrained('users');
             $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->softDeletes();
@@ -24,6 +25,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('seats');
+        Schema::dropIfExists('to_dos');
     }
 };
