@@ -254,10 +254,33 @@ class EventController extends Controller
             ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
             : collect();
 
+        // Event L10/Quarterly/Annual dari tim lain di organisasi yang sama,
+        // ditampilkan read-only di kalender supaya org_admin/leader bisa lihat
+        // jadwal lintas tim tanpa perlu switch-team satu-satu.
+        $otherTeamEvents = collect();
+        if ($team && $team->organization_id) {
+            $otherTeamEvents = Event::whereIn('type', ['l10', 'quarterly', 'annual'])
+                ->where('team_id', '!=', $teamId)
+                ->whereHas('team', fn($q) => $q->where('organization_id', $team->organization_id))
+                ->with('team:id,name')
+                ->orderBy('event_date', 'desc')
+                ->get()
+                ->map(fn($event) => [
+                    'id'          => $event->id,
+                    'name'        => $event->name,
+                    'type'        => $event->type,
+                    'type_label'  => $event->type_label,
+                    'event_date'  => $event->event_date->format('Y-m-d'),
+                    'team_name'   => $event->team->name ?? 'Tim Lain',
+                    'is_other_team' => true,
+                ]);
+        }
+
         return Inertia::render('Event/Index', [
-            'events'      => $events,
-            'users'       => $users,
-            'isLeader'    => $isLeader,
+            'events'           => $events,
+            'otherTeamEvents'  => $otherTeamEvents,
+            'users'            => $users,
+            'isLeader'         => $isLeader,
             'teamSettings' => $team ? [
                 'q1_start_date'  => $team->q1_start_date,
                 'scorecard_day'  => $team->scorecard_day,

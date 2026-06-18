@@ -51,6 +51,16 @@ interface Event {
     is_generated: boolean;
 }
 
+interface OtherTeamEvent {
+    id: number;
+    name: string;
+    type: string;
+    type_label: string;
+    event_date: string;
+    team_name: string;
+    is_other_team: true;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────
 const EVENT_TYPES = [
     { value: "l10", label: "L10 Meeting" },
@@ -270,9 +280,11 @@ function AgendaList({ agenda }: { agenda: AgendaItem[] }) {
 // ─── Main Component ───────────────────────────────────────────────────
 export default function EventIndex({
     events,
+    otherTeamEvents,
     users,
 }: {
     events: Event[];
+    otherTeamEvents: OtherTeamEvent[];
     users: { id: number; name: string }[];
 }) {
     const { auth } = usePage().props as any;
@@ -334,18 +346,33 @@ export default function EventIndex({
                 : [...data.assigned_user_ids, uid],
         );
 
-    // FullCalendar event objects
-    const calendarEvents = events.map((ev) => ({
-        id: String(ev.id),
-        title: ev.name,
-        date: ev.event_date,
-        backgroundColor: TYPE_COLOR[ev.type] ?? TYPE_COLOR.custom,
-        borderColor: TYPE_COLOR[ev.type] ?? TYPE_COLOR.custom,
-        textColor: "#ffffff",
-        extendedProps: { eventId: ev.id },
-    }));
+    // FullCalendar event objects — gabung event tim sendiri + tim lain.
+    // Event tim lain ditandai opacity lebih rendah & title dilabeli nama tim,
+    // serta tidak bisa diklik (read-only, lihat handleCalendarEventClick).
+    const calendarEvents = [
+        ...events.map((ev) => ({
+            id: `own-${ev.id}`,
+            title: ev.name,
+            date: ev.event_date,
+            backgroundColor: TYPE_COLOR[ev.type] ?? TYPE_COLOR.custom,
+            borderColor: TYPE_COLOR[ev.type] ?? TYPE_COLOR.custom,
+            textColor: "#ffffff",
+            extendedProps: { eventId: ev.id, isOtherTeam: false },
+        })),
+        ...otherTeamEvents.map((ev) => ({
+            id: `other-${ev.id}`,
+            title: `${ev.name} — ${ev.team_name}`,
+            date: ev.event_date,
+            backgroundColor: TYPE_COLOR[ev.type] ?? TYPE_COLOR.custom,
+            borderColor: TYPE_COLOR[ev.type] ?? TYPE_COLOR.custom,
+            textColor: "#ffffff",
+            classNames: ["opacity-60"],
+            extendedProps: { eventId: ev.id, isOtherTeam: true },
+        })),
+    ];
 
     const handleCalendarEventClick = (info: any) => {
+        if (info.event.extendedProps.isOtherTeam) return; // read-only, tim lain
         const ev = events.find(
             (e) => e.id === info.event.extendedProps.eventId,
         );
@@ -453,6 +480,12 @@ export default function EventIndex({
                                 {t.label}
                             </span>
                         ))}
+                        {otherTeamEvents.length > 0 && (
+                            <span className="flex items-center gap-1 text-[var(--font-sm)] text-text-muted opacity-60">
+                                <span className="h-2.5 w-2.5 rounded-full border border-current" />
+                                Tim lain (read-only)
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>

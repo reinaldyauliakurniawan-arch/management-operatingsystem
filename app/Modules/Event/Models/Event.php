@@ -34,6 +34,11 @@ class Event extends Model
         'is_modified'    => 'boolean',
     ];
 
+    public function team()
+    {
+        return $this->belongsTo(\App\Modules\Teams\Models\Team::class);
+    }
+
     public function attendances()
     {
         return $this->hasMany(EventAttendance::class);
