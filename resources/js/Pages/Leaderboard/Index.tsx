@@ -1010,7 +1010,7 @@ export default function LeaderboardIndex({
                 open={recalcOpen}
                 onOpenChange={setRecalcOpen}
                 title={`Recalculate ${quarter} ${year}`}
-                description={`Semua entry ${quarter} ${year} akan dihitung ulang dengan config parameter terbaru. Entry lama akan dioverride. Tidak bisa dibatalkan.`}
+                description={`Semua poin ${quarter} ${year} akan dihitung ulang menggunakan config terbaru. Hasilnya menggantikan poin yang tercatat di kuartal ini. Tidak bisa dibatalkan.`}
                 onConfirm={doRecalc}
             />
         </AuthenticatedLayout>
