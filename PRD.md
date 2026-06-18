@@ -216,50 +216,133 @@ Tiap type punya competency items dengan rubric 1–5 + deskripsi per level.
 
 ## MODULE 12 — LEADERBOARD
 
-**Deskripsi:** Ranking per role berdasarkan akumulasi poin dari parameter otomatis dan manual. Skor akhir = total poin user / total poin maks role × 100. Scope: per team. Kalau user ada di multiple team, skor terpisah per team sesuai active team context.
+**Deskripsi:** Sistem performance scoring berbasis poin per kuartal. Scope: per team. Skema poin ditentukan otomatis dari `team.type`:
+- `type = tutor` → skema **Tutor**
+- `type = leadership | departmental | project` → skema **Manajemen**
 
-### 12A — Leaderboard Config (oleh Leader/HR)
+Semua besaran poin (nilai, threshold, penalti) disimpan di database sebagai config — tidak ada yang di-hardcode. HR bisa ubah kapan saja tanpa coding.
 
-**Automatic Parameters** (read-only, terhubung modul existing):
+---
 
-| Parameter | Sumber Data |
-|---|---|
-| Rocks completion rate | Modul Rocks |
-| Scorecard green rate | Modul Scorecard |
-| To-Do completion rate | Modul To-Do |
-| Leadership Assessment score | Modul Leadership Assessment (cycle terbaru) |
-| Event attendance rate | Modul Event |
+### Konsep Inti
 
-**Manual Parameters** (CRUD bebas oleh leader/HR):
-- **Create:** Tambah parameter baru (nama, poin maks, assign ke role)
-- **Read:** List semua parameter manual
-- **Update:** Edit nama, poin maks, role assignment
-- **Delete:** Hapus parameter (data historis input tetap tersimpan)
+**Parameter** = satu item penilaian (misal: "Training Divisi", "Townhall", "Rocks").
+Tiap parameter punya:
+- `key` — identifier unik (string, misal `training_divisi`)
+- `label` — nama tampilan
+- `type` — `additive` (poin ditambah) atau `penalty` (poin dikurangi)
+- `input_type` — cara input: `tiered` (ambang batas → poin), `per_unit` (jumlah × poin per unit), `normalized` (hadir/tersedia × poin maks), `auto` (tarik dari modul lain)
+- `config` — JSON bebas berisi nilai-nilai yang relevan dengan input_type (threshold, poin per unit, poin maks, sumber auto, dll)
+- `applies_to` — `all`, `non_clevel`, atau level/role spesifik
 
-**Sistem Poin:**
-- Tiap parameter punya nilai poin maks yang di-config leader
-- Skor akhir = total poin user / total poin maks role × 100
-- Tambah/hapus parameter baru → semua skor otomatis recalculate
-- Comparable antar user dalam role yang sama di team yang sama
-- Extensible: parameter baru kapan saja tanpa perlu coding
+**Entry** = satu baris input poin per user per parameter per kuartal.
 
-### 12B — Input Poin Manual (oleh Leader/HR)
+**Skor kuartal** = jumlah semua poin entry user di kuartal tersebut.
+
+**Best Quarter Score** = skor kuartal tertinggi user sepanjang tahun.
+
+**Annual Total** = jumlah skor Q1+Q2+Q3+Q4.
+
+---
+
+### Parameter Default — Skema Manajemen
+
+Semua nilai di kolom "Config" disimpan di DB, bukan hardcode.
+
+| Key | Label | Input Type | Config (default) | Applies To |
+|---|---|---|---|---|
+| `training_divisi` | Training Divisi | `normalized` | `{max_points: 100}` | non_clevel |
+| `training_all_div` | Training All Division | `per_unit` | `{points_per_unit: 100}` | all |
+| `townhall` | Townhall | `per_unit` | `{points_per_unit: 200}` | all |
+| `tryout_bahasa` | Tryout Bahasa (TOEFL/IELTS) | `tiered` | `{tiers: [{min: 550, points: 150}, {min: 450, points: 100}, {min: 350, points: 70}, {min: 0, points: 0}]}` | all |
+| `posttest_divisi` | Post-test Training Divisi | `per_unit` | `{points_per_unit: 150}` | all |
+| `posttest_all_div` | Post-test Training All Division | `per_unit` | `{points_per_unit: 150}` | all |
+| `scorecard` | Scorecard | `tiered` | `{tiers: [{min: 100, points: 500}, {min: 80, points: 400}, {min: 60, points: 300}, {min: 0, points: 150}]}` | all |
+| `rocks_okr` | Rocks / OKR | `tiered` | `{tiers: [{min: 100, points: 500}, {min: 80, points: 400}, {min: 60, points: 300}, {min: 0, points: 150}]}` | all |
+| `leadership_pipeline` | Leadership Pipeline | `normalized` | `{max_points: 200, scale: 5}` | all |
+| `kontribusi_ide` | Kontribusi Ide | `per_unit` | `{points_per_unit: 50}` | all |
+
+> `scorecard` dan `rocks_okr` auto-pull dari Modul Scorecard & Rocks jika data tersedia, tapi HR tetap bisa override manual.
+
+---
+
+### Parameter Default — Skema Tutor
+
+| Key | Label | Input Type | Config (default) | Type |
+|---|---|---|---|---|
+| `training` | Training | `per_unit` | `{points_per_unit: 100}` | additive |
+| `townhall` | Townhall | `per_unit` | `{points_per_unit: 200}` | additive |
+| `tryout` | Try Out | `per_unit` | `{points_per_unit: 1}` | additive |
+| `retention` | Retention Murid | `per_unit` | `{points_per_unit: 50}` | additive |
+| `sosmed` | Sosmed | `per_unit` | `{points_per_unit: 10}` | additive |
+| `tambahan_1` | Indikator Tambahan 1 | `per_unit` | `{points_per_unit: 0}` | additive |
+| `tambahan_2` | Indikator Tambahan 2 | `per_unit` | `{points_per_unit: 0}` | additive |
+| `tambahan_3` | Indikator Tambahan 3 | `per_unit` | `{points_per_unit: 0}` | additive |
+| `keterlambatan` | Keterlambatan | `per_unit` | `{points_per_unit: 50}` | penalty |
+| `reschedule` | Reschedule / Replace | `per_unit` | `{points_per_unit: 25}` | penalty |
+
+---
+
+### 12A — Config Parameter (oleh Leader/HR)
 
 **CRUD:**
-- **Create:** Pilih user, pilih parameter manual, input nilai/poin, tambah catatan opsional
-- **Read:** History input poin per user per parameter
-- **Update:** Leader/HR edit input poin (dengan audit log)
-- **Delete:** Leader/HR hapus input (soft delete, audit log)
+- **Read:** HR lihat semua parameter aktif beserta config-nya
+- **Update:** HR ubah nilai config (poin per unit, threshold tier, poin maks) kapan saja. Perubahan berlaku untuk entry baru; entry lama tidak terpengaruh kecuali HR trigger recalculate manual
+- Tidak ada Create/Delete parameter dari UI — parameter ditambah via seeder/migration jika skema berubah. Ini trade-off Ponytail: extensibility cukup via DB config, bukan UI penuh
 
-### 12C — Leaderboard View
+---
+
+### 12B — Input Poin per Kuartal (oleh Leader/HR)
+
+Input dilakukan per user per kuartal. Tampilan: tabel dengan satu baris per user, satu kolom per parameter.
+
+**Manajemen — field input per user:**
+- Identitas: nama, jabatan, level (C-Level/Leader/Staff) — read-only dari data user
+- `training_divisi`: total sesi tersedia + jumlah sesi hadir
+- `training_all_div`: jumlah sesi hadir
+- `townhall`: jumlah sesi hadir
+- `tryout_bahasa`: skor numerik TOEFL atau IELTS (sistem convert ke poin via tiers)
+- `posttest_divisi`: jumlah sesi lulus
+- `posttest_all_div`: jumlah sesi lulus
+- `scorecard`: persentase (auto-pull dari Modul Scorecard, bisa override)
+- `rocks_okr`: persentase (auto-pull dari Modul Rocks, bisa override)
+- `leadership_pipeline`: nilai 1–5 (auto-pull dari Modul Leadership Assessment, bisa override)
+- `kontribusi_ide`: jumlah ide diimplementasikan
+
+**Tutor — field input per tutor:**
+- Identitas: nama — read-only dari data user
+- Semua parameter sesuai tabel skema Tutor: input angka per parameter
 
 **CRUD:**
-- **Read:**
-  - Semua user lihat leaderboard role masing-masing di team aktif
-  - Leader lihat semua role di team aktif
-  - Klik user → breakdown skor per parameter
-  - Filter by periode (quarterly, custom)
-- Tidak ada Create/Update/Delete — pure derived data
+- **Create:** Buka form input Q1/Q2/Q3/Q4, pilih tahun, isi data per user. Satu entry per (user, parameter, quarter, year)
+- **Read:** Tabel input per kuartal, filter by year & quarter
+- **Update:** Edit entry selama kuartal berlangsung
+- **Delete:** Soft delete per entry
+
+---
+
+### 12C — Dashboard & Ranking
+
+**Semua user:**
+- Lihat skor diri sendiri + posisi ranking di team aktif
+- Lihat breakdown poin per parameter kuartal ini
+
+**Leader:**
+- Ringkasan kuartal: total anggota, rata-rata poin, poin tertinggi, poin terendah
+- Tabel ranking semua anggota: poin Q1–Q4, Best Quarter Score, Best Kuartal, Annual Total
+- Best Staff / Best Tutor: user dengan Best Quarter Score tertinggi sepanjang tahun, dengan medali 🥇🥈🥉
+- Filter by year & quarter
+- Klik user → modal breakdown poin per parameter
+
+---
+
+### 12D — Penukaran Poin
+
+**CRUD:**
+- **Create (HR):** Buat katalog reward (nama, deskripsi, poin dibutuhkan, stok). User/tutor ajukan penukaran poin
+- **Read:** HR lihat semua pengajuan, user lihat history penukaran diri sendiri
+- **Update:** HR approve/reject pengajuan. Jika approved, poin terpotong otomatis dari saldo kuartal terakhir
+- **Delete:** HR hapus reward dari katalog (soft delete)
 
 ---
 
@@ -270,10 +353,12 @@ Scorecard merah berulang     → otomatis muncul di Issues
 Rocks off-track              → flag di L10 Meeting
 L10 Meeting                  → generate To-Do baru
 Issues solved                → bisa di-link ke Rock
-Leadership Assessment        → feed ke Leaderboard (automatic parameter)
-Rocks/Scorecard/To-Do        → feed ke Leaderboard (automatic parameter)
-Event attendance             → feed ke Leaderboard (automatic parameter)
-Manual input poin            → feed ke Leaderboard (manual parameter)
+Leadership Assessment score  → auto-pull ke Leaderboard input (bisa override)
+Rocks completion rate        → auto-pull ke Leaderboard input (bisa override)
+Scorecard green rate         → auto-pull ke Leaderboard input (bisa override)
+Event attendance             → auto-pull ke Leaderboard input (bisa override)
+Leaderboard entry approved   → saldo poin user bertambah
+Penukaran poin approved      → saldo poin user berkurang
 ```
 
 ---

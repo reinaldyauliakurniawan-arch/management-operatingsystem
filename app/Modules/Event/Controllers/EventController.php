@@ -173,7 +173,8 @@ class EventController extends Controller
 
         // Hindari duplikat: skip tanggal yang sudah ada (event manual/sudah diedit/sudah lewat yang tidak terhapus).
         if (!empty($toInsert)) {
-            $existingDates = Event::where('team_id', $teamId)
+            $existingDates = Event::withoutGlobalScope(\App\Scopes\TeamScope::class)
+                ->where('team_id', $teamId)
                 ->pluck('event_date')
                 ->map(fn($d) => Carbon::parse($d)->format('Y-m-d'))
                 ->toArray();
@@ -206,6 +207,28 @@ class EventController extends Controller
 
             if (!$hasUpcomingL10) {
                 self::regenerateForTeam($team);
+            }
+        }
+
+        // Auto-generate juga untuk semua tim lain dalam organisasi yang sama,
+        // supaya kalender lintas tim selalu punya data terbaru tanpa perlu
+        // masing-masing leader buka halaman event timnya dulu.
+        if ($team && $team->organization_id) {
+            $otherTeams = Team::where('organization_id', $team->organization_id)
+                ->where('id', '!=', $teamId)
+                ->whereNotNull('q1_start_date')
+                ->get();
+
+            foreach ($otherTeams as $otherTeam) {
+                $hasUpcoming = Event::withoutGlobalScope(\App\Scopes\TeamScope::class)
+                    ->where('team_id', $otherTeam->id)
+                    ->where('type', 'l10')
+                    ->whereDate('event_date', '>=', Carbon::now()->addDays(7))
+                    ->exists();
+
+                if (!$hasUpcoming) {
+                    self::regenerateForTeam($otherTeam);
+                }
             }
         }
 
@@ -259,19 +282,20 @@ class EventController extends Controller
         // jadwal lintas tim tanpa perlu switch-team satu-satu.
         $otherTeamEvents = collect();
         if ($team && $team->organization_id) {
-            $otherTeamEvents = Event::whereIn('type', ['l10', 'quarterly', 'annual'])
+            $otherTeamEvents = Event::withoutGlobalScope(\App\Scopes\TeamScope::class)
+                ->whereIn('type', ['l10', 'quarterly', 'annual', 'training', 'townhall', 'custom'])
                 ->where('team_id', '!=', $teamId)
                 ->whereHas('team', fn($q) => $q->where('organization_id', $team->organization_id))
                 ->with('team:id,name')
-                ->orderBy('event_date', 'desc')
+                ->orderBy('event_date', 'asc')
                 ->get()
                 ->map(fn($event) => [
-                    'id'          => $event->id,
-                    'name'        => $event->name,
-                    'type'        => $event->type,
-                    'type_label'  => $event->type_label,
-                    'event_date'  => $event->event_date->format('Y-m-d'),
-                    'team_name'   => $event->team->name ?? 'Tim Lain',
+                    'id'            => $event->id,
+                    'name'          => $event->name,
+                    'type'          => $event->type,
+                    'type_label'    => $event->type_label,
+                    'event_date'    => $event->event_date->format('Y-m-d'),
+                    'team_name'     => $event->team->name ?? 'Tim Lain',
                     'is_other_team' => true,
                 ]);
         }

@@ -295,6 +295,11 @@ export default function EventIndex({
     const [detailEvent, setDetailEvent] = useState<Event | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [agendaOpen, setAgendaOpen] = useState(false);
+    const [tooltip, setTooltip] = useState<{
+        x: number;
+        y: number;
+        text: string;
+    } | null>(null);
 
     const { data, setData, post, processing, reset, errors } = useForm({
         name: "",
@@ -457,36 +462,6 @@ export default function EventIndex({
                             <List className="h-3.5 w-3.5" /> List
                         </button>
                     </div>
-
-                    {/* Legend */}
-                    <div className="flex flex-wrap gap-x-md gap-y-xs">
-                        {[
-                            { type: "l10", label: "L10" },
-                            { type: "quarterly", label: "Quarterly" },
-                            { type: "annual", label: "Annual" },
-                            { type: "training", label: "Training" },
-                            { type: "townhall", label: "Townhall" },
-                        ].map((t) => (
-                            <span
-                                key={t.type}
-                                className="flex items-center gap-1 text-[var(--font-sm)] text-text-secondary"
-                            >
-                                <span
-                                    className="h-2.5 w-2.5 rounded-full"
-                                    style={{
-                                        backgroundColor: TYPE_COLOR[t.type],
-                                    }}
-                                />
-                                {t.label}
-                            </span>
-                        ))}
-                        {otherTeamEvents.length > 0 && (
-                            <span className="flex items-center gap-1 text-[var(--font-sm)] text-text-muted opacity-60">
-                                <span className="h-2.5 w-2.5 rounded-full border border-current" />
-                                Tim lain (read-only)
-                            </span>
-                        )}
-                    </div>
                 </div>
             </div>
 
@@ -509,11 +484,59 @@ export default function EventIndex({
                         }}
                         events={calendarEvents}
                         eventClick={handleCalendarEventClick}
+                        eventDidMount={(info) => {
+                            if (info.event.extendedProps.isOtherTeam) {
+                                info.el.style.cursor = "default";
+                                info.el.addEventListener("mouseenter", (e) => {
+                                    const rect =
+                                        info.el.getBoundingClientRect();
+                                    setTooltip({
+                                        x: rect.left + window.scrollX,
+                                        y: rect.bottom + window.scrollY + 6,
+                                        text: `${info.event.title} · ${new Date(info.event.startStr).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`,
+                                    });
+                                });
+                                info.el.addEventListener("mouseleave", () =>
+                                    setTooltip(null),
+                                );
+                            }
+                        }}
                         height="auto"
                         dayMaxEvents={3}
                         eventDisplay="block"
                         eventClassNames="cursor-pointer rounded-xs px-1 text-[var(--font-sm)] font-medium"
                     />
+                    <div
+                        className="flex flex-wrap items-center mt-md"
+                        style={{ gap: "6px 16px" }}
+                    >
+                        {[
+                            { type: "l10", label: "L10" },
+                            { type: "quarterly", label: "Quarterly" },
+                            { type: "annual", label: "Annual" },
+                            { type: "training", label: "Training" },
+                            { type: "townhall", label: "Townhall" },
+                        ].map((t) => (
+                            <span
+                                key={t.type}
+                                className="flex items-center gap-1 text-[var(--font-sm)] text-text-secondary"
+                            >
+                                <span
+                                    className="h-3 w-3 rounded-full shrink-0"
+                                    style={{
+                                        backgroundColor: TYPE_COLOR[t.type],
+                                    }}
+                                />
+                                {t.label}
+                            </span>
+                        ))}
+                        {otherTeamEvents.length > 0 && (
+                            <span className="flex items-center gap-1 text-[var(--font-sm)] text-text-muted opacity-60">
+                                <span className="h-3 w-3 rounded-full border border-current shrink-0" />
+                                Tim lain (read-only)
+                            </span>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -902,6 +925,15 @@ export default function EventIndex({
                 description="Event ini akan dihapus (soft delete)."
                 onConfirm={() => deleteId && destroy(deleteId)}
             />
+
+            {tooltip && (
+                <div
+                    className="fixed z-50 rounded-md bg-gray-900 px-3 py-1.5 text-xs text-white shadow-lg pointer-events-none"
+                    style={{ left: tooltip.x, top: tooltip.y }}
+                >
+                    {tooltip.text}
+                </div>
+            )}
         </AuthenticatedLayout>
     );
 }
