@@ -43,6 +43,11 @@ class TeamController extends Controller
                             ],
                         )
                         ->values(),
+                    // Biar org_admin bisa lihat next event tiap tim tanpa switch-team dulu.
+                    "next_event" => \App\Modules\Event\Models\Event::where("team_id", $team->id)
+                        ->whereDate("event_date", ">=", now()->toDateString())
+                        ->orderBy("event_date")
+                        ->first(["name", "type", "event_date"]),
                 ],
             );
 

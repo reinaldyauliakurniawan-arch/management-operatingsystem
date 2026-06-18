@@ -21,6 +21,7 @@ class Event extends Model
         'agenda',
         'assigned_roles',
         'is_generated',
+        'is_modified',
         'created_by',
         'updated_by',
     ];
@@ -30,6 +31,7 @@ class Event extends Model
         'assigned_roles' => 'array',
         'agenda'         => 'array',
         'is_generated'   => 'boolean',
+        'is_modified'    => 'boolean',
     ];
 
     public function attendances()

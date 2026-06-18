@@ -60,6 +60,7 @@ interface Team {
     parent_team_id: number | null;
     member_count: number;
     leaders: { id: number; name: string }[];
+    next_event: { name: string; type: string; event_date: string } | null;
 }
 
 interface User {
@@ -377,6 +378,8 @@ export default function TeamsIndex({
                                                     {team.member_count} anggota
                                                     {team.leaders.length > 0 &&
                                                         ` · Leader: ${team.leaders.map((l) => l.name).join(", ")}`}
+                                                    {team.next_event &&
+                                                        ` · Next: ${team.next_event.name} (${team.next_event.event_date})`}
                                                 </p>
                                             </div>
                                         </div>

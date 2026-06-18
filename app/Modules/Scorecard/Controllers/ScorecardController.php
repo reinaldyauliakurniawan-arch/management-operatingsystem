@@ -163,7 +163,14 @@ class ScorecardController extends Controller
             ->where('id', $teamId)
             ->update($validated);
 
-        return back()->with('message', 'Settings disimpan.');
+        // Single source of truth: setiap kali scorecard setting berubah,
+        // event L10/Quarterly/Annual di calendar otomatis sinkron ulang.
+        $team = \App\Modules\Teams\Models\Team::withoutGlobalScopes()->find($teamId);
+        if ($team) {
+            \App\Modules\Event\Controllers\EventController::regenerateForTeam($team);
+        }
+
+        return back()->with('message', 'Settings disimpan & event otomatis sinkron.');
     }
 
     public function logScore(Request $request, LogWeeklyScore $logWeeklyScore)

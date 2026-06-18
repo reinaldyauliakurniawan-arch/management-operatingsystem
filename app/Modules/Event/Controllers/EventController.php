@@ -103,6 +103,89 @@ class EventController extends Controller
         return $q1Start->copy()->year(Carbon::now()->year)->subWeeks(2)->format('Y-m-d');
     }
 
+    // ─── Regenerate event L10/Quarterly/Annual dari setting tim ───────
+    // Dipanggil dari ScorecardController::updateSettings() setiap kali
+    // scorecard_day / q1_start_date berubah, supaya calendar otomatis
+    // sinkron tanpa perlu klik "Generate Otomatis" manual.
+    public static function regenerateForTeam(Team $team): void
+    {
+        $teamId = $team->id;
+
+        // Hapus event generated yang belum diedit & belum lewat.
+        // Event manual, event yang sudah diedit, dan event yang sudah lewat tidak disentuh.
+        Event::where('team_id', $teamId)
+            ->whereIn('type', ['l10', 'quarterly', 'annual'])
+            ->where('is_generated', true)
+            ->where('is_modified', false)
+            ->whereDate('event_date', '>=', Carbon::today())
+            ->delete();
+
+        $toInsert = [];
+
+        foreach (self::generateL10Dates($team) as $date) {
+            $toInsert[] = [
+                'team_id'      => $teamId,
+                'created_by'   => $team->created_by ?? null,
+                'name'         => 'L10 Meeting',
+                'type'         => 'l10',
+                'event_date'   => $date,
+                'description'  => 'Weekly L10 Meeting — 90 menit.',
+                'agenda'       => json_encode(self::agendaFor('l10')),
+                'is_generated' => true,
+                'is_modified'  => false,
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ];
+        }
+
+        foreach (self::generateQuarterlyDates($team) as $date) {
+            $toInsert[] = [
+                'team_id'      => $teamId,
+                'created_by'   => $team->created_by ?? null,
+                'name'         => 'Quarterly Meeting',
+                'type'         => 'quarterly',
+                'event_date'   => $date,
+                'description'  => 'Quarterly Planning Meeting — 1 hari penuh.',
+                'agenda'       => json_encode(self::agendaFor('quarterly')),
+                'is_generated' => true,
+                'is_modified'  => false,
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ];
+        }
+
+        $annualDate = self::generateAnnualDate($team);
+        if ($annualDate) {
+            $toInsert[] = [
+                'team_id'      => $teamId,
+                'created_by'   => $team->created_by ?? null,
+                'name'         => 'Annual Meeting',
+                'type'         => 'annual',
+                'event_date'   => $annualDate,
+                'description'  => 'Annual Planning — 2 hari. Review VTO & set target tahunan.',
+                'agenda'       => json_encode(self::agendaFor('annual')),
+                'is_generated' => true,
+                'is_modified'  => false,
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ];
+        }
+
+        // Hindari duplikat: skip tanggal yang sudah ada (event manual/sudah diedit/sudah lewat yang tidak terhapus).
+        if (!empty($toInsert)) {
+            $existingDates = Event::where('team_id', $teamId)
+                ->pluck('event_date')
+                ->map(fn($d) => Carbon::parse($d)->format('Y-m-d'))
+                ->toArray();
+
+            $toInsert = array_values(array_filter($toInsert, fn($row) => !in_array($row['event_date'], $existingDates)));
+
+            if (!empty($toInsert)) {
+                Event::insert($toInsert);
+            }
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────
     public function index()
     {
@@ -111,6 +194,20 @@ class EventController extends Controller
         $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
         $isLeader = $role === 'leader';
         $team   = Team::find($teamId);
+
+        // Auto-extend window L10/Quarterly/Annual setiap kali halaman dibuka,
+        // kalau gap terdeteksi (gak ada L10 yang jaraknya >7 hari ke depan).
+        // Ini gantiin cron/scheduler — user pasti buka halaman ini buat liat kalendernya.
+        if ($team && $team->q1_start_date) {
+            $hasUpcomingL10 = Event::where('team_id', $teamId)
+                ->where('type', 'l10')
+                ->whereDate('event_date', '>=', Carbon::now()->addDays(7))
+                ->exists();
+
+            if (!$hasUpcomingL10) {
+                self::regenerateForTeam($team);
+            }
+        }
 
         $eventsQuery = Event::with([
             'attendances' => fn($q) => $isLeader
@@ -157,55 +254,10 @@ class EventController extends Controller
             ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
             : collect();
 
-        // Suggestions: tanggal auto-generate yang belum ada di DB
-        $suggestions = [];
-        if ($isLeader && $team) {
-            $existingDates = Event::where('team_id', $teamId)->pluck('event_date')->map(fn($d) => Carbon::parse($d)->format('Y-m-d'))->toArray();
-
-            // L10 suggestions
-            foreach (self::generateL10Dates($team) as $date) {
-                if (!in_array($date, $existingDates)) {
-                    $suggestions[] = [
-                        'type'        => 'l10',
-                        'name'        => 'L10 Meeting',
-                        'event_date'  => $date,
-                        'agenda'      => self::agendaFor('l10'),
-                        'description' => 'Weekly L10 Meeting — 90 menit.',
-                    ];
-                }
-            }
-
-            // Quarterly suggestions
-            foreach (self::generateQuarterlyDates($team) as $date) {
-                if (!in_array($date, $existingDates)) {
-                    $suggestions[] = [
-                        'type'        => 'quarterly',
-                        'name'        => 'Quarterly Meeting',
-                        'event_date'  => $date,
-                        'agenda'      => self::agendaFor('quarterly'),
-                        'description' => 'Quarterly Planning Meeting — 1 hari penuh.',
-                    ];
-                }
-            }
-
-            // Annual suggestion
-            $annualDate = self::generateAnnualDate($team);
-            if ($annualDate && !in_array($annualDate, $existingDates)) {
-                $suggestions[] = [
-                    'type'        => 'annual',
-                    'name'        => 'Annual Meeting',
-                    'event_date'  => $annualDate,
-                    'agenda'      => self::agendaFor('annual'),
-                    'description' => 'Annual Planning — 2 hari. Review VTO & set target tahunan.',
-                ];
-            }
-        }
-
         return Inertia::render('Event/Index', [
             'events'      => $events,
             'users'       => $users,
             'isLeader'    => $isLeader,
-            'suggestions' => $suggestions,
             'teamSettings' => $team ? [
                 'q1_start_date'  => $team->q1_start_date,
                 'scorecard_day'  => $team->scorecard_day,
@@ -308,6 +360,12 @@ class EventController extends Controller
             'agenda'         => 'nullable|array',
             'assigned_roles' => 'nullable|array',
         ]);
+
+        // Event generated yang diedit manual ditandai is_modified
+        // supaya tidak ikut terhapus saat regenerasi otomatis dari Scorecard Setting.
+        if ($event->is_generated) {
+            $validated['is_modified'] = true;
+        }
 
         $event->update($validated);
 
