@@ -18,6 +18,9 @@ return new class extends Migration
             $table->boolean('gwc_capacity')->default(false);
             $table->json('core_values_scores')->nullable(); // [{"value":"Integrity","symbol":"+"}, ...]
             $table->string('period')->nullable(); // e.g. "Q3 2025"
+            $table->boolean('is_candidate')->default(false); // true = kandidat eksternal
+            $table->string('candidate_name')->nullable(); // nama jika bukan user sistem
+            $table->foreignId('seat_id')->nullable()->constrained('seats')->nullOnDelete();
             $table->string('seat_fit')->nullable(); // right_person_right_seat, dst
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users');

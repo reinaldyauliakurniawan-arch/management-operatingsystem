@@ -136,6 +136,13 @@ export default function LeadershipAssessmentIndex({
                 action={
                     isLeader ? (
                         <div className="flex gap-sm">
+                            <Link
+                                href={route(
+                                    "leadership-assessment.rubrik.index",
+                                )}
+                            >
+                                <Button variant="ghost">Kelola Rubrik</Button>
+                            </Link>
                             <Button
                                 variant="secondary"
                                 onClick={() => setAssignOpen(true)}

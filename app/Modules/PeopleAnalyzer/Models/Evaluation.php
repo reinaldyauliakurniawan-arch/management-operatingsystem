@@ -15,6 +15,9 @@ class Evaluation extends Model
         'team_id',
         'evaluator_id',
         'evaluatee_id',
+        'is_candidate',
+        'candidate_name',
+        'seat_id',
         'gwc_get',
         'gwc_want',
         'gwc_capacity',
@@ -30,6 +33,7 @@ class Evaluation extends Model
         'gwc_get'            => 'boolean',
         'gwc_want'           => 'boolean',
         'gwc_capacity'       => 'boolean',
+        'is_candidate'       => 'boolean',
         'core_values_scores' => 'array',
     ];
 
@@ -41,6 +45,11 @@ class Evaluation extends Model
     public function evaluatee()
     {
         return $this->belongsTo(User::class, 'evaluatee_id');
+    }
+
+    public function seat()
+    {
+        return $this->belongsTo(\App\Modules\AccountabilityChart\Models\Seat::class, 'seat_id');
     }
 
     /**

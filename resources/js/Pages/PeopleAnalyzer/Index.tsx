@@ -28,18 +28,19 @@ import { Textarea } from "@/Components/ui/textarea";
 import { EmptyState } from "@/Components/ui/empty-state";
 import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
 
-// ---- Types ----
-
 interface CoreValueScore {
     value: string;
     symbol: "+" | "+/-" | "-";
 }
-
 interface Evaluation {
     id: number;
-    evaluatee: { id: number; name: string };
+    evaluatee: { id: number; name: string } | null;
     evaluator: { id: number; name: string };
+    is_candidate: boolean;
+    candidate_name: string | null;
+    display_name: string;
     period: string | null;
+    seat_title: string | null;
     gwc_get: boolean;
     gwc_want: boolean;
     gwc_capacity: boolean;
@@ -49,27 +50,24 @@ interface Evaluation {
     notes: string | null;
     created_at: string;
 }
-
 interface Standard {
     min_plus: number;
     max_plus_minus: number;
     max_minus: number;
     gwc_get: boolean;
     gwc_want: boolean;
-    gwc_capacity: string; // "Y" | "N"
+    gwc_capacity: string;
 }
-
 interface User {
     id: number;
     name: string;
 }
+interface Seat {
+    id: number;
+    title: string;
+}
 
-// ---- Helpers ----
-
-const SEAT_FIT_LABELS: Record<
-    string,
-    { label: string; variant: "success" | "warning" | "error" | "neutral" }
-> = {
+const SEAT_FIT_LABELS: Record<string, { label: string; variant: any }> = {
     right_person_right_seat: {
         label: "Right Person, Right Seat",
         variant: "success",
@@ -80,7 +78,7 @@ const SEAT_FIT_LABELS: Record<
     },
     right_person_wrong_seat: {
         label: "Right Person, Wrong Seat",
-        variant: "info" as any,
+        variant: "neutral",
     },
     wrong_person_wrong_seat: {
         label: "Wrong Person, Wrong Seat",
@@ -92,7 +90,6 @@ function SeatFitBadge({ fit }: { fit: string }) {
     const meta = SEAT_FIT_LABELS[fit] ?? { label: fit, variant: "neutral" };
     return <Badge variant={meta.variant}>{meta.label}</Badge>;
 }
-
 function GwcDot({ value }: { value: boolean }) {
     return (
         <span
@@ -105,8 +102,7 @@ function GwcDot({ value }: { value: boolean }) {
         </span>
     );
 }
-
-function SymbolBadge({ symbol }: { symbol: "+" | "+/-" | "-" }) {
+function SymbolBadge({ symbol }: { symbol: string }) {
     const styles: Record<string, string> = {
         "+": "bg-primary-subtle text-primary-text",
         "+/-": "bg-warning-subtle text-warning-text",
@@ -114,49 +110,50 @@ function SymbolBadge({ symbol }: { symbol: "+" | "+/-" | "-" }) {
     };
     return (
         <span
-            className={`rounded-xs px-sm py-0.5 text-[var(--font-sm)] font-semibold ${styles[symbol]}`}
+            className={`rounded-xs px-sm py-0.5 text-[var(--font-sm)] font-semibold ${styles[symbol] ?? ""}`}
         >
             {symbol}
         </span>
     );
 }
 
-const DEFAULT_CORE_VALUES = [{ value: "", symbol: "+" as const }];
-
-// ---- Main Component ----
-
 export default function PeopleAnalyzerIndex({
     evaluations,
     users,
     standard,
     canManage,
+    vto_core_values,
+    seats,
 }: {
     evaluations: Evaluation[];
     users: User[];
     standard: Standard | null;
     canManage: boolean;
+    vto_core_values: string[];
+    seats: Seat[];
 }) {
+    const [tab, setTab] = useState<"members" | "candidates" | "history">(
+        "members",
+    );
     const [createOpen, setCreateOpen] = useState(false);
     const [editEval, setEditEval] = useState<Evaluation | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [standardOpen, setStandardOpen] = useState(false);
     const [detailEval, setDetailEval] = useState<Evaluation | null>(null);
 
-    // Eval form
     const evalForm = useForm({
         evaluatee_id: "",
+        is_candidate: false,
+        candidate_name: "",
+        seat_id: "",
         period: "",
         gwc_get: true,
         gwc_want: true,
         gwc_capacity: true,
-        core_values_scores: [{ value: "", symbol: "+" }] as {
-            value: string;
-            symbol: string;
-        }[],
+        core_values_scores: [] as { value: string; symbol: string }[],
         notes: "",
     });
 
-    // Standard form
     const stdForm = useForm({
         min_plus: standard?.min_plus ?? 3,
         max_plus_minus: standard?.max_plus_minus ?? 2,
@@ -166,15 +163,22 @@ export default function PeopleAnalyzerIndex({
         gwc_capacity: standard?.gwc_capacity ?? "Y",
     });
 
+    // Pre-fill core values from VTO when opening create modal
     const openCreate = () => {
         evalForm.reset();
-        evalForm.setData("core_values_scores", [{ value: "", symbol: "+" }]);
+        const cvScores = vto_core_values.length
+            ? vto_core_values.map((v: string) => ({ value: v, symbol: "+" }))
+            : [{ value: "", symbol: "+" }];
+        evalForm.setData("core_values_scores", cvScores);
         setCreateOpen(true);
     };
 
     const openEdit = (ev: Evaluation) => {
         evalForm.setData({
-            evaluatee_id: String(ev.evaluatee.id),
+            evaluatee_id: ev.evaluatee ? String(ev.evaluatee.id) : "",
+            is_candidate: ev.is_candidate,
+            candidate_name: ev.candidate_name ?? "",
+            seat_id: "",
             period: ev.period ?? "",
             gwc_get: ev.gwc_get,
             gwc_want: ev.gwc_want,
@@ -224,13 +228,11 @@ export default function PeopleAnalyzerIndex({
             ...evalForm.data.core_values_scores,
             { value: "", symbol: "+" },
         ]);
-
     const removeCoreValue = (i: number) =>
         evalForm.setData(
             "core_values_scores",
             evalForm.data.core_values_scores.filter((_, idx) => idx !== i),
         );
-
     const updateCoreValue = (
         i: number,
         field: "value" | "symbol",
@@ -241,10 +243,58 @@ export default function PeopleAnalyzerIndex({
         evalForm.setData("core_values_scores", updated);
     };
 
+    // Tab filtering
+    const memberEvals = evaluations.filter((e) => !e.is_candidate);
+    const candidateEvals = evaluations.filter((e) => e.is_candidate);
+    const tabData =
+        tab === "members"
+            ? memberEvals
+            : tab === "candidates"
+              ? candidateEvals
+              : evaluations;
+
     const EvalFormBody = () => (
         <div className="flex flex-col gap-lg">
-            {/* Evaluatee — only on create */}
+            {/* Candidate toggle */}
             {!editEval && (
+                <div className="flex items-center gap-md rounded-lg border border-border bg-surface-raised px-md py-sm">
+                    <span className="text-[var(--font-base)] text-text-secondary">
+                        Mode penilaian:
+                    </span>
+                    <div className="flex gap-sm">
+                        {[
+                            { val: false, label: "Anggota Tim" },
+                            { val: true, label: "Kandidat Eksternal" },
+                        ].map(({ val, label }) => (
+                            <button
+                                key={label}
+                                type="button"
+                                onClick={() =>
+                                    evalForm.setData("is_candidate", val)
+                                }
+                                className={`rounded-xs px-md py-xs text-[var(--font-base)] font-medium transition-colors ${evalForm.data.is_candidate === val ? "bg-primary-subtle text-primary-text" : "bg-surface-overlay text-text-muted"}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Evaluatee / Candidate name */}
+            {evalForm.data.is_candidate ? (
+                <div className="flex flex-col gap-xs">
+                    <Label>Nama Kandidat *</Label>
+                    <Input
+                        value={evalForm.data.candidate_name}
+                        onChange={(e) =>
+                            evalForm.setData("candidate_name", e.target.value)
+                        }
+                        placeholder="Nama lengkap kandidat"
+                        required
+                    />
+                </div>
+            ) : !editEval ? (
                 <div className="flex flex-col gap-xs">
                     <Label>Evaluatee *</Label>
                     <Select
@@ -253,20 +303,37 @@ export default function PeopleAnalyzerIndex({
                             evalForm.setData("evaluatee_id", e.target.value)
                         }
                     >
-                        <option value="">— Pilih user —</option>
+                        <option value="">— Pilih anggota —</option>
                         {users.map((u) => (
                             <option key={u.id} value={u.id}>
                                 {u.name}
                             </option>
                         ))}
                     </Select>
-                    {evalForm.errors.evaluatee_id && (
-                        <p className="text-[var(--font-base)] text-error-text">
-                            {evalForm.errors.evaluatee_id}
-                        </p>
-                    )}
                 </div>
-            )}
+            ) : null}
+
+            {/* Seat / Posisi */}
+            <div className="flex flex-col gap-xs">
+                <Label>Posisi yang Dinilai (opsional)</Label>
+                <Select
+                    value={evalForm.data.seat_id}
+                    onChange={(e) =>
+                        evalForm.setData("seat_id", e.target.value)
+                    }
+                >
+                    <option value="">— Tidak spesifik —</option>
+                    {seats.map((s) => (
+                        <option key={s.id} value={s.id}>
+                            {s.title}
+                        </option>
+                    ))}
+                </Select>
+                <p className="text-[var(--font-sm)] text-text-muted">
+                    Untuk kandidat: posisi yang dilamar. Untuk anggota: posisi
+                    yang sedang dijabat.
+                </p>
+            </div>
 
             <div className="flex flex-col gap-xs">
                 <Label>Periode (opsional)</Label>
@@ -308,14 +375,7 @@ export default function PeopleAnalyzerIndex({
                                                         opt === "Y",
                                                     )
                                                 }
-                                                className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${
-                                                    evalForm.data[key] ===
-                                                    (opt === "Y")
-                                                        ? opt === "Y"
-                                                            ? "bg-primary-subtle text-primary-text"
-                                                            : "bg-error-subtle text-error-text"
-                                                        : "bg-surface-overlay text-text-muted hover:bg-surface-overlay/70"
-                                                }`}
+                                                className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${evalForm.data[key] === (opt === "Y") ? (opt === "Y" ? "bg-primary-subtle text-primary-text" : "bg-error-subtle text-error-text") : "bg-surface-overlay text-text-muted hover:bg-surface-overlay/70"}`}
                                             >
                                                 {opt}
                                             </button>
@@ -332,15 +392,41 @@ export default function PeopleAnalyzerIndex({
             <div className="flex flex-col gap-xs">
                 <div className="flex items-center justify-between">
                     <Label>Core Values</Label>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={addCoreValue}
-                    >
-                        + Tambah
-                    </Button>
+                    <div className="flex gap-xs">
+                        {vto_core_values.length > 0 && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                    evalForm.setData(
+                                        "core_values_scores",
+                                        vto_core_values.map((v) => ({
+                                            value: v,
+                                            symbol: "+",
+                                        })),
+                                    )
+                                }
+                            >
+                                ↺ Reset dari VTO
+                            </Button>
+                        )}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={addCoreValue}
+                        >
+                            + Tambah
+                        </Button>
+                    </div>
                 </div>
+                {vto_core_values.length > 0 && (
+                    <p className="text-[var(--font-sm)] text-text-muted">
+                        Core values dari VTO otomatis dimuat. Ubah simbol sesuai
+                        penilaian.
+                    </p>
+                )}
                 <div className="flex flex-col gap-sm">
                     {evalForm.data.core_values_scores.map((cv, i) => (
                         <div key={i} className="flex items-center gap-sm">
@@ -389,10 +475,130 @@ export default function PeopleAnalyzerIndex({
         </div>
     );
 
+    const EvalTable = ({ data }: { data: Evaluation[] }) => (
+        <div className="overflow-x-auto">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        {[
+                            "Nama",
+                            "Posisi",
+                            "Periode",
+                            "GWC",
+                            "Core Values",
+                            "Seat Fit",
+                            "",
+                        ].map((h, i) => (
+                            <TableHead key={i}>{h}</TableHead>
+                        ))}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {data.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={7}>
+                                <EmptyState
+                                    title="Tidak ada data"
+                                    description="Belum ada evaluasi di kategori ini."
+                                />
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {data.map((ev) => (
+                        <TableRow key={ev.id}>
+                            <TableCell>
+                                <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                    {ev.display_name}
+                                </p>
+                                <p className="text-[var(--font-sm)] text-text-muted">
+                                    {ev.is_candidate && (
+                                        <span className="mr-xs rounded-xs bg-warning-subtle px-xs py-0.5 text-[var(--font-sm)] text-warning-text">
+                                            Kandidat
+                                        </span>
+                                    )}
+                                    by {ev.evaluator.name}
+                                </p>
+                            </TableCell>
+                            <TableCell className="text-text-secondary">
+                                {ev.seat_title ?? "—"}
+                            </TableCell>
+                            <TableCell className="text-text-secondary">
+                                {ev.period ?? "—"}
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex flex-col gap-xs">
+                                    <span className="text-[var(--font-sm)] text-text-muted">
+                                        G: <GwcDot value={ev.gwc_get} />
+                                    </span>
+                                    <span className="text-[var(--font-sm)] text-text-muted">
+                                        W: <GwcDot value={ev.gwc_want} />
+                                    </span>
+                                    <span className="text-[var(--font-sm)] text-text-muted">
+                                        C: <GwcDot value={ev.gwc_capacity} />
+                                    </span>
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex flex-wrap gap-xs">
+                                    {ev.core_values_scores.map((cv, i) => (
+                                        <div
+                                            key={i}
+                                            className="flex items-center gap-xs"
+                                        >
+                                            <span className="text-[var(--font-base)] text-text-secondary">
+                                                {cv.value}
+                                            </span>
+                                            <SymbolBadge symbol={cv.symbol} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <SeatFitBadge
+                                    fit={ev.seat_fit_computed ?? ev.seat_fit}
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex items-center justify-end gap-sm">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setDetailEval(ev)}
+                                    >
+                                        Detail
+                                    </Button>
+                                    {canManage && (
+                                        <>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => openEdit(ev)}
+                                            >
+                                                Edit
+                                            </Button>
+                                            <Button
+                                                variant="danger"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setDeleteId(ev.id)
+                                                }
+                                            >
+                                                Hapus
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    );
+
     return (
         <AuthenticatedLayout>
             <Head title="People Analyzer" />
-
             <PageHeader
                 title="People Analyzer"
                 subtitle="Evaluasi GWC & Core Values fit per anggota tim"
@@ -413,7 +619,7 @@ export default function PeopleAnalyzerIndex({
                 }
             />
 
-            {/* Standard info strip */}
+            {/* Standard strip */}
             {standard && (
                 <div className="mb-xl flex flex-wrap items-center gap-lg rounded-lg border border-border bg-surface-subtle px-lg py-md">
                     <p className="text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
@@ -443,6 +649,32 @@ export default function PeopleAnalyzerIndex({
                 </div>
             )}
 
+            {/* Tabs */}
+            <div className="mb-lg flex gap-xs border-b border-border">
+                {[
+                    {
+                        key: "members",
+                        label: `Anggota Tim (${memberEvals.length})`,
+                    },
+                    {
+                        key: "candidates",
+                        label: `Kandidat (${candidateEvals.length})`,
+                    },
+                    {
+                        key: "history",
+                        label: `Semua Riwayat (${evaluations.length})`,
+                    },
+                ].map(({ key, label }) => (
+                    <button
+                        key={key}
+                        onClick={() => setTab(key as any)}
+                        className={`px-md pb-sm pt-xs text-[var(--font-base)] font-medium transition-colors border-b-2 -mb-px ${tab === key ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-primary"}`}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+
             {evaluations.length === 0 ? (
                 <Card>
                     <CardContent className="py-16">
@@ -457,110 +689,7 @@ export default function PeopleAnalyzerIndex({
                     </CardContent>
                 </Card>
             ) : (
-                <div className="overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            {[
-                                "Nama",
-                                "Periode",
-                                "GWC",
-                                "Core Values",
-                                "Seat Fit",
-                                "",
-                            ].map((h, i) => (
-                                <TableHead key={i}>{h}</TableHead>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {evaluations.map((ev) => (
-                            <TableRow key={ev.id}>
-                                <TableCell>
-                                    <p className="text-[var(--font-base)] font-medium text-text-primary">
-                                        {ev.evaluatee.name}
-                                    </p>
-                                    <p className="text-[var(--font-base)] text-text-muted">
-                                        by {ev.evaluator.name}
-                                    </p>
-                                </TableCell>
-                                <TableCell className="text-text-secondary">
-                                    {ev.period ?? "—"}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-col gap-xs">
-                                        <span className="text-[var(--font-sm)] text-text-muted">
-                                            G: <GwcDot value={ev.gwc_get} />
-                                        </span>
-                                        <span className="text-[var(--font-sm)] text-text-muted">
-                                            W: <GwcDot value={ev.gwc_want} />
-                                        </span>
-                                        <span className="text-[var(--font-sm)] text-text-muted">
-                                            C:{" "}
-                                            <GwcDot value={ev.gwc_capacity} />
-                                        </span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-wrap gap-xs">
-                                        {ev.core_values_scores.map((cv, i) => (
-                                            <div
-                                                key={i}
-                                                className="flex items-center gap-xs"
-                                            >
-                                                <span className="text-[var(--font-base)] text-text-secondary">
-                                                    {cv.value}
-                                                </span>
-                                                <SymbolBadge
-                                                    symbol={cv.symbol as any}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <SeatFitBadge
-                                        fit={
-                                            ev.seat_fit_computed ?? ev.seat_fit
-                                        }
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex items-center justify-end gap-sm">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setDetailEval(ev)}
-                                        >
-                                            Detail
-                                        </Button>
-                                        {canManage && (
-                                            <>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => openEdit(ev)}
-                                                >
-                                                    Edit
-                                                </Button>
-                                                <Button
-                                                    variant="danger"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        setDeleteId(ev.id)
-                                                    }
-                                                >
-                                                    Hapus
-                                                </Button>
-                                            </>
-                                        )}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-                </div>
+                <EvalTable data={tabData} />
             )}
 
             {/* Create Modal */}
@@ -570,7 +699,7 @@ export default function PeopleAnalyzerIndex({
                         <DialogTitle>Buat Evaluasi</DialogTitle>
                     </DialogHeader>
                     <DialogBody>
-                        <form onSubmit={submitEval}>
+                        <form id="eval-create-form" onSubmit={submitEval}>
                             <EvalFormBody />
                         </form>
                     </DialogBody>
@@ -582,7 +711,8 @@ export default function PeopleAnalyzerIndex({
                             Batal
                         </Button>
                         <Button
-                            onClick={submitEval}
+                            type="submit"
+                            form="eval-create-form"
                             disabled={evalForm.processing}
                         >
                             {evalForm.processing ? "Menyimpan…" : "Simpan"}
@@ -594,16 +724,16 @@ export default function PeopleAnalyzerIndex({
             {/* Edit Modal */}
             <Dialog
                 open={!!editEval}
-                onOpenChange={(open) => !open && setEditEval(null)}
+                onOpenChange={(o) => !o && setEditEval(null)}
             >
                 <DialogContent size="md">
                     <DialogHeader>
                         <DialogTitle>
-                            Edit Evaluasi — {editEval?.evaluatee.name}
+                            Edit Evaluasi — {editEval?.display_name}
                         </DialogTitle>
                     </DialogHeader>
                     <DialogBody>
-                        <form onSubmit={submitEval}>
+                        <form id="eval-edit-form" onSubmit={submitEval}>
                             <EvalFormBody />
                         </form>
                     </DialogBody>
@@ -615,7 +745,8 @@ export default function PeopleAnalyzerIndex({
                             Batal
                         </Button>
                         <Button
-                            onClick={submitEval}
+                            type="submit"
+                            form="eval-edit-form"
                             disabled={evalForm.processing}
                         >
                             {evalForm.processing ? "Menyimpan…" : "Update"}
@@ -627,18 +758,26 @@ export default function PeopleAnalyzerIndex({
             {/* Detail Modal */}
             <Dialog
                 open={!!detailEval}
-                onOpenChange={(open) => !open && setDetailEval(null)}
+                onOpenChange={(o) => !o && setDetailEval(null)}
             >
                 <DialogContent size="md">
                     <DialogHeader>
                         <DialogTitle>
-                            Detail Evaluasi — {detailEval?.evaluatee.name}
+                            Detail Evaluasi — {detailEval?.display_name}
                         </DialogTitle>
                     </DialogHeader>
                     <DialogBody>
                         {detailEval && (
                             <div className="flex flex-col gap-lg">
-                                <div className="flex items-center justify-between">
+                                <div className="grid grid-cols-2 gap-md">
+                                    <div>
+                                        <p className="text-[var(--font-base)] text-text-muted">
+                                            Posisi
+                                        </p>
+                                        <p className="text-[var(--font-base)] text-text-primary">
+                                            {detailEval.seat_title ?? "—"}
+                                        </p>
+                                    </div>
                                     <div>
                                         <p className="text-[var(--font-base)] text-text-muted">
                                             Periode
@@ -647,6 +786,11 @@ export default function PeopleAnalyzerIndex({
                                             {detailEval.period ?? "—"}
                                         </p>
                                     </div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[var(--font-base)] text-text-muted">
+                                        Seat Fit
+                                    </span>
                                     <SeatFitBadge
                                         fit={
                                             detailEval.seat_fit_computed ??
@@ -654,7 +798,6 @@ export default function PeopleAnalyzerIndex({
                                         }
                                     />
                                 </div>
-
                                 <div>
                                     <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                         GWC
@@ -686,7 +829,6 @@ export default function PeopleAnalyzerIndex({
                                         ))}
                                     </div>
                                 </div>
-
                                 <div>
                                     <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                         Core Values
@@ -702,16 +844,13 @@ export default function PeopleAnalyzerIndex({
                                                         {cv.value}
                                                     </span>
                                                     <SymbolBadge
-                                                        symbol={
-                                                            cv.symbol as any
-                                                        }
+                                                        symbol={cv.symbol}
                                                     />
                                                 </div>
                                             ),
                                         )}
                                     </div>
                                 </div>
-
                                 {detailEval.notes && (
                                     <div>
                                         <p className="mb-sm text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
@@ -722,7 +861,6 @@ export default function PeopleAnalyzerIndex({
                                         </p>
                                     </div>
                                 )}
-
                                 <p className="text-[var(--font-base)] text-text-muted">
                                     Dievaluasi oleh {detailEval.evaluator.name}
                                 </p>
@@ -748,57 +886,42 @@ export default function PeopleAnalyzerIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form
+                            id="std-form"
                             onSubmit={submitStandard}
                             className="flex flex-col gap-lg"
                         >
                             <p className="text-[var(--font-base)] text-text-secondary">
                                 Tentukan threshold minimum untuk lulus evaluasi.
-                                Skor dihitung dari core values dan GWC.
                             </p>
-
-                            <div className="flex flex-col gap-xs">
-                                <Label>Min jumlah (+)</Label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    value={stdForm.data.min_plus}
-                                    onChange={(e) =>
-                                        stdForm.setData(
-                                            "min_plus",
-                                            Number(e.target.value),
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div className="flex flex-col gap-xs">
-                                <Label>Max jumlah (+/-)</Label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    value={stdForm.data.max_plus_minus}
-                                    onChange={(e) =>
-                                        stdForm.setData(
-                                            "max_plus_minus",
-                                            Number(e.target.value),
-                                        )
-                                    }
-                                />
-                            </div>
-                            <div className="flex flex-col gap-xs">
-                                <Label>Max jumlah (-)</Label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    value={stdForm.data.max_minus}
-                                    onChange={(e) =>
-                                        stdForm.setData(
-                                            "max_minus",
-                                            Number(e.target.value),
-                                        )
-                                    }
-                                />
-                            </div>
-
+                            {[
+                                {
+                                    key: "min_plus" as const,
+                                    label: "Min jumlah (+)",
+                                },
+                                {
+                                    key: "max_plus_minus" as const,
+                                    label: "Max jumlah (+/-)",
+                                },
+                                {
+                                    key: "max_minus" as const,
+                                    label: "Max jumlah (-)",
+                                },
+                            ].map(({ key, label }) => (
+                                <div key={key} className="flex flex-col gap-xs">
+                                    <Label>{label}</Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        value={stdForm.data[key]}
+                                        onChange={(e) =>
+                                            stdForm.setData(
+                                                key,
+                                                Number(e.target.value),
+                                            )
+                                        }
+                                    />
+                                </div>
+                            ))}
                             <div className="flex flex-col gap-xs">
                                 <Label>GWC Minimum</Label>
                                 <div className="flex flex-col gap-sm rounded-lg border border-border bg-surface-raised p-md">
@@ -832,16 +955,7 @@ export default function PeopleAnalyzerIndex({
                                                                 opt === "Y",
                                                             )
                                                         }
-                                                        className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${
-                                                            stdForm.data[
-                                                                key
-                                                            ] ===
-                                                            (opt === "Y")
-                                                                ? opt === "Y"
-                                                                    ? "bg-primary-subtle text-primary-text"
-                                                                    : "bg-error-subtle text-error-text"
-                                                                : "bg-surface-overlay text-text-muted"
-                                                        }`}
+                                                        className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${stdForm.data[key] === (opt === "Y") ? (opt === "Y" ? "bg-primary-subtle text-primary-text" : "bg-error-subtle text-error-text") : "bg-surface-overlay text-text-muted"}`}
                                                     >
                                                         {opt}
                                                     </button>
@@ -864,15 +978,7 @@ export default function PeopleAnalyzerIndex({
                                                             opt,
                                                         )
                                                     }
-                                                    className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${
-                                                        stdForm.data
-                                                            .gwc_capacity ===
-                                                        opt
-                                                            ? opt === "Y"
-                                                                ? "bg-primary-subtle text-primary-text"
-                                                                : "bg-error-subtle text-error-text"
-                                                            : "bg-surface-overlay text-text-muted"
-                                                    }`}
+                                                    className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${stdForm.data.gwc_capacity === opt ? (opt === "Y" ? "bg-primary-subtle text-primary-text" : "bg-error-subtle text-error-text") : "bg-surface-overlay text-text-muted"}`}
                                                 >
                                                     {opt}
                                                 </button>
@@ -891,7 +997,8 @@ export default function PeopleAnalyzerIndex({
                             Batal
                         </Button>
                         <Button
-                            onClick={submitStandard}
+                            type="submit"
+                            form="std-form"
                             disabled={stdForm.processing}
                         >
                             {stdForm.processing
@@ -904,9 +1011,9 @@ export default function PeopleAnalyzerIndex({
 
             <ConfirmDialog
                 open={deleteId !== null}
-                onOpenChange={(open) => !open && setDeleteId(null)}
+                onOpenChange={(o) => !o && setDeleteId(null)}
                 title="Hapus Evaluasi"
-                description="Evaluasi ini akan dihapus (soft delete). Data historis tetap tersimpan."
+                description="Evaluasi ini akan dihapus (soft delete)."
                 onConfirm={() => deleteId && destroy(deleteId)}
             />
         </AuthenticatedLayout>

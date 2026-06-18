@@ -7,6 +7,8 @@ use App\Modules\LeadershipAssessment\Models\AssessmentCycle;
 use App\Modules\LeadershipAssessment\Models\AssessmentAssignment;
 use App\Modules\LeadershipAssessment\Models\AssessmentResponse;
 use App\Modules\LeadershipAssessment\Models\LeadershipType;
+use App\Modules\LeadershipAssessment\Models\LeadershipItem;
+use App\Modules\LeadershipAssessment\Models\LeadershipRubric;
 use App\Modules\Teams\Models\TeamMember;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -383,5 +385,81 @@ class LeadershipAssessmentController extends Controller
             'byType'     => $byType,
             'overallAvg' => $responses->isEmpty() ? null : round($responses->avg('rubric_level'), 2),
         ]);
+    }
+
+    // ---- Rubrik CRUD ----
+
+    public function rubrikIndex()
+    {
+        $types = LeadershipType::with('items.rubrics')->orderBy('id')->get();
+        return Inertia::render('LeadershipAssessment/Rubrik', [
+            'types' => $types,
+        ]);
+    }
+
+    public function storeType(Request $request)
+    {
+        $validated = $request->validate(['name' => 'required|string|max:255']);
+        LeadershipType::create($validated);
+        return back()->with('message', 'Tipe ditambahkan.');
+    }
+
+    public function updateType(Request $request, LeadershipType $type)
+    {
+        $validated = $request->validate(['name' => 'required|string|max:255']);
+        $type->update($validated);
+        return back()->with('message', 'Tipe diperbarui.');
+    }
+
+    public function destroyType(LeadershipType $type)
+    {
+        $type->delete();
+        return back()->with('message', 'Tipe dihapus.');
+    }
+
+    public function storeItem(Request $request, LeadershipType $type)
+    {
+        $validated = $request->validate(['title' => 'required|string|max:255']);
+        $type->items()->create($validated);
+        return back()->with('message', 'Item ditambahkan.');
+    }
+
+    public function updateItem(Request $request, LeadershipItem $item)
+    {
+        $validated = $request->validate(['title' => 'required|string|max:255']);
+        $item->update($validated);
+        return back()->with('message', 'Item diperbarui.');
+    }
+
+    public function destroyItem(LeadershipItem $item)
+    {
+        $item->delete();
+        return back()->with('message', 'Item dihapus.');
+    }
+
+    public function storeRubric(Request $request, LeadershipItem $item)
+    {
+        $validated = $request->validate([
+            'level'       => 'required|integer|between:1,5',
+            'description' => 'required|string',
+        ]);
+        LeadershipRubric::updateOrCreate(
+            ['leadership_item_id' => $item->id, 'level' => $validated['level']],
+            ['description' => $validated['description']]
+        );
+        return back()->with('message', 'Rubrik disimpan.');
+    }
+
+    public function updateRubric(Request $request, LeadershipRubric $rubric)
+    {
+        $validated = $request->validate(['description' => 'required|string']);
+        $rubric->update($validated);
+        return back()->with('message', 'Rubrik diperbarui.');
+    }
+
+    public function destroyRubric(LeadershipRubric $rubric)
+    {
+        $rubric->delete();
+        return back()->with('message', 'Rubrik dihapus.');
     }
 }

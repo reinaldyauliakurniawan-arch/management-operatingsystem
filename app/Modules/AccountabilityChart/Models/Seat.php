@@ -10,6 +10,8 @@ class Seat extends Model
 {
     use HasTeam;
 
+    protected $table = 'seats';
+
     protected $fillable = [
         'team_id',
         'title',
