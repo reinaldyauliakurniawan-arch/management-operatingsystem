@@ -15,9 +15,12 @@ class Event extends Model
         'team_id',
         'name',
         'type',
+        'custom_type',
         'event_date',
         'description',
+        'agenda',
         'assigned_roles',
+        'is_generated',
         'created_by',
         'updated_by',
     ];
@@ -25,6 +28,8 @@ class Event extends Model
     protected $casts = [
         'event_date'     => 'date',
         'assigned_roles' => 'array',
+        'agenda'         => 'array',
+        'is_generated'   => 'boolean',
     ];
 
     public function attendances()
@@ -37,5 +42,21 @@ class Event extends Model
         return $this->belongsToMany(User::class, 'event_attendances')
                     ->withPivot('attended', 'marked_at', 'marked_by')
                     ->withTimestamps();
+    }
+
+    /**
+     * Label tipe yang ditampilkan ke user.
+     */
+    public function getTypeLabelAttribute(): string
+    {
+        return match($this->type) {
+            'training'  => 'Training',
+            'townhall'  => 'Townhall',
+            'l10'       => 'L10 Meeting',
+            'quarterly' => 'Quarterly Meeting',
+            'annual'    => 'Annual Meeting',
+            'custom'    => $this->custom_type ?? 'Custom',
+            default     => ucfirst($this->type),
+        };
     }
 }

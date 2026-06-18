@@ -59,7 +59,7 @@ function DialogContent({
             <DialogPrimitive.Popup
                 data-slot="dialog-content"
                 className={cn(
-                    "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-0 rounded-lg bg-surface p-0 text-sm text-text-primary shadow-lg duration-150 outline-none data-open:animate-[dialog-in_150ms_ease-out] data-closed:animate-[dialog-out_150ms_ease-out]",
+                    "fixed top-1/2 left-1/2 z-50 flex flex-col w-full max-w-[calc(100%-2rem)] max-h-[calc(100svh-2rem)] -translate-x-1/2 -translate-y-1/2 gap-0 rounded-lg bg-surface p-0 text-sm text-text-primary shadow-lg duration-150 outline-none data-open:animate-[dialog-in_150ms_ease-out] data-closed:animate-[dialog-out_150ms_ease-out]",
                     dialogSizeClasses[size],
                     className,
                 )}
@@ -103,7 +103,7 @@ function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
     return (
         <div
             data-slot="dialog-body"
-            className={cn("p-xl", className)}
+            className={cn("flex-1 overflow-y-auto p-xl", className)}
             {...props}
         />
     );

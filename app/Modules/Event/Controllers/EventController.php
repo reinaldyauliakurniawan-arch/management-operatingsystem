@@ -5,235 +5,365 @@ namespace App\Modules\Event\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Event\Models\Event;
 use App\Modules\Event\Models\EventAttendance;
+use App\Modules\Teams\Models\Team;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class EventController extends Controller
 {
+    // ─── Agenda templates (EOS) ───────────────────────────────────────
+    private static function agendaFor(string $type): array
+    {
+        return match($type) {
+            'l10' => [
+                ['title' => 'Segue',         'duration' => 5,  'desc' => 'Check-in singkat, good news personal & bisnis.'],
+                ['title' => 'Scorecard',     'duration' => 5,  'desc' => 'Review angka mingguan tim. Setiap angka: on-track atau off-track?'],
+                ['title' => 'Rock Review',   'duration' => 5,  'desc' => 'Status rock per orang: on-track / off-track. Tidak ada diskusi di sini.'],
+                ['title' => 'Headlines',     'duration' => 5,  'desc' => 'Customer & employee headlines. Berita penting saja.'],
+                ['title' => 'To-Do Review',  'duration' => 5,  'desc' => 'Review to-do minggu lalu. Done / not done. 90% completion rate target.'],
+                ['title' => 'IDS',           'duration' => 60, 'desc' => 'Identify-Discuss-Solve. Selesaikan isu terpenting. Hasilkan to-do baru.'],
+                ['title' => 'Conclude',      'duration' => 5,  'desc' => 'Recap to-do, cascade messages, rating meeting 1-10.'],
+            ],
+            'quarterly' => [
+                ['title' => 'Check-in',              'duration' => 30,  'desc' => 'Good news personal & bisnis. Ekspektasi hari ini.'],
+                ['title' => 'Review V/TO',            'duration' => 60,  'desc' => 'Review Vision/Traction Organizer. Masih selaras dengan Core Values, Core Focus, 10-Year Target?'],
+                ['title' => 'Review Rocks Lalu',      'duration' => 30,  'desc' => 'Done / not done. Jujur. Tidak ada judgment.'],
+                ['title' => 'Review P&L & Data',      'duration' => 30,  'desc' => 'Kesehatan bisnis: revenue, profit, pipeline, scorecard.'],
+                ['title' => 'People Review',           'duration' => 30,  'desc' => 'GWC check (Get it, Want it, Capacity): siapa yang perlu diperhatikan?'],
+                ['title' => 'SWOT / Issues Identify', 'duration' => 60,  'desc' => 'List semua isu / opportunities. Prioritaskan top 3-5.'],
+                ['title' => 'Set Rocks Quarter Baru',  'duration' => 60,  'desc' => 'Tiap rock harus SMART. Max 3-7 rock per orang.'],
+                ['title' => 'Conclude',                'duration' => 30,  'desc' => 'Recap rocks & to-do. Cascade messages ke tim. Rating meeting.'],
+            ],
+            'annual' => [
+                ['title' => 'Day 1 — Check-in & Review',    'duration' => 60,  'desc' => 'Check-in panjang. Review tahun lalu: pencapaian & kegagalan jujur.'],
+                ['title' => 'Day 1 — Core Values',          'duration' => 90,  'desc' => 'Apakah Core Values masih relevan? Siapa yang hidup / tidak hidup nilai ini?'],
+                ['title' => 'Day 1 — Core Focus',           'duration' => 60,  'desc' => 'Review Hedgehog: Purpose/Cause/Passion, Niche, Economic Engine.'],
+                ['title' => 'Day 1 — 10-Year Target',       'duration' => 60,  'desc' => 'Apakah masih inspire? Seberapa dekat? Perlu diperbarui?'],
+                ['title' => 'Day 1 — Marketing Strategy',   'duration' => 90,  'desc' => 'Target Market, 3 Uniques, Proven Process, Guarantee.'],
+                ['title' => 'Day 2 — 3-Year Picture',       'duration' => 60,  'desc' => 'Seperti apa bisnis 3 tahun lagi? Revenue, profit, looks like.'],
+                ['title' => 'Day 2 — 1-Year Plan',          'duration' => 60,  'desc' => 'Revenue, profit, 3-7 Goals tahun ini.'],
+                ['title' => 'Day 2 — Rocks Q1',             'duration' => 60,  'desc' => 'Set rocks untuk Q1. Prioritas mutlak.'],
+                ['title' => 'Day 2 — Issues & IDS',         'duration' => 90,  'desc' => 'Selesaikan isu besar yang memblokir 1-year plan.'],
+                ['title' => 'Day 2 — Conclude',             'duration' => 30,  'desc' => 'Recap, cascade, rating meeting.'],
+            ],
+            default => [],
+        };
+    }
+
+    // ─── Hitung tanggal L10 (N minggu ke depan) ───────────────────────
+    private static function generateL10Dates(Team $team, int $weeksAhead = 12): array
+    {
+        $day = (int) $team->scorecard_day; // 0=Minggu,1=Senin,...,6=Sabtu
+        $dates = [];
+        $cursor = Carbon::now()->startOfWeek(Carbon::MONDAY);
+
+        // Cari hari pertama yang sesuai scorecard_day di minggu ini atau minggu depan
+        $carbonDay = ($day === 0) ? Carbon::SUNDAY : $day; // Carbon: 0=Mon,6=Sun... pakai constant
+        $target = $cursor->copy()->dayOfWeek($day); // PHP Carbon dayOfWeek: 0=Sun,1=Mon
+        if ($target->isPast()) {
+            $target->addWeek();
+        }
+
+        for ($i = 0; $i < $weeksAhead; $i++) {
+            $dates[] = $target->copy()->addWeeks($i)->format('Y-m-d');
+        }
+
+        return $dates;
+    }
+
+    // ─── Hitung tanggal Quarterly dari q1_start_date ──────────────────
+    private static function generateQuarterlyDates(Team $team): array
+    {
+        if (!$team->q1_start_date) return [];
+
+        $q1Start = Carbon::parse($team->q1_start_date);
+        $year    = Carbon::now()->year;
+
+        // Sesuaikan ke tahun sekarang
+        $q1 = $q1Start->copy()->year($year);
+
+        return [
+            $q1->copy()->format('Y-m-d'),
+            $q1->copy()->addMonths(3)->format('Y-m-d'),
+            $q1->copy()->addMonths(6)->format('Y-m-d'),
+            $q1->copy()->addMonths(9)->format('Y-m-d'),
+        ];
+    }
+
+    // ─── Hitung tanggal Annual ────────────────────────────────────────
+    private static function generateAnnualDate(Team $team): ?string
+    {
+        if (!$team->q1_start_date) return null;
+
+        $q1Start = Carbon::parse($team->q1_start_date);
+        // Annual = 1-2 minggu sebelum Q1 start tahun berikutnya
+        return $q1Start->copy()->year(Carbon::now()->year)->subWeeks(2)->format('Y-m-d');
+    }
+
+    // ─────────────────────────────────────────────────────────────────
     public function index()
     {
-        $teamId = session("active_team_id");
+        $teamId = session('active_team_id');
         $userId = Auth::id();
-        $role = Auth::user()
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
-        $isLeader = $role === "leader";
+        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $isLeader = $role === 'leader';
+        $team   = Team::find($teamId);
 
         $eventsQuery = Event::with([
-            "attendances" => fn($q) => $isLeader
-                ? $q->with("user")
-                : $q->where("user_id", $userId),
-        ])->where("team_id", $teamId);
+            'attendances' => fn($q) => $isLeader
+                ? $q->with('user')
+                : $q->where('user_id', $userId),
+        ])->where('team_id', $teamId);
 
-        // Non-leader hanya lihat event yang di-assign ke role mereka atau ke semua
         if (!$isLeader) {
             $eventsQuery->where(function ($q) use ($role) {
-                $q->whereNull("assigned_roles")->orWhereJsonContains(
-                    "assigned_roles",
-                    $role,
-                );
+                $q->whereNull('assigned_roles')->orWhereJsonContains('assigned_roles', $role);
             });
         }
 
         $events = $eventsQuery
-            ->orderBy("event_date", "desc")
+            ->orderBy('event_date', 'desc')
             ->get()
             ->map(function ($event) use ($userId, $isLeader) {
                 $myAttendance = $event->attendances->first();
                 return [
-                    "id" => $event->id,
-                    "name" => $event->name,
-                    "type" => $event->type,
-                    "event_date" => $event->event_date->format("Y-m-d"),
-                    "description" => $event->description,
-                    "assigned_roles" => $event->assigned_roles,
-                    "attended_count" => $isLeader
-                        ? $event->attendances->where("attended", true)->count()
-                        : null,
-                    "my_attended" => $myAttendance?->attended ?? false,
-                    "is_past" => $event->event_date->isPast(),
-                    "attendees" => $isLeader
-                        ? $event->attendances
-                            ->map(
-                                fn($a) => [
-                                    "id" => $a->user_id,
-                                    "name" =>
-                                        optional($a->user)->name ?? "(unknown)",
-                                    "attended" => $a->attended,
-                                ],
-                            )
-                            ->values()
+                    'id'             => $event->id,
+                    'name'           => $event->name,
+                    'type'           => $event->type,
+                    'custom_type'    => $event->custom_type,
+                    'type_label'     => $event->type_label,
+                    'event_date'     => $event->event_date->format('Y-m-d'),
+                    'description'    => $event->description,
+                    'agenda'         => $event->agenda ?? [],
+                    'assigned_roles' => $event->assigned_roles,
+                    'is_generated'   => $event->is_generated,
+                    'attended_count' => $isLeader ? $event->attendances->where('attended', true)->count() : null,
+                    'my_attended'    => $myAttendance?->attended ?? false,
+                    'is_past'        => $event->event_date->isPast(),
+                    'attendees'      => $isLeader
+                        ? $event->attendances->map(fn($a) => [
+                            'id'       => $a->user_id,
+                            'name'     => optional($a->user)->name ?? '(unknown)',
+                            'attended' => $a->attended,
+                        ])->values()
                         : [],
                 ];
             });
 
-        $users =
-            $isLeader && $teamId
-                ? User::whereHas(
-                    "teamMemberships",
-                    fn($q) => $q->where("team_id", $teamId),
-                )->get(["id", "name"])
-                : collect();
+        $users = $isLeader && $teamId
+            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
+            : collect();
 
-        return Inertia::render("Event/Index", [
-            "events" => $events,
-            "users" => $users,
-            "isLeader" => $isLeader,
+        // Suggestions: tanggal auto-generate yang belum ada di DB
+        $suggestions = [];
+        if ($isLeader && $team) {
+            $existingDates = Event::where('team_id', $teamId)->pluck('event_date')->map(fn($d) => Carbon::parse($d)->format('Y-m-d'))->toArray();
+
+            // L10 suggestions
+            foreach (self::generateL10Dates($team) as $date) {
+                if (!in_array($date, $existingDates)) {
+                    $suggestions[] = [
+                        'type'        => 'l10',
+                        'name'        => 'L10 Meeting',
+                        'event_date'  => $date,
+                        'agenda'      => self::agendaFor('l10'),
+                        'description' => 'Weekly L10 Meeting — 90 menit.',
+                    ];
+                }
+            }
+
+            // Quarterly suggestions
+            foreach (self::generateQuarterlyDates($team) as $date) {
+                if (!in_array($date, $existingDates)) {
+                    $suggestions[] = [
+                        'type'        => 'quarterly',
+                        'name'        => 'Quarterly Meeting',
+                        'event_date'  => $date,
+                        'agenda'      => self::agendaFor('quarterly'),
+                        'description' => 'Quarterly Planning Meeting — 1 hari penuh.',
+                    ];
+                }
+            }
+
+            // Annual suggestion
+            $annualDate = self::generateAnnualDate($team);
+            if ($annualDate && !in_array($annualDate, $existingDates)) {
+                $suggestions[] = [
+                    'type'        => 'annual',
+                    'name'        => 'Annual Meeting',
+                    'event_date'  => $annualDate,
+                    'agenda'      => self::agendaFor('annual'),
+                    'description' => 'Annual Planning — 2 hari. Review VTO & set target tahunan.',
+                ];
+            }
+        }
+
+        return Inertia::render('Event/Index', [
+            'events'      => $events,
+            'users'       => $users,
+            'isLeader'    => $isLeader,
+            'suggestions' => $suggestions,
+            'teamSettings' => $team ? [
+                'q1_start_date'  => $team->q1_start_date,
+                'scorecard_day'  => $team->scorecard_day,
+            ] : null,
         ]);
     }
 
     public function store(Request $request)
     {
-        $teamId = session("active_team_id");
-        $role = Auth::user()
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        $teamId = session('active_team_id');
+        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if ($role !== "leader") {
-            abort(403, "Hanya leader yang bisa membuat event.");
+        if ($role !== 'leader') {
+            abort(403, 'Hanya leader yang bisa membuat event.');
         }
 
         $validated = $request->validate([
-            "name" => "required|string|max:255",
-            "type" => "required|in:training,townhall",
-            "event_date" => "required|date",
-            "description" => "nullable|string",
-            "assigned_roles" => "nullable|array",
-            "assigned_roles.*" => "in:leader,member,tutor",
-            "assigned_user_ids" => "nullable|array",
-            "assigned_user_ids.*" => "exists:users,id",
+            'name'               => 'required|string|max:255',
+            'type'               => 'required|in:training,townhall,l10,quarterly,annual,custom',
+            'custom_type'        => 'nullable|string|max:100',
+            'event_date'         => 'required|date',
+            'description'        => 'nullable|string',
+            'agenda'             => 'nullable|array',
+            'agenda.*.title'     => 'required|string',
+            'agenda.*.duration'  => 'nullable|integer',
+            'agenda.*.desc'      => 'nullable|string',
+            'assigned_roles'     => 'nullable|array',
+            'assigned_roles.*'   => 'in:leader,member,tutor',
+            'assigned_user_ids'  => 'nullable|array',
+            'assigned_user_ids.*'=> 'exists:users,id',
+            'is_generated'       => 'nullable|boolean',
         ]);
 
-        $validated["team_id"] = $teamId;
-        $validated["created_by"] = Auth::id();
-        $assignedUserIds = $validated["assigned_user_ids"] ?? [];
-        unset($validated["assigned_user_ids"]);
-        $event = Event::create($validated);
-
-        if (!empty($assignedUserIds)) {
-            foreach ($assignedUserIds as $uid) {
-                EventAttendance::firstOrCreate(
-                    [
-                        "event_id" => $event->id,
-                        "user_id" => $uid,
-                    ],
-                    ["attended" => false],
-                );
-            }
+        // Auto-fill agenda kalau tidak di-override manual
+        if (empty($validated['agenda']) && $validated['type'] !== 'custom') {
+            $validated['agenda'] = self::agendaFor($validated['type']);
         }
 
-        return back()->with("message", "Event dibuat.");
+        $validated['team_id']    = $teamId;
+        $validated['created_by'] = Auth::id();
+        $assignedUserIds         = $validated['assigned_user_ids'] ?? [];
+        unset($validated['assigned_user_ids']);
+
+        $event = Event::create($validated);
+
+        foreach ($assignedUserIds as $uid) {
+            EventAttendance::firstOrCreate(
+                ['event_id' => $event->id, 'user_id' => $uid],
+                ['attended' => false]
+            );
+        }
+
+        return back()->with('message', 'Event dibuat.');
+    }
+
+    public function storeBulk(Request $request)
+    {
+        $teamId = session('active_team_id');
+        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if ($role !== 'leader') abort(403);
+
+        $request->validate([
+            'events'               => 'required|array',
+            'events.*.type'        => 'required|string',
+            'events.*.name'        => 'required|string',
+            'events.*.event_date'  => 'required|date',
+        ]);
+
+        foreach ($request->events as $ev) {
+            Event::create([
+                'team_id'      => $teamId,
+                'created_by'   => Auth::id(),
+                'name'         => $ev['name'],
+                'type'         => $ev['type'],
+                'event_date'   => $ev['event_date'],
+                'description'  => $ev['description'] ?? null,
+                'agenda'       => $ev['agenda'] ?? self::agendaFor($ev['type']),
+                'is_generated' => true,
+            ]);
+        }
+
+        return back()->with('message', count($request->events) . ' event berhasil digenerate.');
     }
 
     public function update(Request $request, Event $event)
     {
-        $teamId = session("active_team_id");
-        $role = Auth::user()
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        $teamId = session('active_team_id');
+        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if ($role !== "leader") {
-            abort(403);
-        }
-
-        if ($event->event_date->isPast()) {
-            abort(422, "Event sudah lewat, tidak bisa diedit.");
-        }
+        if ($role !== 'leader') abort(403);
+        if ($event->event_date->isPast()) abort(422, 'Event sudah lewat, tidak bisa diedit.');
 
         $validated = $request->validate([
-            "name" => "sometimes|string|max:255",
-            "type" => "sometimes|in:training,townhall",
-            "event_date" => "sometimes|date",
-            "description" => "nullable|string",
-            "assigned_roles" => "nullable|array",
+            'name'           => 'sometimes|string|max:255',
+            'type'           => 'sometimes|in:training,townhall,l10,quarterly,annual,custom',
+            'custom_type'    => 'nullable|string|max:100',
+            'event_date'     => 'sometimes|date',
+            'description'    => 'nullable|string',
+            'agenda'         => 'nullable|array',
+            'assigned_roles' => 'nullable|array',
         ]);
 
         $event->update($validated);
 
-        return back()->with("message", "Event diperbarui.");
+        return back()->with('message', 'Event diperbarui.');
     }
 
     public function markAttended(Request $request, Event $event)
     {
         $userId = Auth::id();
-        $teamId = session("active_team_id");
-        $role = Auth::user()
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        $teamId = session('active_team_id');
+        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if ($event->team_id !== $teamId) {
-            abort(403);
-        }
+        if ($event->team_id !== $teamId) abort(403);
 
         $assignedRoles = $event->assigned_roles ?? [];
-        if (
-            !empty($assignedRoles) &&
-            ($role === null || !in_array($role, $assignedRoles, true))
-        ) {
-            abort(403, "Event ini tidak di-assign ke role kamu.");
+        if (!empty($assignedRoles) && ($role === null || !in_array($role, $assignedRoles, true))) {
+            abort(403, 'Event ini tidak di-assign ke role kamu.');
         }
 
         EventAttendance::updateOrCreate(
-            ["event_id" => $event->id, "user_id" => $userId],
-            [
-                "attended" => true,
-                "marked_at" => now(),
-                "marked_by" => $userId,
-            ],
+            ['event_id' => $event->id, 'user_id' => $userId],
+            ['attended' => true, 'marked_at' => now(), 'marked_by' => $userId]
         );
 
-        return back()->with("message", "Kehadiran dicatat.");
+        return back()->with('message', 'Kehadiran dicatat.');
     }
 
     public function overrideAttendance(Request $request, Event $event)
     {
-        $teamId = session("active_team_id");
-        $role = Auth::user()
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        $teamId = session('active_team_id');
+        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if ($role !== "leader") {
-            abort(403);
-        }
+        if ($role !== 'leader') abort(403);
 
         $request->validate([
-            "user_id" => "required|exists:users,id",
-            "attended" => "required|boolean",
+            'user_id'  => 'required|exists:users,id',
+            'attended' => 'required|boolean',
         ]);
 
         EventAttendance::updateOrCreate(
-            ["event_id" => $event->id, "user_id" => $request->user_id],
-            [
-                "attended" => $request->attended,
-                "marked_at" => now(),
-                "marked_by" => Auth::id(),
-            ],
+            ['event_id' => $event->id, 'user_id' => $request->user_id],
+            ['attended' => $request->attended, 'marked_at' => now(), 'marked_by' => Auth::id()]
         );
 
-        return back()->with("message", "Kehadiran di-override.");
+        return back()->with('message', 'Kehadiran di-override.');
     }
 
     public function destroy(Event $event)
     {
-        $teamId = session("active_team_id");
-        $role = Auth::user()
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        $teamId = session('active_team_id');
+        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if ($role !== "leader") {
-            abort(403);
-        }
+        if ($role !== 'leader') abort(403);
 
         $event->delete();
 
-        return back()->with("message", "Event dihapus.");
+        return back()->with('message', 'Event dihapus.');
     }
 }

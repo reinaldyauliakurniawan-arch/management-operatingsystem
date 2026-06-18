@@ -9,3 +9,4 @@ Route::patch('/events/{event}', [EventController::class, 'update'])->name('event
 Route::post('/events/{event}/attend', [EventController::class, 'markAttended'])->name('events.attend');
 Route::post('/events/{event}/override', [EventController::class, 'overrideAttendance'])->name('events.override');
 Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+    Route::post('/events/bulk', [EventController::class, 'storeBulk'])->name('events.bulk');
