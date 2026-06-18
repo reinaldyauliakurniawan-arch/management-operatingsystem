@@ -13,6 +13,8 @@ return new class extends Migration
             $table->foreignId('team_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->text('description')->nullable();
+            $table->text('root_cause')->nullable();
+            $table->text('solution')->nullable();
             $table->integer('priority')->default(0);
             $table->string('status')->default('open'); // open, resolved
             $table->foreignId('owner_id')->nullable()->constrained('users');

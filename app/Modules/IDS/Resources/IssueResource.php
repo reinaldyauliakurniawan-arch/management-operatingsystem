@@ -13,6 +13,8 @@ class IssueResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
+            'root_cause' => $this->root_cause,
+            'solution' => $this->solution,
             'priority' => $this->priority,
             'status' => $this->status,
             'owner' => $this->owner ? [

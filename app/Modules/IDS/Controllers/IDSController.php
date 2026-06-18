@@ -33,6 +33,8 @@ class IDSController extends Controller
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
+            'root_cause'  => 'nullable|string',
+            'solution'    => 'nullable|string',
             'priority'    => 'nullable|integer|min:0|max:10',
             'owner_id'    => 'nullable|exists:users,id',
         ]);
@@ -56,6 +58,8 @@ class IDSController extends Controller
         $validated = $request->validate([
             'title'       => 'sometimes|string|max:255',
             'description' => 'nullable|string',
+            'root_cause'  => 'nullable|string',
+            'solution'    => 'nullable|string',
             'priority'    => 'sometimes|integer|min:0|max:10',
             'owner_id'    => 'nullable|exists:users,id',
         ]);

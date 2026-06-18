@@ -15,6 +15,8 @@ class Issue extends Model
         'team_id',
         'title',
         'description',
+        'root_cause',
+        'solution',
         'priority',
         'status',
         'owner_id',

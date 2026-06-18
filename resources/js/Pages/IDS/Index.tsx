@@ -36,6 +36,8 @@ interface Issue {
     id: number;
     title: string;
     description: string;
+    root_cause: string;
+    solution: string;
     priority: number;
     status: "open" | "resolved";
     owner: { id: number; name: string } | null;
@@ -58,21 +60,58 @@ export default function IDSIndex({
     const isLeader = auth.teamRole === "leader";
     const isMember = auth.teamRole === "member";
     const [createOpen, setCreateOpen] = useState(false);
+    const [editIssue, setEditIssue] = useState<Issue | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
 
-    const { data, setData, post, processing, reset, errors } = useForm({
+    // Create form
+    const createForm = useForm({
         title: "",
         description: "",
+        root_cause: "",
+        solution: "",
         priority: 5,
         owner_id: "",
     });
 
-    const submit = (e: React.FormEvent) => {
+    // Edit form
+    const editForm = useForm({
+        title: "",
+        description: "",
+        root_cause: "",
+        solution: "",
+        priority: 5,
+        owner_id: "",
+    });
+
+    const submitCreate = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route("ids.store"), {
+        createForm.post(route("ids.store"), {
             onSuccess: () => {
                 setCreateOpen(false);
-                reset();
+                createForm.reset();
+            },
+        });
+    };
+
+    const openEdit = (issue: Issue) => {
+        setEditIssue(issue);
+        editForm.setData({
+            title: issue.title,
+            description: issue.description ?? "",
+            root_cause: issue.root_cause ?? "",
+            solution: issue.solution ?? "",
+            priority: issue.priority,
+            owner_id: issue.owner ? String(issue.owner.id) : "",
+        });
+    };
+
+    const submitEdit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editIssue) return;
+        editForm.patch(route("ids.update", editIssue.id), {
+            onSuccess: () => {
+                setEditIssue(null);
+                editForm.reset();
             },
         });
     };
@@ -142,6 +181,8 @@ export default function IDSIndex({
                             {[
                                 { key: "priority", label: "P" },
                                 { key: "issue", label: "Issue" },
+                                { key: "root_cause", label: "Akar Masalah" },
+                                { key: "solution", label: "Solusi" },
                                 { key: "owner", label: "Owner" },
                                 { key: "status", label: "Status" },
                                 { key: "actions", label: "" },
@@ -153,7 +194,7 @@ export default function IDSIndex({
                     <TableBody>
                         {issueList.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={5}>
+                                <TableCell colSpan={7}>
                                     <EmptyState
                                         title="Tidak ada issue"
                                         description="Semua aman! Belum ada issue yang di-identify."
@@ -182,12 +223,45 @@ export default function IDSIndex({
                                         {issue.title}
                                     </p>
                                     {issue.description && (
-                                        <p className="mt-0.5 text-[var(--font-base)] text-text-muted">
+                                        <p
+                                            className="mt-0.5 text-[var(--font-base)] text-text-muted cursor-help"
+                                            title={issue.description}
+                                        >
                                             {issue.description.slice(0, 80)}
                                             {issue.description.length > 80
                                                 ? "…"
                                                 : ""}
                                         </p>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-text-secondary max-w-[160px]">
+                                    {issue.root_cause ? (
+                                        <span
+                                            className="cursor-help"
+                                            title={issue.root_cause}
+                                        >
+                                            {issue.root_cause.slice(0, 60)}
+                                            {issue.root_cause.length > 60
+                                                ? "…"
+                                                : ""}
+                                        </span>
+                                    ) : (
+                                        "—"
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-text-secondary max-w-[160px]">
+                                    {issue.solution ? (
+                                        <span
+                                            className="cursor-help"
+                                            title={issue.solution}
+                                        >
+                                            {issue.solution.slice(0, 60)}
+                                            {issue.solution.length > 60
+                                                ? "…"
+                                                : ""}
+                                        </span>
+                                    ) : (
+                                        "—"
                                     )}
                                 </TableCell>
                                 <TableCell className="text-text-secondary">
@@ -204,6 +278,15 @@ export default function IDSIndex({
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex items-center justify-end gap-sm">
+                                        {(isLeader || isMember) && (
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => openEdit(issue)}
+                                            >
+                                                Edit
+                                            </Button>
+                                        )}
                                         {issue.status === "open" &&
                                             (isLeader || isMember) && (
                                                 <Button
@@ -243,53 +326,77 @@ export default function IDSIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form
-                            id="ids-form"
-                            onSubmit={submit}
+                            id="ids-create-form"
+                            onSubmit={submitCreate}
                             className="flex flex-col gap-lg"
                         >
                             <div className="flex flex-col gap-xs">
-                                <Label htmlFor="issue-title">Issue *</Label>
+                                <Label htmlFor="c-title">Issue *</Label>
                                 <Input
-                                    id="issue-title"
-                                    value={data.title}
+                                    id="c-title"
+                                    value={createForm.data.title}
                                     onChange={(e) =>
-                                        setData("title", e.target.value)
+                                        createForm.setData("title", e.target.value)
                                     }
                                     placeholder="Apa masalahnya?"
-                                    aria-invalid={!!errors.title}
+                                    aria-invalid={!!createForm.errors.title}
                                     required
                                 />
-                                {errors.title && (
+                                {createForm.errors.title && (
                                     <p className="text-[var(--font-base)] text-error-text">
-                                        {errors.title}
+                                        {createForm.errors.title}
                                     </p>
                                 )}
                             </div>
                             <div className="flex flex-col gap-xs">
-                                <Label htmlFor="issue-desc">Deskripsi</Label>
+                                <Label htmlFor="c-desc">Deskripsi Masalah</Label>
                                 <Textarea
-                                    id="issue-desc"
-                                    value={data.description}
+                                    id="c-desc"
+                                    value={createForm.data.description}
                                     onChange={(e) =>
-                                        setData("description", e.target.value)
+                                        createForm.setData("description", e.target.value)
                                     }
                                     placeholder="Detail masalah..."
                                     rows={3}
                                 />
                             </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="c-root">Akar Masalah (Root Cause)</Label>
+                                <Textarea
+                                    id="c-root"
+                                    value={createForm.data.root_cause}
+                                    onChange={(e) =>
+                                        createForm.setData("root_cause", e.target.value)
+                                    }
+                                    placeholder="Apa penyebab utamanya?"
+                                    rows={2}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="c-sol">Solusi</Label>
+                                <Textarea
+                                    id="c-sol"
+                                    value={createForm.data.solution}
+                                    onChange={(e) =>
+                                        createForm.setData("solution", e.target.value)
+                                    }
+                                    placeholder="Solusi yang direncanakan..."
+                                    rows={2}
+                                />
+                            </div>
                             <div className="grid grid-cols-2 gap-md">
                                 <div className="flex flex-col gap-xs">
-                                    <Label htmlFor="issue-priority">
+                                    <Label htmlFor="c-priority">
                                         Priority (0–10)
                                     </Label>
                                     <Input
-                                        id="issue-priority"
+                                        id="c-priority"
                                         type="number"
                                         min={0}
                                         max={10}
-                                        value={data.priority}
+                                        value={createForm.data.priority}
                                         onChange={(e) =>
-                                            setData(
+                                            createForm.setData(
                                                 "priority",
                                                 parseInt(e.target.value),
                                             )
@@ -297,12 +404,12 @@ export default function IDSIndex({
                                     />
                                 </div>
                                 <div className="flex flex-col gap-xs">
-                                    <Label htmlFor="issue-owner">Owner</Label>
+                                    <Label htmlFor="c-owner">Owner</Label>
                                     <Select
-                                        id="issue-owner"
-                                        value={data.owner_id}
+                                        id="c-owner"
+                                        value={createForm.data.owner_id}
                                         onChange={(e) =>
-                                            setData("owner_id", e.target.value)
+                                            createForm.setData("owner_id", e.target.value)
                                         }
                                     >
                                         <option value="">— Tidak ada —</option>
@@ -325,10 +432,132 @@ export default function IDSIndex({
                         </Button>
                         <Button
                             type="submit"
-                            form="ids-form"
-                            disabled={processing}
+                            form="ids-create-form"
+                            disabled={createForm.processing}
                         >
-                            {processing ? "Menyimpan…" : "Identify"}
+                            {createForm.processing ? "Menyimpan…" : "Identify"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Modal */}
+            <Dialog open={editIssue !== null} onOpenChange={(o) => !o && setEditIssue(null)}>
+                <DialogContent size="md">
+                    <DialogHeader>
+                        <DialogTitle>Edit Issue</DialogTitle>
+                    </DialogHeader>
+                    <DialogBody>
+                        <form
+                            id="ids-edit-form"
+                            onSubmit={submitEdit}
+                            className="flex flex-col gap-lg"
+                        >
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="e-title">Issue *</Label>
+                                <Input
+                                    id="e-title"
+                                    value={editForm.data.title}
+                                    onChange={(e) =>
+                                        editForm.setData("title", e.target.value)
+                                    }
+                                    placeholder="Apa masalahnya?"
+                                    required
+                                />
+                                {editForm.errors.title && (
+                                    <p className="text-[var(--font-base)] text-error-text">
+                                        {editForm.errors.title}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="e-desc">Deskripsi Masalah</Label>
+                                <Textarea
+                                    id="e-desc"
+                                    value={editForm.data.description}
+                                    onChange={(e) =>
+                                        editForm.setData("description", e.target.value)
+                                    }
+                                    placeholder="Detail masalah..."
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="e-root">Akar Masalah (Root Cause)</Label>
+                                <Textarea
+                                    id="e-root"
+                                    value={editForm.data.root_cause}
+                                    onChange={(e) =>
+                                        editForm.setData("root_cause", e.target.value)
+                                    }
+                                    placeholder="Apa penyebab utamanya?"
+                                    rows={2}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="e-sol">Solusi</Label>
+                                <Textarea
+                                    id="e-sol"
+                                    value={editForm.data.solution}
+                                    onChange={(e) =>
+                                        editForm.setData("solution", e.target.value)
+                                    }
+                                    placeholder="Solusi yang direncanakan..."
+                                    rows={2}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-md">
+                                <div className="flex flex-col gap-xs">
+                                    <Label htmlFor="e-priority">
+                                        Priority (0–10)
+                                    </Label>
+                                    <Input
+                                        id="e-priority"
+                                        type="number"
+                                        min={0}
+                                        max={10}
+                                        value={editForm.data.priority}
+                                        onChange={(e) =>
+                                            editForm.setData(
+                                                "priority",
+                                                parseInt(e.target.value),
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-xs">
+                                    <Label htmlFor="e-owner">Owner</Label>
+                                    <Select
+                                        id="e-owner"
+                                        value={editForm.data.owner_id}
+                                        onChange={(e) =>
+                                            editForm.setData("owner_id", e.target.value)
+                                        }
+                                    >
+                                        <option value="">— Tidak ada —</option>
+                                        {users.map((u) => (
+                                            <option key={u.id} value={u.id}>
+                                                {u.name}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </div>
+                            </div>
+                        </form>
+                    </DialogBody>
+                    <DialogFooter>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setEditIssue(null)}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="submit"
+                            form="ids-edit-form"
+                            disabled={editForm.processing}
+                        >
+                            {editForm.processing ? "Menyimpan…" : "Simpan"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
