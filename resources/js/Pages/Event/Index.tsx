@@ -213,11 +213,11 @@ const DEFAULT_AGENDA: Record<string, AgendaItem[]> = {
 
 function typeBadgeVariant(
     type: string,
-): "info" | "warning" | "danger" | "success" | "neutral" {
+): "info" | "warning" | "error" | "success" | "neutral" {
     const map: Record<string, any> = {
         l10: "info",
         quarterly: "warning",
-        annual: "danger",
+        annual: "error",
         training: "success",
         townhall: "neutral",
         custom: "neutral",
