@@ -16,6 +16,7 @@ class ToDo extends Model
     protected $fillable = [
         'team_id',
         'meeting_id',
+        'issue_id',
         'title',
         'owner_id',
         'due_date',
@@ -32,5 +33,10 @@ class ToDo extends Model
     public function owner()
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function issue()
+    {
+        return $this->belongsTo(\App\Modules\IDS\Models\Issue::class, 'issue_id');
     }
 }

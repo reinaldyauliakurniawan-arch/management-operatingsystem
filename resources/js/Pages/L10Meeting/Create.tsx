@@ -12,10 +12,16 @@ interface User {
     name: string;
 }
 
-export default function L10Create({ members }: { members: User[] }) {
+export default function L10Create({
+    members,
+    next_scheduled,
+}: {
+    members: User[];
+    next_scheduled?: string;
+}) {
     const { data, setData, post, processing, errors } = useForm({
         title: "",
-        scheduled_at: "",
+        scheduled_at: next_scheduled ?? "",
         attendee_ids: [] as number[],
     });
 

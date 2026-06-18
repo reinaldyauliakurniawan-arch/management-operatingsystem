@@ -16,7 +16,7 @@ class ToDoController extends Controller
     public function index()
     {
         $teamId = session("active_team_id");
-        $todos = ToDo::with("owner")
+        $todos = ToDo::with(["owner", "issue"])
             ->where("team_id", $teamId)
             ->orderBy("due_date")
             ->get();
@@ -27,9 +27,15 @@ class ToDoController extends Controller
             )->get(["id", "name"])
             : User::all(["id", "name"]);
 
+        $openIssues = \App\Modules\IDS\Models\Issue::where("team_id", $teamId)
+            ->where("status", "open")
+            ->orderBy("priority", "desc")
+            ->get(["id", "title"]);
+
         return Inertia::render("ToDo/Index", [
             "todos" => ToDoResource::collection($todos),
             "users" => $users,
+            "open_issues" => $openIssues,
         ]);
     }
 
@@ -42,6 +48,7 @@ class ToDoController extends Controller
             "owner_id" => "required|exists:users,id",
             "due_date" => "required|date",
             "meeting_id" => "nullable|exists:meetings,id",
+            "issue_id" => "nullable|exists:issues,id",
         ]);
 
         $validated["team_id"] = $teamId;

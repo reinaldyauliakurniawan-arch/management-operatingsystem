@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('title');
             $table->foreignId('owner_id')->constrained('users');
             $table->foreignId('meeting_id')->nullable()->constrained('meetings')->nullOnDelete();
+            $table->foreignId('issue_id')->nullable()->constrained('issues')->nullOnDelete();
             $table->date('due_date');
             $table->boolean('is_completed')->default(false);
             $table->foreignId('created_by')->nullable()->constrained('users');

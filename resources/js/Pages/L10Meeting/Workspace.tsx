@@ -124,7 +124,14 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
         conclude_notes: meeting.conclude_notes ?? "",
         rating: meeting.rating?.toString() ?? "",
     });
-    const issueForm = useForm({ title: "", priority: "medium" });
+    const issueForm = useForm({
+        title: "",
+        description: "",
+        root_cause: "",
+        solution: "",
+        priority: 5,
+        owner_id: "",
+    });
     const todoForm = useForm({ title: "", assignee_id: "", due_date: "" });
 
     const startMeeting = () =>
@@ -411,7 +418,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                     <Card>
                         <CardContent>
                             <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
-                                To-Do Review
+                                To-Do Review (Carry-Forward)
                             </p>
                             {meeting.todos.length === 0 ? (
                                 <p className="text-[var(--font-base)] text-text-muted">
@@ -542,14 +549,15 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
             {/* IDS */}
             {activeSection === "IDS" && (
                 <div className="flex flex-col gap-lg">
+                    {/* Existing open issues (read only, dari /ids) */}
                     <Card>
                         <CardContent>
                             <p className="mb-lg text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
-                                Issues — Identify, Discuss, Solve
+                                Issues Open (dari IDS)
                             </p>
                             {meeting.issues.length === 0 ? (
                                 <p className="text-[var(--font-base)] text-text-muted">
-                                    Belum ada issue di meeting ini.
+                                    Tidak ada open issue saat ini.
                                 </p>
                             ) : (
                                 <div className="flex flex-col divide-y divide-border">
@@ -585,18 +593,23 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                         </CardContent>
                     </Card>
 
+                    {/* Raise new issue — langsung sync ke tabel issues (/ids) */}
                     {!isReadOnly && (
                         <Card>
                             <CardContent>
-                                <p className="mb-md text-[var(--font-base)] font-medium text-text-primary">
-                                    Tambah Issue
+                                <p className="mb-xs text-[var(--font-base)] font-medium text-text-primary">
+                                    Identify Issue Baru
+                                </p>
+                                <p className="mb-md text-[var(--font-base)] text-text-muted">
+                                    Issue yang ditambah di sini langsung
+                                    tersimpan ke halaman IDS.
                                 </p>
                                 <form
                                     onSubmit={addIssue}
                                     className="flex flex-col gap-md"
                                 >
                                     <div className="flex flex-col gap-xs">
-                                        <Label>Issue</Label>
+                                        <Label>Issue *</Label>
                                         <Input
                                             value={issueForm.data.title}
                                             onChange={(e) =>
@@ -605,26 +618,98 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                                     e.target.value,
                                                 )
                                             }
-                                            placeholder="Deskripsi issue..."
+                                            placeholder="Apa masalahnya?"
+                                            required
                                         />
                                     </div>
                                     <div className="flex flex-col gap-xs">
-                                        <Label>Priority</Label>
-                                        <Select
-                                            value={issueForm.data.priority}
+                                        <Label>Deskripsi Masalah</Label>
+                                        <Textarea
+                                            rows={2}
+                                            value={issueForm.data.description}
                                             onChange={(e) =>
                                                 issueForm.setData(
-                                                    "priority",
+                                                    "description",
                                                     e.target.value,
                                                 )
                                             }
-                                        >
-                                            <option value="low">Low</option>
-                                            <option value="medium">
-                                                Medium
-                                            </option>
-                                            <option value="high">High</option>
-                                        </Select>
+                                            placeholder="Detail masalah..."
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-md">
+                                        <div className="flex flex-col gap-xs">
+                                            <Label>Akar Masalah</Label>
+                                            <Textarea
+                                                rows={2}
+                                                value={
+                                                    issueForm.data.root_cause
+                                                }
+                                                onChange={(e) =>
+                                                    issueForm.setData(
+                                                        "root_cause",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Penyebab utama..."
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-xs">
+                                            <Label>Solusi</Label>
+                                            <Textarea
+                                                rows={2}
+                                                value={issueForm.data.solution}
+                                                onChange={(e) =>
+                                                    issueForm.setData(
+                                                        "solution",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Solusi yang direncanakan..."
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-md">
+                                        <div className="flex flex-col gap-xs">
+                                            <Label>Priority (0–10)</Label>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                max={10}
+                                                value={issueForm.data.priority}
+                                                onChange={(e) =>
+                                                    issueForm.setData(
+                                                        "priority",
+                                                        parseInt(
+                                                            e.target.value,
+                                                        ),
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-xs">
+                                            <Label>Owner</Label>
+                                            <Select
+                                                value={issueForm.data.owner_id}
+                                                onChange={(e) =>
+                                                    issueForm.setData(
+                                                        "owner_id",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            >
+                                                <option value="">
+                                                    — Tidak ada —
+                                                </option>
+                                                {meeting.attendees.map((a) => (
+                                                    <option
+                                                        key={a.id}
+                                                        value={a.id}
+                                                    >
+                                                        {a.name}
+                                                    </option>
+                                                ))}
+                                            </Select>
+                                        </div>
                                     </div>
                                     <div className="flex justify-end">
                                         <Button
@@ -632,7 +717,9 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                             type="submit"
                                             disabled={issueForm.processing}
                                         >
-                                            Tambah
+                                            {issueForm.processing
+                                                ? "Menyimpan…"
+                                                : "Tambah ke IDS"}
                                         </Button>
                                     </div>
                                 </form>

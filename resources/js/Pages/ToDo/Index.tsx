@@ -32,6 +32,10 @@ interface User {
     id: number;
     name: string;
 }
+interface OpenIssue {
+    id: number;
+    title: string;
+}
 interface ToDo {
     id: number;
     title: string;
@@ -39,14 +43,18 @@ interface ToDo {
     due_date: string;
     is_completed: boolean;
     is_overdue: boolean;
+    issue_id: number | null;
+    issue_title: string | null;
 }
 
 export default function ToDoIndex({
     todos,
     users,
+    open_issues,
 }: {
     todos: { data: ToDo[] };
     users: User[];
+    open_issues: OpenIssue[];
 }) {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
@@ -58,6 +66,7 @@ export default function ToDoIndex({
         title: "",
         owner_id: users[0]?.id || "",
         due_date: new Date().toISOString().split("T")[0],
+        issue_id: "",
     });
 
     const submit = (e: React.FormEvent) => {
@@ -155,6 +164,7 @@ export default function ToDoIndex({
                             {[
                                 { key: "check", label: "" },
                                 { key: "title", label: "To-Do" },
+                                { key: "issue", label: "Terkait Issue" },
                                 { key: "owner", label: "Owner" },
                                 { key: "due", label: "Due Date" },
                                 { key: "status", label: "Status" },
@@ -167,7 +177,7 @@ export default function ToDoIndex({
                     <TableBody>
                         {todoList.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={6}>
+                                <TableCell colSpan={7}>
                                     <EmptyState
                                         title="Belum ada to-do"
                                         description="Tambah to-do pertama untuk team ini."
@@ -194,6 +204,25 @@ export default function ToDoIndex({
                                     >
                                         {todo.title}
                                     </span>
+                                </TableCell>
+                                <TableCell>
+                                    {todo.issue_title ? (
+                                        <span
+                                            className="text-[var(--font-base)] text-primary cursor-help"
+                                            title={todo.issue_title}
+                                        >
+                                            {todo.issue_title.length > 40
+                                                ? todo.issue_title.slice(
+                                                      0,
+                                                      40,
+                                                  ) + "…"
+                                                : todo.issue_title}
+                                        </span>
+                                    ) : (
+                                        <span className="text-text-muted">
+                                            —
+                                        </span>
+                                    )}
                                 </TableCell>
                                 <TableCell className="text-text-secondary">
                                     {todo.owner.name}
@@ -265,6 +294,29 @@ export default function ToDoIndex({
                                         {errors.title}
                                     </p>
                                 )}
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="todo-issue">
+                                    Terkait Issue (opsional)
+                                </Label>
+                                <Select
+                                    id="todo-issue"
+                                    value={data.issue_id}
+                                    onChange={(e) =>
+                                        setData("issue_id", e.target.value)
+                                    }
+                                >
+                                    <option value="">— Tidak ada —</option>
+                                    {open_issues.map((i) => (
+                                        <option key={i.id} value={i.id}>
+                                            {i.title}
+                                        </option>
+                                    ))}
+                                </Select>
+                                <p className="text-[var(--font-sm)] text-text-muted">
+                                    Pilih jika to-do ini adalah action untuk
+                                    menyelesaikan issue tertentu.
+                                </p>
                             </div>
                             <div className="grid grid-cols-2 gap-md">
                                 <div className="flex flex-col gap-xs">

@@ -22,6 +22,8 @@ class ToDoResource extends JsonResource
             "is_completed" => $this->is_completed,
             "is_overdue" => !$this->is_completed && $this->due_date->isPast(),
             "meeting_id" => $this->meeting_id,
+            "issue_id" => $this->issue_id,
+            "issue_title" => $this->issue?->title,
         ];
     }
 }

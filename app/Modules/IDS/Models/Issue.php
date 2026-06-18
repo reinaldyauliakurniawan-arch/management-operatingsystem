@@ -28,4 +28,9 @@ class Issue extends Model
     {
         return $this->belongsTo(User::class, 'owner_id');
     }
+
+    public function todos()
+    {
+        return $this->hasMany(\App\Modules\ToDo\Models\ToDo::class, 'issue_id');
+    }
 }

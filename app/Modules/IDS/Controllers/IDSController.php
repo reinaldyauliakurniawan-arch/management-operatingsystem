@@ -15,7 +15,7 @@ class IDSController extends Controller
     public function index()
     {
         $teamId = session('active_team_id');
-        $issues = Issue::with('owner')->where('team_id', $teamId)->orderBy('priority', 'desc')->get();
+        $issues = Issue::with('owner')->withCount('todos')->where('team_id', $teamId)->orderBy('priority', 'desc')->get();
         $users = $teamId
             ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
             : User::all(['id', 'name']);

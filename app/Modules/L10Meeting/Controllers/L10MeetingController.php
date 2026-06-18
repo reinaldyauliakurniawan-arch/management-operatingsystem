@@ -53,8 +53,20 @@ class L10MeetingController extends Controller
             )->get(["id", "name"])
             : User::all(["id", "name"]);
 
+        // Hitung jadwal L10 berikutnya berdasarkan scorecard_day tim
+        $team = \App\Modules\Teams\Models\Team::withoutGlobalScopes()->find($teamId);
+        $scorecardDay = $team?->scorecard_day ?? 1; // 0=Minggu,1=Senin,...,6=Sabtu
+
+        $now = \Carbon\Carbon::now();
+        $next = $now->copy()->next($scorecardDay === 0 ? \Carbon\Carbon::SUNDAY : $scorecardDay);
+        if ($now->dayOfWeek === $scorecardDay) {
+            $next = $now->copy();
+        }
+        $next->setTime(9, 0); // default jam 09:00
+
         return Inertia::render("L10Meeting/Create", [
             "members" => $users,
+            "next_scheduled" => $next->format("Y-m-d\TH:i"),
         ]);
     }
 
@@ -214,6 +226,8 @@ class L10MeetingController extends Controller
         $validated = $request->validate([
             "title" => "required|string|max:255",
             "description" => "nullable|string",
+            "root_cause" => "nullable|string",
+            "solution" => "nullable|string",
             "priority" => "nullable",
             "owner_id" => "nullable|exists:users,id",
         ]);
@@ -223,6 +237,8 @@ class L10MeetingController extends Controller
         Issue::create([
             "title" => $validated["title"],
             "description" => $validated["description"] ?? null,
+            "root_cause" => $validated["root_cause"] ?? null,
+            "solution" => $validated["solution"] ?? null,
             "priority" => $priority,
             "owner_id" => $validated["owner_id"] ?? Auth::id(),
             "team_id" => $teamId,

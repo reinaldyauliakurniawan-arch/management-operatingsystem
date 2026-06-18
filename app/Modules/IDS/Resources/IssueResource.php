@@ -21,6 +21,7 @@ class IssueResource extends JsonResource
                 'id' => $this->owner->id,
                 'name' => $this->owner->name,
             ] : null,
+            'todo_count' => $this->todos_count ?? 0,
         ];
     }
 }

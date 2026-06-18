@@ -41,6 +41,7 @@ interface Issue {
     priority: number;
     status: "open" | "resolved";
     owner: { id: number; name: string } | null;
+    todo_count: number;
 }
 
 function priorityClass(priority: number) {
@@ -183,6 +184,7 @@ export default function IDSIndex({
                                 { key: "issue", label: "Issue" },
                                 { key: "root_cause", label: "Akar Masalah" },
                                 { key: "solution", label: "Solusi" },
+                                { key: "todos", label: "To-Dos" },
                                 { key: "owner", label: "Owner" },
                                 { key: "status", label: "Status" },
                                 { key: "actions", label: "" },
@@ -194,7 +196,7 @@ export default function IDSIndex({
                     <TableBody>
                         {issueList.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={7}>
+                                <TableCell colSpan={8}>
                                     <EmptyState
                                         title="Tidak ada issue"
                                         description="Semua aman! Belum ada issue yang di-identify."
@@ -262,6 +264,17 @@ export default function IDSIndex({
                                         </span>
                                     ) : (
                                         "—"
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-text-secondary text-center">
+                                    {issue.todo_count > 0 ? (
+                                        <span className="inline-flex items-center justify-center rounded-full bg-primary-subtle px-sm py-xs text-[var(--font-sm)] font-medium text-primary-text">
+                                            {issue.todo_count}
+                                        </span>
+                                    ) : (
+                                        <span className="text-text-muted">
+                                            —
+                                        </span>
                                     )}
                                 </TableCell>
                                 <TableCell className="text-text-secondary">
@@ -336,7 +349,10 @@ export default function IDSIndex({
                                     id="c-title"
                                     value={createForm.data.title}
                                     onChange={(e) =>
-                                        createForm.setData("title", e.target.value)
+                                        createForm.setData(
+                                            "title",
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="Apa masalahnya?"
                                     aria-invalid={!!createForm.errors.title}
@@ -349,24 +365,34 @@ export default function IDSIndex({
                                 )}
                             </div>
                             <div className="flex flex-col gap-xs">
-                                <Label htmlFor="c-desc">Deskripsi Masalah</Label>
+                                <Label htmlFor="c-desc">
+                                    Deskripsi Masalah
+                                </Label>
                                 <Textarea
                                     id="c-desc"
                                     value={createForm.data.description}
                                     onChange={(e) =>
-                                        createForm.setData("description", e.target.value)
+                                        createForm.setData(
+                                            "description",
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="Detail masalah..."
                                     rows={3}
                                 />
                             </div>
                             <div className="flex flex-col gap-xs">
-                                <Label htmlFor="c-root">Akar Masalah (Root Cause)</Label>
+                                <Label htmlFor="c-root">
+                                    Akar Masalah (Root Cause)
+                                </Label>
                                 <Textarea
                                     id="c-root"
                                     value={createForm.data.root_cause}
                                     onChange={(e) =>
-                                        createForm.setData("root_cause", e.target.value)
+                                        createForm.setData(
+                                            "root_cause",
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="Apa penyebab utamanya?"
                                     rows={2}
@@ -378,7 +404,10 @@ export default function IDSIndex({
                                     id="c-sol"
                                     value={createForm.data.solution}
                                     onChange={(e) =>
-                                        createForm.setData("solution", e.target.value)
+                                        createForm.setData(
+                                            "solution",
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="Solusi yang direncanakan..."
                                     rows={2}
@@ -409,7 +438,10 @@ export default function IDSIndex({
                                         id="c-owner"
                                         value={createForm.data.owner_id}
                                         onChange={(e) =>
-                                            createForm.setData("owner_id", e.target.value)
+                                            createForm.setData(
+                                                "owner_id",
+                                                e.target.value,
+                                            )
                                         }
                                     >
                                         <option value="">— Tidak ada —</option>
@@ -442,7 +474,10 @@ export default function IDSIndex({
             </Dialog>
 
             {/* Edit Modal */}
-            <Dialog open={editIssue !== null} onOpenChange={(o) => !o && setEditIssue(null)}>
+            <Dialog
+                open={editIssue !== null}
+                onOpenChange={(o) => !o && setEditIssue(null)}
+            >
                 <DialogContent size="md">
                     <DialogHeader>
                         <DialogTitle>Edit Issue</DialogTitle>
@@ -459,7 +494,10 @@ export default function IDSIndex({
                                     id="e-title"
                                     value={editForm.data.title}
                                     onChange={(e) =>
-                                        editForm.setData("title", e.target.value)
+                                        editForm.setData(
+                                            "title",
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="Apa masalahnya?"
                                     required
@@ -471,24 +509,34 @@ export default function IDSIndex({
                                 )}
                             </div>
                             <div className="flex flex-col gap-xs">
-                                <Label htmlFor="e-desc">Deskripsi Masalah</Label>
+                                <Label htmlFor="e-desc">
+                                    Deskripsi Masalah
+                                </Label>
                                 <Textarea
                                     id="e-desc"
                                     value={editForm.data.description}
                                     onChange={(e) =>
-                                        editForm.setData("description", e.target.value)
+                                        editForm.setData(
+                                            "description",
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="Detail masalah..."
                                     rows={3}
                                 />
                             </div>
                             <div className="flex flex-col gap-xs">
-                                <Label htmlFor="e-root">Akar Masalah (Root Cause)</Label>
+                                <Label htmlFor="e-root">
+                                    Akar Masalah (Root Cause)
+                                </Label>
                                 <Textarea
                                     id="e-root"
                                     value={editForm.data.root_cause}
                                     onChange={(e) =>
-                                        editForm.setData("root_cause", e.target.value)
+                                        editForm.setData(
+                                            "root_cause",
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="Apa penyebab utamanya?"
                                     rows={2}
@@ -500,7 +548,10 @@ export default function IDSIndex({
                                     id="e-sol"
                                     value={editForm.data.solution}
                                     onChange={(e) =>
-                                        editForm.setData("solution", e.target.value)
+                                        editForm.setData(
+                                            "solution",
+                                            e.target.value,
+                                        )
                                     }
                                     placeholder="Solusi yang direncanakan..."
                                     rows={2}
@@ -531,7 +582,10 @@ export default function IDSIndex({
                                         id="e-owner"
                                         value={editForm.data.owner_id}
                                         onChange={(e) =>
-                                            editForm.setData("owner_id", e.target.value)
+                                            editForm.setData(
+                                                "owner_id",
+                                                e.target.value,
+                                            )
                                         }
                                     >
                                         <option value="">— Tidak ada —</option>
