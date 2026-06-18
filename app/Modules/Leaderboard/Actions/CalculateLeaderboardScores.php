@@ -2,201 +2,214 @@
 
 namespace App\Modules\Leaderboard\Actions;
 
-use App\Modules\Teams\Models\Team;
 use App\Modules\Teams\Models\TeamMember;
 use App\Modules\Leaderboard\Models\LeaderboardParameter;
 use App\Modules\Leaderboard\Models\LeaderboardEntry;
 use App\Modules\Rocks\Models\Rock;
 use App\Modules\Scorecard\Models\Metric;
-use App\Modules\ToDo\Models\ToDo;
-use App\Modules\Event\Models\EventAttendance;
 use App\Modules\Event\Models\Event;
+use App\Modules\Event\Models\EventAttendance;
+use App\Modules\LeadershipAssessment\Models\AssessmentCycle;
+use App\Modules\LeadershipAssessment\Models\AssessmentResponse;
 
 class CalculateLeaderboardScores
 {
-    public function execute(?int $teamId = null, ?string $dateFrom = null, ?string $dateTo = null): \Illuminate\Support\Collection
-    {
-        $teamId = $teamId ?? session('active_team_id');
-        if (!$teamId) return collect();
+    public function execute(
+        int $teamId,
+        string $quarter,
+        int $year,
+    ): \Illuminate\Support\Collection {
+        $members = TeamMember::with("user")->where("team_id", $teamId)->get();
+        $params = LeaderboardParameter::where("team_id", $teamId)
+            ->orderBy("sort_order")
+            ->orderBy("id")
+            ->get();
 
-        $team = Team::find($teamId);
-        if (!$team) return collect();
+        return $members
+            ->map(function ($member) use ($params, $teamId, $quarter, $year) {
+                $userId = $member->user_id;
+                $scheme = $this->schemeFor($member->role);
+                $breakdown = [];
+                $total = 0;
 
-        $members  = TeamMember::with('user')->where('team_id', $teamId)->get();
-        $params   = LeaderboardParameter::withoutGlobalScopes()->where('team_id', $teamId)->get();
-
-        $results = $members->map(function ($member) use ($params, $teamId, $dateFrom, $dateTo) {
-            $user       = $member->user;
-            $role       = $member->role;
-            $userId     = $user->id;
-
-            $totalPoints    = 0;
-            $maxPoints      = 0;
-            $breakdown      = [];
-
-            foreach ($params as $param) {
-                $assignedRoles = $param->assigned_roles ?? [];
-                if (! empty($assignedRoles) && ! in_array($role, $assignedRoles, true)) {
-                    continue;
-                }
-
-                $maxPoints += $param->max_points;
-
-                if ($param->is_automatic) {
-                    $earned = $this->calcAutomatic($param->automatic_source, $userId, $teamId, $param->max_points, $dateFrom, $dateTo);
-                } else {
-                    $entryQuery = LeaderboardEntry::withoutGlobalScopes()
-                        ->where('team_id', $teamId)
-                        ->where('parameter_id', $param->id)
-                        ->where('user_id', $userId);
-
-                    if ($dateFrom) {
-                        $entryQuery->whereDate('created_at', '>=', $dateFrom);
-                    }
-                    if ($dateTo) {
-                        $entryQuery->whereDate('created_at', '<=', $dateTo);
+                foreach ($params->where("scheme", $scheme) as $param) {
+                    if ($param->input_type === "auto") {
+                        $points = $this->calcAuto(
+                            $param,
+                            $userId,
+                            $teamId,
+                            $quarter,
+                            $year,
+                        );
+                    } else {
+                        $entry = LeaderboardEntry::where([
+                            "team_id" => $teamId,
+                            "parameter_id" => $param->id,
+                            "user_id" => $userId,
+                            "quarter" => $quarter,
+                            "year" => $year,
+                        ])->first();
+                        $points = $entry ? $entry->points : 0;
                     }
 
-                    $earned = $entryQuery->sum('points');
-                    $earned = min($earned, $param->max_points);
+                    $total += $points;
+                    $breakdown[] = [
+                        "parameter_id" => $param->id,
+                        "parameter" => $param->name,
+                        "input_type" => $param->input_type,
+                        "points" => round($points, 2),
+                        "is_auto" => $param->input_type === "auto",
+                    ];
                 }
 
-                $totalPoints += $earned;
-                $breakdown[] = [
-                    'parameter'  => $param->name,
-                    'earned'     => round($earned, 2),
-                    'max'        => $param->max_points,
-                    'automatic'  => $param->is_automatic,
+                return [
+                    "user_id" => $userId,
+                    "name" => $member->user->name,
+                    "role" => $member->role,
+                    "scheme" => $scheme,
+                    "total" => round($total, 2),
+                    "breakdown" => $breakdown,
                 ];
-            }
-
-            $score = $maxPoints > 0 ? round(($totalPoints / $maxPoints) * 100, 1) : 0;
-
-            return [
-                'user_id'    => $userId,
-                'name'       => $user->name,
-                'role'       => $role,
-                'score'      => $score,
-                'breakdown'  => $breakdown,
-            ];
-        });
-
-        return $results->sortBy([
-            ['score', 'desc'],
-            ['user_id', 'asc'],
-        ])->values();
+            })
+            ->sortByDesc("total")
+            ->values();
     }
 
-    private function calcAutomatic(string $source, int $userId, int $teamId, float $maxPoints, ?string $dateFrom = null, ?string $dateTo = null): float
+    private function schemeFor(string $role): string
     {
-        return match ($source) {
-            'rocks'      => $this->rocksScore($userId, $teamId, $maxPoints, $dateFrom, $dateTo),
-            'scorecard'  => $this->scorecardScore($userId, $teamId, $maxPoints, $dateFrom, $dateTo),
-            'todos'      => $this->todosScore($userId, $teamId, $maxPoints, $dateFrom, $dateTo),
-            'events'     => $this->eventsScore($userId, $teamId, $maxPoints, $dateFrom, $dateTo),
-            'leadership' => $this->leadershipScore($userId, $teamId, $maxPoints),
-            default      => 0,
+        return $role === "tutor" ? "tutor" : "management";
+    }
+
+    private function calcAuto(
+        LeaderboardParameter $param,
+        int $userId,
+        int $teamId,
+        string $quarter,
+        int $year,
+    ): float {
+        $config = $param->config ?? [];
+        $source = $config["source"] ?? "";
+
+        [$from, $to] = $this->quarterDateRange($quarter, $year);
+
+        $pct = match ($source) {
+            "rocks" => $this->rocksRate($userId, $teamId, $from, $to),
+            "scorecard" => $this->scorecardRate($userId, $teamId, $from, $to),
+            "events" => $this->eventsRate($userId, $teamId, $from, $to),
+            "leadership" => $this->leadershipRate($userId, $teamId),
+            default => 0,
+        };
+
+        // auto param bisa pakai tiered atau normalized
+        if (!empty($config["tiers"])) {
+            return $param->calculatePoints($pct); // reuse tiered logic via pct value
+        }
+
+        $max = (float) ($config["max_points"] ?? 0);
+        return round(($pct / 100) * $max, 2);
+    }
+
+    private function quarterDateRange(string $quarter, int $year): array
+    {
+        return match ($quarter) {
+            "Q1" => ["{$year}-01-01", "{$year}-03-31"],
+            "Q2" => ["{$year}-04-01", "{$year}-06-30"],
+            "Q3" => ["{$year}-07-01", "{$year}-09-30"],
+            "Q4" => ["{$year}-10-01", "{$year}-12-31"],
+            default => ["{$year}-01-01", "{$year}-12-31"],
         };
     }
 
-    private function rocksScore(int $userId, int $teamId, float $max, ?string $dateFrom = null, ?string $dateTo = null): float
-    {
-        $q = Rock::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId);
-        if ($dateFrom) $q->where('created_at', '>=', $dateFrom);
-        if ($dateTo)   $q->where('created_at', '<=', $dateTo);
+    private function rocksRate(
+        int $userId,
+        int $teamId,
+        string $from,
+        string $to,
+    ): float {
+        $q = Rock::withoutGlobalScopes()
+            ->where("team_id", $teamId)
+            ->where("owner_id", $userId)
+            ->whereBetween("created_at", [$from, $to]);
         $total = (clone $q)->count();
-        if ($total === 0) return 0;
-        $done = (clone $q)->where('status', 'done')->count();
-        return round(($done / $total) * $max, 2);
-    }
-
-    private function scorecardScore(int $userId, int $teamId, float $max, ?string $dateFrom = null, ?string $dateTo = null): float
-    {
-        $metrics = Metric::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId)
-            ->with(['scores' => function ($q) use ($dateFrom, $dateTo) {
-                if ($dateFrom) $q->where('week_start_date', '>=', $dateFrom);
-                if ($dateTo)   $q->where('week_start_date', '<=', $dateTo);
-            }])->get();
-        if ($metrics->isEmpty()) return 0;
-        $totalScores = 0;
-        $greenScores = 0;
-        foreach ($metrics as $metric) {
-            foreach ($metric->scores as $score) {
-                $totalScores++;
-                if ($score->status === 'green') $greenScores++;
-            }
+        if (!$total) {
+            return 0;
         }
-        if ($totalScores === 0) return 0;
-        return round(($greenScores / $totalScores) * $max, 2);
+        return round(
+            ((clone $q)->where("status", "done")->count() / $total) * 100,
+            2,
+        );
     }
 
-    private function todosScore(int $userId, int $teamId, float $max, ?string $dateFrom = null, ?string $dateTo = null): float
-    {
-        $q = ToDo::withoutGlobalScopes()->where('team_id', $teamId)->where('owner_id', $userId);
-        if ($dateFrom) $q->where('created_at', '>=', $dateFrom);
-        if ($dateTo)   $q->where('created_at', '<=', $dateTo);
-        $total = (clone $q)->count();
-        if ($total === 0) return 0;
-        $done = (clone $q)->where('is_completed', true)->count();
-        return round(($done / $total) * $max, 2);
+    private function scorecardRate(
+        int $userId,
+        int $teamId,
+        string $from,
+        string $to,
+    ): float {
+        $metrics = Metric::withoutGlobalScopes()
+            ->where("team_id", $teamId)
+            ->where("owner_id", $userId)
+            ->with([
+                "scores" => fn($q) => $q->whereBetween("week_start_date", [
+                    $from,
+                    $to,
+                ]),
+            ])
+            ->get();
+        $total = $metrics->sum(fn($m) => $m->scores->count());
+        if (!$total) {
+            return 0;
+        }
+        $green = $metrics->sum(
+            fn($m) => $m->scores->where("status", "green")->count(),
+        );
+        return round(($green / $total) * 100, 2);
     }
 
-    private function eventsScore(int $userId, int $teamId, float $max, ?string $dateFrom = null, ?string $dateTo = null): float
-    {
-        $role = \App\Modules\Teams\Models\TeamMember::where('team_id', $teamId)
-            ->where('user_id', $userId)
-            ->value('role');
-
-        $eventsQuery = Event::withoutGlobalScopes()
-            ->where('team_id', $teamId)
-            ->where(function ($q) use ($role) {
-                $q->whereNull('assigned_roles')
-                  ->orWhere('assigned_roles', '[]')
-                  ->orWhereJsonContains('assigned_roles', $role);
-            });
-        if ($dateFrom) $eventsQuery->where('event_date', '>=', $dateFrom);
-        if ($dateTo)   $eventsQuery->where('event_date', '<=', $dateTo);
-
-        $totalEvents = $eventsQuery->count();
-        if ($totalEvents === 0) return 0;
-
-        $attended = EventAttendance::withoutGlobalScopes()
-            ->whereHas('event', fn($q) => $q->withoutGlobalScopes()
-                ->where('team_id', $teamId)
-                ->where(function ($q2) use ($role) {
-                    $q2->whereNull('assigned_roles')
-                       ->orWhere('assigned_roles', '[]')
-                       ->orWhereJsonContains('assigned_roles', $role);
-                })
-                ->when($dateFrom, fn($q3) => $q3->where('event_date', '>=', $dateFrom))
-                ->when($dateTo,   fn($q3) => $q3->where('event_date', '<=', $dateTo))
-            )
-            ->where('user_id', $userId)
-            ->where('attended', true)
+    private function eventsRate(
+        int $userId,
+        int $teamId,
+        string $from,
+        string $to,
+    ): float {
+        $total = Event::withoutGlobalScopes()
+            ->where("team_id", $teamId)
+            ->whereBetween("event_date", [$from, $to])
             ->count();
-
-        return round(($attended / $totalEvents) * $max, 2);
+        if (!$total) {
+            return 0;
+        }
+        $attended = EventAttendance::withoutGlobalScopes()
+            ->whereHas(
+                "event",
+                fn($q) => $q
+                    ->withoutGlobalScopes()
+                    ->where("team_id", $teamId)
+                    ->whereBetween("event_date", [$from, $to]),
+            )
+            ->where("user_id", $userId)
+            ->where("attended", true)
+            ->count();
+        return round(($attended / $total) * 100, 2);
     }
 
-    private function leadershipScore(int $userId, int $teamId, float $max): float
+    private function leadershipRate(int $userId, int $teamId): float
     {
-        // Get the latest closed cycle for this team
-        $latestCycle = \App\Modules\LeadershipAssessment\Models\AssessmentCycle::withoutGlobalScopes()
-            ->where('team_id', $teamId)
-            ->where('status', 'closed')
+        $cycle = AssessmentCycle::withoutGlobalScopes()
+            ->where("team_id", $teamId)
+            ->where("status", "closed")
             ->latest()
             ->first();
-
-        if (!$latestCycle) return 0;
-
-        $responses = \App\Modules\LeadershipAssessment\Models\AssessmentResponse::where('cycle_id', $latestCycle->id)
-            ->where('assessee_id', $userId)
-            ->get();
-
-        if ($responses->isEmpty()) return 0;
-
-        // Scale: avg rubric level (1-5) → normalized to max_points
-        $avgLevel = $responses->avg('rubric_level'); // 1.0–5.0
-        return round((($avgLevel - 1) / 4) * $max, 2); // 0 at level 1, max at level 5
+        if (!$cycle) {
+            return 0;
+        }
+        $avg = AssessmentResponse::where("cycle_id", $cycle->id)
+            ->where("assessee_id", $userId)
+            ->avg("rubric_level");
+        if (!$avg) {
+            return 0;
+        }
+        // rubric 1-5 → persentase 0-100
+        return round((($avg - 1) / 4) * 100, 2);
     }
 }

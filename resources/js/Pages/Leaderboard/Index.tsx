@@ -1,23 +1,14 @@
 import React, { useState } from "react";
-import { Trophy, TrendingUp, Users, Zap } from "lucide-react";
-import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
+import { Trophy, ChevronDown, ChevronUp, Settings, Plus } from "lucide-react";
 import { useForm, Head, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
-import { Card, CardHeader, CardTitle, CardContent } from "@/Components/ui/card";
-import {
-    Table,
-    TableHeader,
-    TableBody,
-    TableRow,
-    TableHead,
-    TableCell,
-} from "@/Components/ui/table";
-import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import { Select } from "@/Components/ui/select";
+import { Badge } from "@/Components/ui/badge";
+import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
 import {
     Dialog,
     DialogContent,
@@ -27,101 +18,394 @@ import {
     DialogFooter,
 } from "@/Components/ui/dialog";
 
-interface Breakdown {
-    parameter: string;
-    earned: number;
-    max: number;
-    automatic: boolean;
-}
+// ---- Types ----
 
-interface ScoreEntry {
-    user_id: number;
-    name: string;
-    role: "leader" | "member" | "tutor";
-    score: number;
-    breakdown: Breakdown[];
+interface Tier {
+    min: number;
+    points: number;
 }
-
+interface Config {
+    weight?: number;
+    max_points?: number;
+    tiers?: Tier[];
+    source?: string;
+}
 interface Parameter {
     id: number;
+    scheme: "tutor" | "management";
     name: string;
-    max_points: number;
-    assigned_roles: string[];
-    is_automatic: boolean;
-    automatic_source: string | null;
+    input_type: "per_unit" | "tiered" | "normalized" | "auto";
+    config: Config | null;
+    sort_order: number;
+}
+interface BreakdownItem {
+    parameter_id: number;
+    parameter: string;
+    input_type: string;
+    points: number;
+    is_auto: boolean;
+}
+interface ScoreRow {
+    user_id: number;
+    name: string;
+    role: string;
+    scheme: "tutor" | "management";
+    total: number;
+    breakdown: BreakdownItem[];
+}
+interface Member {
+    id: number;
+    name: string;
+    role: string;
 }
 
-const automaticSources = [
+const QUARTERS = ["Q1", "Q2", "Q3", "Q4"];
+const INPUT_TYPES = [
+    { value: "per_unit", label: "Per Unit (jumlah × bobot)" },
+    { value: "tiered", label: "Tiered (nilai → poin via bracket)" },
+    { value: "normalized", label: "Normalized (% hadir × maks)" },
+    { value: "auto", label: "Auto (tarik dari modul)" },
+];
+const AUTO_SOURCES = [
     { value: "rocks", label: "Rocks completion rate" },
     { value: "scorecard", label: "Scorecard green rate" },
-    { value: "todos", label: "To-Do completion rate" },
     { value: "events", label: "Event attendance rate" },
     { value: "leadership", label: "Leadership Assessment score" },
 ];
-
-const roleOptions = ["leader", "member", "tutor"];
-
-const roleLabels: Record<string, string> = {
-    leader: "Leader",
-    member: "Member",
+const SCHEME_LABELS: Record<string, string> = {
     tutor: "Tutor",
+    management: "Manajemen",
 };
+
+// ---- Tier Editor ----
+
+function TierEditor({
+    tiers,
+    onChange,
+}: {
+    tiers: Tier[];
+    onChange: (t: Tier[]) => void;
+}) {
+    const update = (i: number, field: keyof Tier, val: number) => {
+        const next = tiers.map((t, idx) =>
+            idx === i ? { ...t, [field]: val } : t,
+        );
+        onChange(next);
+    };
+    const add = () => onChange([...tiers, { min: 0, points: 0 }]);
+    const remove = (i: number) => onChange(tiers.filter((_, idx) => idx !== i));
+
+    return (
+        <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-[var(--font-sm)] font-medium text-text-muted px-1">
+                <span>Nilai minimum (≥)</span>
+                <span>Poin</span>
+                <span />
+            </div>
+            {tiers.map((t, i) => (
+                <div
+                    key={i}
+                    className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center"
+                >
+                    <Input
+                        type="number"
+                        step="any"
+                        value={t.min}
+                        onChange={(e) =>
+                            update(i, "min", parseFloat(e.target.value) || 0)
+                        }
+                    />
+                    <Input
+                        type="number"
+                        step="any"
+                        value={t.points}
+                        onChange={(e) =>
+                            update(i, "points", parseFloat(e.target.value) || 0)
+                        }
+                    />
+                    <button
+                        type="button"
+                        onClick={() => remove(i)}
+                        className="text-text-muted hover:text-error-text px-1"
+                    >
+                        ✕
+                    </button>
+                </div>
+            ))}
+            <button
+                type="button"
+                onClick={add}
+                className="self-start text-[var(--font-sm)] text-primary hover:underline"
+            >
+                + Tambah bracket
+            </button>
+        </div>
+    );
+}
+
+// ---- Config Editor ----
+
+function ConfigEditor({
+    inputType,
+    config,
+    onChange,
+}: {
+    inputType: string;
+    config: Config;
+    onChange: (c: Config) => void;
+}) {
+    if (inputType === "per_unit")
+        return (
+            <div>
+                <Label className="mb-1.5 text-text-secondary">
+                    Bobot per unit{" "}
+                    <span className="text-text-muted">(negatif = penalti)</span>
+                </Label>
+                <Input
+                    type="number"
+                    step="any"
+                    value={config.weight ?? 0}
+                    onChange={(e) =>
+                        onChange({
+                            ...config,
+                            weight: parseFloat(e.target.value) || 0,
+                        })
+                    }
+                />
+            </div>
+        );
+
+    if (inputType === "tiered")
+        return (
+            <div>
+                <Label className="mb-1.5 text-text-secondary">
+                    Bracket Poin
+                </Label>
+                <TierEditor
+                    tiers={config.tiers ?? []}
+                    onChange={(tiers) => onChange({ ...config, tiers })}
+                />
+            </div>
+        );
+
+    if (inputType === "normalized")
+        return (
+            <div>
+                <Label className="mb-1.5 text-text-secondary">
+                    Poin Maksimum
+                </Label>
+                <Input
+                    type="number"
+                    min={0}
+                    step="any"
+                    value={config.max_points ?? 0}
+                    onChange={(e) =>
+                        onChange({
+                            ...config,
+                            max_points: parseFloat(e.target.value) || 0,
+                        })
+                    }
+                />
+            </div>
+        );
+
+    if (inputType === "auto")
+        return (
+            <div className="flex flex-col gap-md">
+                <div>
+                    <Label className="mb-1.5 text-text-secondary">
+                        Sumber Data
+                    </Label>
+                    <Select
+                        value={config.source ?? ""}
+                        onChange={(e) =>
+                            onChange({ ...config, source: e.target.value })
+                        }
+                    >
+                        <option value="">— Pilih —</option>
+                        {AUTO_SOURCES.map((s) => (
+                            <option key={s.value} value={s.value}>
+                                {s.label}
+                            </option>
+                        ))}
+                    </Select>
+                </div>
+                <div>
+                    <Label className="mb-1.5 text-text-secondary">
+                        Bracket Poin{" "}
+                        <span className="text-text-muted">
+                            (dari persentase 0–100)
+                        </span>
+                    </Label>
+                    <TierEditor
+                        tiers={config.tiers ?? []}
+                        onChange={(tiers) => onChange({ ...config, tiers })}
+                    />
+                </div>
+            </div>
+        );
+
+    return null;
+}
+
+// ---- Param Row ----
+
+function ParamRow({
+    param,
+    onEdit,
+    onDelete,
+}: {
+    param: Parameter;
+    onEdit: (p: Parameter) => void;
+    onDelete: (id: number) => void;
+}) {
+    const configSummary = () => {
+        const c = param.config;
+        if (!c) return "—";
+        if (param.input_type === "per_unit") return `bobot: ${c.weight}`;
+        if (param.input_type === "normalized")
+            return `maks: ${c.max_points} poin`;
+        if (param.input_type === "tiered")
+            return `${c.tiers?.length ?? 0} bracket`;
+        if (param.input_type === "auto") return `auto: ${c.source}`;
+        return "—";
+    };
+
+    return (
+        <div className="flex items-center justify-between rounded-sm bg-surface-subtle px-3 py-2.5">
+            <div>
+                <p className="text-sm font-medium text-text-primary">
+                    {param.name}
+                </p>
+                <p className="text-[var(--font-sm)] text-text-muted">
+                    {
+                        INPUT_TYPES.find((t) => t.value === param.input_type)
+                            ?.label
+                    }{" "}
+                    · {configSummary()}
+                </p>
+            </div>
+            <div className="flex gap-2">
+                <Button
+                    size="xs"
+                    variant="secondary"
+                    onClick={() => onEdit(param)}
+                >
+                    Edit
+                </Button>
+                <Button
+                    size="xs"
+                    variant="danger"
+                    onClick={() => onDelete(param.id)}
+                >
+                    Hapus
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+// ---- Main Page ----
 
 export default function LeaderboardIndex({
     scores,
     parameters,
+    members,
     filters,
 }: {
-    scores: ScoreEntry[];
+    scores: ScoreRow[];
     parameters: Parameter[];
-    filters: { date_from: string | null; date_to: string | null };
+    members: Member[];
+    filters: { year: number; quarter: string };
 }) {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
 
+    const [quarter, setQuarter] = useState(filters.quarter);
+    const [year, setYear] = useState(String(filters.year));
     const [expanded, setExpanded] = useState<number | null>(null);
+
+    // modals
     const [configOpen, setConfigOpen] = useState(false);
-    const [pointOpen, setPointOpen] = useState(false);
-    const [dateFrom, setDateFrom] = useState(filters.date_from ?? "");
-    const [dateTo, setDateTo] = useState(filters.date_to ?? "");
+    const [entryOpen, setEntryOpen] = useState(false);
+    const [editParam, setEditParam] = useState<Parameter | null>(null);
     const [deleteParamId, setDeleteParamId] = useState<number | null>(null);
+    const [recalcOpen, setRecalcOpen] = useState(false);
 
-    const paramForm = useForm({
-        name: "",
-        max_points: 10,
-        assigned_roles: [] as string[],
-        is_automatic: false,
-        automatic_source: "" as string,
-    });
+    // new param form state
+    const [newScheme, setNewScheme] = useState<"tutor" | "management">(
+        "management",
+    );
+    const [newName, setNewName] = useState("");
+    const [newInputType, setNewInputType] = useState("per_unit");
+    const [newConfig, setNewConfig] = useState<Config>({ weight: 0 });
+    const [paramSaving, setParamSaving] = useState(false);
 
-    const pointForm = useForm({
+    // edit param state mirrors
+    const [editInputType, setEditInputType] = useState("per_unit");
+    const [editConfig, setEditConfig] = useState<Config>({});
+    const [editName, setEditName] = useState("");
+
+    const entryForm = useForm({
         parameter_id: "",
         user_id: "",
-        points: 0,
+        quarter: filters.quarter,
+        year: String(filters.year),
+        raw_value: "",
         notes: "",
     });
 
     const applyFilter = () => {
         router.get(
             route("leaderboard.index"),
-            { date_from: dateFrom || null, date_to: dateTo || null },
+            { quarter, year },
             { preserveState: true },
         );
     };
 
-    const submitParam = (e: React.FormEvent) => {
-        e.preventDefault();
-        paramForm.post(route("leaderboard.parameters.store"), {
-            onSuccess: () => paramForm.reset(),
-            preserveScroll: true,
-        });
+    const openEdit = (p: Parameter) => {
+        setEditParam(p);
+        setEditName(p.name);
+        setEditInputType(p.input_type);
+        setEditConfig(p.config ?? {});
     };
 
-    const deleteParam = (id: number) => {
-        setDeleteParamId(id);
+    const saveEdit = () => {
+        if (!editParam) return;
+        router.patch(
+            route("leaderboard.parameters.update", editParam.id),
+            {
+                name: editName,
+                input_type: editInputType,
+                config: editConfig as any,
+            },
+            { preserveScroll: true, onSuccess: () => setEditParam(null) },
+        );
     };
 
-    const confirmDeleteParam = () => {
+    const saveNew = () => {
+        setParamSaving(true);
+        router.post(
+            route("leaderboard.parameters.store"),
+            {
+                scheme: newScheme,
+                name: newName,
+                input_type: newInputType,
+                config: newConfig as any,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setNewName("");
+                    setNewConfig({ weight: 0 });
+                    setParamSaving(false);
+                },
+                onError: () => setParamSaving(false),
+            },
+        );
+    };
+
+    const confirmDelete = () => {
         if (!deleteParamId) return;
         router.delete(route("leaderboard.parameters.destroy", deleteParamId), {
             preserveScroll: true,
@@ -129,35 +413,163 @@ export default function LeaderboardIndex({
         });
     };
 
-    const submitPoint = (e: React.FormEvent) => {
+    const submitEntry = (e: React.FormEvent) => {
         e.preventDefault();
-        pointForm.post(route("leaderboard.entries.store"), {
-            onSuccess: () => {
-                pointForm.reset();
-                setPointOpen(false);
-            },
+        entryForm.post(route("leaderboard.entries.store"), {
             preserveScroll: true,
+            onSuccess: () => {
+                entryForm.reset();
+                setEntryOpen(false);
+            },
         });
     };
 
-    const toggleParamRole = (role: string) => {
-        paramForm.setData(
-            "assigned_roles",
-            paramForm.data.assigned_roles.includes(role)
-                ? paramForm.data.assigned_roles.filter((r) => r !== role)
-                : [...paramForm.data.assigned_roles, role],
+    const doRecalc = () => {
+        router.post(
+            route("leaderboard.recalculate"),
+            { quarter, year },
+            {
+                preserveScroll: true,
+                onFinish: () => setRecalcOpen(false),
+            },
         );
     };
 
-    const grouped = (isLeader ? roleOptions : [auth.teamRole].filter(Boolean))
-        .map((role) => ({
-            role,
-            entries: scores.filter((s) => s.role === role),
-        }))
-        .filter((g) => g.entries.length > 0);
+    // Group by scheme
+    const tutorScores = scores.filter((s) => s.scheme === "tutor");
+    const mgmtScores = scores.filter((s) => s.scheme === "management");
 
-    const manualParameters = parameters.filter((p) => !p.is_automatic);
-    const manualParamUsers = scores;
+    const SchemeTable = ({
+        rows,
+        label,
+    }: {
+        rows: ScoreRow[];
+        label: string;
+    }) => {
+        if (rows.length === 0) return null;
+        return (
+            <div>
+                <h2 className="mb-3 text-[var(--font-md)] font-semibold text-text-primary">
+                    Leaderboard {label}
+                </h2>
+                <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-border bg-surface">
+                    <table className="w-full border-collapse">
+                        <thead>
+                            <tr className="border-b border-border bg-surface-subtle">
+                                <th className="px-5 py-3.5 text-left text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary w-16">
+                                    #
+                                </th>
+                                <th className="px-5 py-3.5 text-left text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
+                                    Nama
+                                </th>
+                                <th className="px-5 py-3.5 text-right text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
+                                    Total Poin
+                                </th>
+                                <th className="px-5 py-3.5 w-28" />
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                            {rows.map((row, idx) => (
+                                <React.Fragment key={row.user_id}>
+                                    <tr className="transition-colors hover:bg-surface-subtle">
+                                        <td className="px-5 py-4">
+                                            {idx === 0 ? (
+                                                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                                                    1
+                                                    <Trophy className="absolute ml-3 -mt-3 h-3 w-3 text-primary" />
+                                                </span>
+                                            ) : (
+                                                <span className="text-sm font-semibold text-text-secondary">
+                                                    {idx + 1}
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <p className="text-sm font-semibold text-text-primary">
+                                                {row.name}
+                                            </p>
+                                            <p className="text-[var(--font-sm)] text-text-muted capitalize">
+                                                {row.role}
+                                            </p>
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            <span className="text-[var(--font-md)] font-bold text-primary">
+                                                {row.total.toLocaleString()}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            <button
+                                                onClick={() =>
+                                                    setExpanded(
+                                                        expanded === row.user_id
+                                                            ? null
+                                                            : row.user_id,
+                                                    )
+                                                }
+                                                className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1 text-[var(--font-sm)] font-medium text-text-secondary hover:bg-surface-raised"
+                                            >
+                                                {expanded === row.user_id ? (
+                                                    <>
+                                                        <ChevronUp className="h-3 w-3" />{" "}
+                                                        Tutup
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ChevronDown className="h-3 w-3" />{" "}
+                                                        Detail
+                                                    </>
+                                                )}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {expanded === row.user_id && (
+                                        <tr>
+                                            <td
+                                                colSpan={4}
+                                                className="bg-surface-subtle px-5 py-4"
+                                            >
+                                                <div className="flex flex-col gap-1.5">
+                                                    {row.breakdown.map((b) => (
+                                                        <div
+                                                            key={b.parameter_id}
+                                                            className="flex items-center justify-between text-sm"
+                                                        >
+                                                            <span className="text-text-secondary">
+                                                                {b.parameter}
+                                                                {b.is_auto && (
+                                                                    <Badge
+                                                                        variant="info"
+                                                                        className="ml-1.5"
+                                                                    >
+                                                                        Auto
+                                                                    </Badge>
+                                                                )}
+                                                            </span>
+                                                            <span
+                                                                className={`font-semibold ${b.points < 0 ? "text-error-text" : "text-text-primary"}`}
+                                                            >
+                                                                {b.points >= 0
+                                                                    ? "+"
+                                                                    : ""}
+                                                                {b.points.toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    };
+
+    const tutorParams = parameters.filter((p) => p.scheme === "tutor");
+    const mgmtParams = parameters.filter((p) => p.scheme === "management");
 
     return (
         <AuthenticatedLayout>
@@ -165,18 +577,18 @@ export default function LeaderboardIndex({
 
             <PageHeader
                 title="Leaderboard"
-                subtitle="Ranking per role berdasarkan akumulasi poin"
+                subtitle={`${quarter} ${year}`}
                 action={
                     isLeader && (
                         <div className="flex gap-sm">
                             <Button
                                 variant="secondary"
-                                onClick={() => setPointOpen(true)}
+                                onClick={() => setEntryOpen(true)}
                             >
-                                + Input Poin
+                                <Plus className="h-4 w-4" /> Input Poin
                             </Button>
                             <Button onClick={() => setConfigOpen(true)}>
-                                Konfigurasi
+                                <Settings className="h-4 w-4" /> Konfigurasi
                             </Button>
                         </div>
                     )
@@ -184,488 +596,190 @@ export default function LeaderboardIndex({
             />
 
             {/* Filter */}
-            <div className="mb-xl rounded-[var(--radius-lg)] border border-border bg-surface p-4 md:p-6 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6">
-                <div className="flex flex-col gap-2">
-                    <span className="text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
-                        Periode Cepat
-                    </span>
-                    <div className="flex bg-surface-subtle p-1 rounded-full border border-border gap-1">
-                        {[
-                            { label: "Q1", from: `-01-01`, to: `-03-31` },
-                            { label: "Q2", from: `-04-01`, to: `-06-30` },
-                            { label: "Q3", from: `-07-01`, to: `-09-30` },
-                            { label: "Q4", from: `-10-01`, to: `-12-31` },
-                        ].map((q) => {
-                            const year = new Date().getFullYear();
-                            const isActive = dateFrom === `${year}${q.from}`;
-                            return (
-                                <button
-                                    key={q.label}
-                                    type="button"
-                                    onClick={() => {
-                                        setDateFrom(`${year}${q.from}`);
-                                        setDateTo(`${year}${q.to}`);
-                                    }}
-                                    className={`px-4 py-1.5 rounded-full text-[var(--font-base)] font-medium transition-all ${
-                                        isActive
-                                            ? "bg-surface shadow-[var(--shadow-xs)] border border-border text-primary font-semibold"
-                                            : "text-text-secondary hover:text-text-primary"
-                                    }`}
-                                >
-                                    {q.label} {year}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-                <div className="flex items-end gap-3 flex-wrap">
-                    <div className="flex flex-col gap-1.5">
-                        <Label className="text-text-secondary">Dari</Label>
-                        <Input
-                            type="date"
-                            value={dateFrom}
-                            onChange={(e) => setDateFrom(e.target.value)}
-                            className="w-40"
-                        />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                        <Label className="text-text-secondary">Sampai</Label>
-                        <Input
-                            type="date"
-                            value={dateTo}
-                            onChange={(e) => setDateTo(e.target.value)}
-                            className="w-40"
-                        />
-                    </div>
-                    <Button onClick={applyFilter}>Filter</Button>
-                    {(dateFrom || dateTo) && (
-                        <Button
-                            variant="ghost"
-                            onClick={() => {
-                                setDateFrom("");
-                                setDateTo("");
-                                router.get(
-                                    route("leaderboard.index"),
-                                    {},
-                                    { preserveState: true },
-                                );
-                            }}
+            <div className="mb-xl flex flex-wrap items-end gap-4">
+                <div className="flex bg-surface-subtle p-1 rounded-full border border-border gap-1">
+                    {QUARTERS.map((q) => (
+                        <button
+                            key={q}
+                            type="button"
+                            onClick={() => setQuarter(q)}
+                            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                quarter === q
+                                    ? "bg-surface shadow-sm border border-border text-primary font-semibold"
+                                    : "text-text-secondary hover:text-text-primary"
+                            }`}
                         >
-                            Reset
+                            {q}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex items-end gap-2">
+                    <div>
+                        <Label className="mb-1 text-text-secondary">
+                            Tahun
+                        </Label>
+                        <Input
+                            type="number"
+                            value={year}
+                            min={2020}
+                            max={2099}
+                            onChange={(e) => setYear(e.target.value)}
+                            className="w-28"
+                        />
+                    </div>
+                    <Button onClick={applyFilter}>Tampilkan</Button>
+                    {isLeader && (
+                        <Button
+                            variant="secondary"
+                            onClick={() => setRecalcOpen(true)}
+                        >
+                            Recalculate
                         </Button>
                     )}
                 </div>
             </div>
 
-            {/* Leaderboard tables per role */}
+            {/* Tables */}
             <div className="flex flex-col gap-xl">
-                {grouped.length === 0 && (
-                    <Card>
-                        <CardContent className="py-12 text-center text-text-muted">
-                            Belum ada data leaderboard.{" "}
-                            {isLeader && "Tambah parameter di Konfigurasi."}
-                        </CardContent>
-                    </Card>
-                )}
-                {grouped.map((group) => (
-                    <div key={group.role}>
-                        <div className="mb-3 flex items-center justify-between px-1">
-                            <h2 className="text-[var(--font-md)] font-semibold tracking-tight text-text-primary">
-                                {roleLabels[group.role]} Rank
-                            </h2>
-                            <div className="flex items-center gap-2 text-[var(--font-sm)] text-text-muted">
-                                <span className="h-2 w-2 rounded-full bg-primary" />
-                                {group.entries.length} peserta
-                            </div>
-                        </div>
-                        <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-border bg-surface">
-                            <table className="w-full border-collapse">
-                                <thead>
-                                    <tr className="border-b border-border bg-surface-subtle">
-                                        <th className="px-6 py-4 text-left text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary w-20">
-                                            # Rank
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
-                                            Nama
-                                        </th>
-                                        <th className="px-6 py-4 text-center text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
-                                            Score
-                                        </th>
-                                        <th className="px-6 py-4 text-right text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
-                                            Action
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
-                                    {group.entries.map((entry, idx) => (
-                                        <React.Fragment key={entry.user_id}>
-                                            <tr className="transition-colors duration-150 hover:bg-surface-subtle">
-                                                <td className="px-6 py-5">
-                                                    {idx === 0 ? (
-                                                        <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[var(--font-base)] font-bold text-white">
-                                                            1
-                                                            <span className="absolute -right-1 -top-2">
-                                                                <Trophy className="h-3.5 w-3.5 text-primary" />
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-[var(--font-base)] font-semibold text-text-secondary">
-                                                            {idx + 1}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-5">
-                                                    <p className="text-[var(--font-base)] font-semibold text-text-primary">
-                                                        {entry.name}
-                                                    </p>
-                                                    <p className="text-[var(--font-base)] text-text-secondary capitalize">
-                                                        {entry.role}
-                                                    </p>
-                                                </td>
-                                                <td className="px-6 py-5 text-center">
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <span className="text-[var(--font-md)] font-bold text-primary">
-                                                            {entry.score}
-                                                            <span className="text-[var(--font-base)] font-medium text-text-secondary">
-                                                                {" "}
-                                                                / 100
-                                                            </span>
-                                                        </span>
-                                                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-raised">
-                                                            <div
-                                                                className="h-full rounded-full bg-primary transition-all"
-                                                                style={{
-                                                                    width: `${Math.min(entry.score, 100)}%`,
-                                                                    opacity:
-                                                                        idx ===
-                                                                        0
-                                                                            ? 1
-                                                                            : 0.5 +
-                                                                              0.5 *
-                                                                                  (1 -
-                                                                                      idx /
-                                                                                          group
-                                                                                              .entries
-                                                                                              .length),
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5 text-right">
-                                                    <button
-                                                        onClick={() =>
-                                                            setExpanded(
-                                                                expanded ===
-                                                                    entry.user_id
-                                                                    ? null
-                                                                    : entry.user_id,
-                                                            )
-                                                        }
-                                                        className={`rounded-full border px-4 py-1.5 text-[var(--font-base)] font-medium transition-all ${
-                                                            expanded ===
-                                                            entry.user_id
-                                                                ? "border-primary bg-primary text-white"
-                                                                : "border-border text-text-secondary hover:bg-surface-raised"
-                                                        }`}
-                                                    >
-                                                        {expanded ===
-                                                        entry.user_id
-                                                            ? "Tutup"
-                                                            : "Breakdown"}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            {expanded === entry.user_id && (
-                                                <tr>
-                                                    <td
-                                                        colSpan={4}
-                                                        className="bg-surface-subtle px-6 py-4"
-                                                    >
-                                                        <div className="flex flex-col gap-2">
-                                                            {entry.breakdown.map(
-                                                                (b) => (
-                                                                    <div
-                                                                        key={
-                                                                            b.parameter
-                                                                        }
-                                                                        className="flex items-center justify-between text-[var(--font-base)]"
-                                                                    >
-                                                                        <span className="text-text-secondary">
-                                                                            {
-                                                                                b.parameter
-                                                                            }{" "}
-                                                                            {b.automatic && (
-                                                                                <Badge
-                                                                                    variant="info"
-                                                                                    className="ml-1"
-                                                                                >
-                                                                                    Auto
-                                                                                </Badge>
-                                                                            )}
-                                                                        </span>
-                                                                        <span className="font-medium text-text-primary">
-                                                                            {
-                                                                                b.earned
-                                                                            }{" "}
-                                                                            /{" "}
-                                                                            {
-                                                                                b.max
-                                                                            }
-                                                                        </span>
-                                                                    </div>
-                                                                ),
-                                                            )}
-                                                            {entry.breakdown
-                                                                .length ===
-                                                                0 && (
-                                                                <p className="text-[var(--font-base)] text-text-muted">
-                                                                    Belum ada
-                                                                    parameter
-                                                                    untuk role
-                                                                    ini.
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </React.Fragment>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                ))}
-
-                {/* Insight Cards */}
-                {scores.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                        {[
-                            {
-                                label: "Top Scorer",
-                                value: `${scores[0]?.name ?? "-"} (${scores[0]?.score ?? 0})`,
-                                icon: TrendingUp,
-                            },
-                            {
-                                label: "Total Peserta",
-                                value: `${scores.length} Members`,
-                                icon: Users,
-                            },
-                            {
-                                label: "Rata-rata Score",
-                                value: `${scores.length ? (scores.reduce((a, b) => a + b.score, 0) / scores.length).toFixed(1) : 0} pts`,
-                                icon: Zap,
-                            },
-                        ].map((card) => (
-                            <div
-                                key={card.label}
-                                className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-surface p-6"
-                            >
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-subtle">
-                                    <card.icon className="h-5 w-5 text-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
-                                        {card.label}
-                                    </p>
-                                    <p className="text-[var(--font-md)] font-bold text-text-primary">
-                                        {card.value}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+                {scores.length === 0 && (
+                    <div className="rounded-lg border border-border bg-surface py-16 text-center text-text-muted">
+                        Belum ada data untuk {quarter} {year}.
+                        {isLeader &&
+                            " Input poin atau tambah parameter di Konfigurasi."}
                     </div>
                 )}
+                <SchemeTable rows={tutorScores} label="Tutor" />
+                <SchemeTable rows={mgmtScores} label="Manajemen" />
             </div>
 
-            {/* Config Modal */}
+            {/* === Config Modal === */}
             <Dialog open={configOpen} onOpenChange={setConfigOpen}>
                 <DialogContent size="lg">
                     <DialogHeader>
-                        <DialogTitle>Konfigurasi Leaderboard</DialogTitle>
+                        <DialogTitle>Konfigurasi Parameter</DialogTitle>
                     </DialogHeader>
                     <DialogBody className="flex flex-col gap-xl">
-                        {/* existing parameters */}
+                        {/* Tutor params */}
                         <div>
-                            <p className="mb-sm text-[var(--font-base)] font-medium tracking-wider text-text-muted uppercase">
-                                Parameter Aktif
+                            <p className="mb-sm text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-muted">
+                                Skema Tutor
                             </p>
                             <div className="flex flex-col gap-sm">
-                                {parameters.length === 0 && (
+                                {tutorParams.length === 0 && (
                                     <p className="text-sm text-text-muted">
-                                        Belum ada parameter.
+                                        Belum ada.
                                     </p>
                                 )}
-                                {parameters.map((p) => (
-                                    <div
+                                {tutorParams.map((p) => (
+                                    <ParamRow
                                         key={p.id}
-                                        className="flex items-center justify-between rounded-sm bg-surface-subtle px-3 py-2"
-                                    >
-                                        <div>
-                                            <p className="text-sm font-medium text-text-primary">
-                                                {p.name}{" "}
-                                                {p.is_automatic && (
-                                                    <Badge
-                                                        variant="info"
-                                                        className="ml-1"
-                                                    >
-                                                        Auto
-                                                    </Badge>
-                                                )}
-                                            </p>
-                                            <p className="text-[var(--font-base)] text-text-muted">
-                                                Max {p.max_points} pts ·{" "}
-                                                {p.assigned_roles
-                                                    .map((r) => roleLabels[r])
-                                                    .join(", ")}
-                                            </p>
-                                        </div>
-                                        <Button
-                                            size="xs"
-                                            variant="danger"
-                                            onClick={() => deleteParam(p.id)}
-                                        >
-                                            Hapus
-                                        </Button>
-                                    </div>
+                                        param={p}
+                                        onEdit={openEdit}
+                                        onDelete={setDeleteParamId}
+                                    />
                                 ))}
                             </div>
                         </div>
 
-                        {/* add new parameter */}
+                        {/* Management params */}
                         <div>
-                            <p className="mb-sm text-[var(--font-base)] font-medium tracking-wider text-text-muted uppercase">
+                            <p className="mb-sm text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-muted">
+                                Skema Manajemen
+                            </p>
+                            <div className="flex flex-col gap-sm">
+                                {mgmtParams.length === 0 && (
+                                    <p className="text-sm text-text-muted">
+                                        Belum ada.
+                                    </p>
+                                )}
+                                {mgmtParams.map((p) => (
+                                    <ParamRow
+                                        key={p.id}
+                                        param={p}
+                                        onEdit={openEdit}
+                                        onDelete={setDeleteParamId}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Add new */}
+                        <div className="border-t border-border pt-xl">
+                            <p className="mb-sm text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-muted">
                                 Tambah Parameter Baru
                             </p>
-                            <form
-                                onSubmit={submitParam}
-                                className="flex flex-col gap-md"
-                            >
-                                <div>
-                                    <Label className="mb-1.5 text-text-secondary">
-                                        Nama Parameter *
-                                    </Label>
-                                    <Input
-                                        value={paramForm.data.name}
-                                        onChange={(e) =>
-                                            paramForm.setData(
-                                                "name",
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="Misal: Disiplin Kehadiran"
-                                    />
-                                </div>
+                            <div className="flex flex-col gap-md">
                                 <div className="grid grid-cols-2 gap-md">
                                     <div>
                                         <Label className="mb-1.5 text-text-secondary">
-                                            Poin Maks *
+                                            Skema
+                                        </Label>
+                                        <Select
+                                            value={newScheme}
+                                            onChange={(e) =>
+                                                setNewScheme(
+                                                    e.target.value as any,
+                                                )
+                                            }
+                                        >
+                                            <option value="management">
+                                                Manajemen
+                                            </option>
+                                            <option value="tutor">Tutor</option>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label className="mb-1.5 text-text-secondary">
+                                            Nama Parameter
                                         </Label>
                                         <Input
-                                            type="number"
-                                            min={0.1}
-                                            step={0.1}
-                                            value={paramForm.data.max_points}
+                                            value={newName}
                                             onChange={(e) =>
-                                                paramForm.setData(
-                                                    "max_points",
-                                                    parseFloat(e.target.value),
-                                                )
+                                                setNewName(e.target.value)
                                             }
+                                            placeholder="Misal: Kehadiran Rapat"
                                         />
                                     </div>
-                                    <div>
-                                        <Label className="mb-1.5 text-text-secondary">
-                                            Tipe
-                                        </Label>
-                                        <Select
-                                            value={
-                                                paramForm.data.is_automatic
-                                                    ? "automatic"
-                                                    : "manual"
-                                            }
-                                            onChange={(e) =>
-                                                paramForm.setData(
-                                                    "is_automatic",
-                                                    e.target.value ===
-                                                        "automatic",
-                                                )
-                                            }
-                                        >
-                                            <option value="manual">
-                                                Manual
-                                            </option>
-                                            <option value="automatic">
-                                                Otomatis
-                                            </option>
-                                        </Select>
-                                    </div>
                                 </div>
-                                {paramForm.data.is_automatic && (
-                                    <div>
-                                        <Label className="mb-1.5 text-text-secondary">
-                                            Sumber Data *
-                                        </Label>
-                                        <Select
-                                            value={
-                                                paramForm.data.automatic_source
-                                            }
-                                            onChange={(e) =>
-                                                paramForm.setData(
-                                                    "automatic_source",
-                                                    e.target.value,
-                                                )
-                                            }
-                                        >
-                                            <option value="">— Pilih —</option>
-                                            {automaticSources.map((s) => (
-                                                <option
-                                                    key={s.value}
-                                                    value={s.value}
-                                                >
-                                                    {s.label}
-                                                </option>
-                                            ))}
-                                        </Select>
-                                    </div>
-                                )}
                                 <div>
                                     <Label className="mb-1.5 text-text-secondary">
-                                        Assign ke Role *
+                                        Tipe Input
                                     </Label>
-                                    <div className="flex flex-wrap gap-sm">
-                                        {roleOptions.map((r) => (
-                                            <button
-                                                type="button"
-                                                key={r}
-                                                onClick={() =>
-                                                    toggleParamRole(r)
-                                                }
-                                                className={
-                                                    paramForm.data.assigned_roles.includes(
-                                                        r,
-                                                    )
-                                                        ? "rounded-xs bg-primary-subtle px-2 py-0.5 text-[var(--font-base)] font-medium text-primary-text"
-                                                        : "rounded-xs bg-surface-raised px-2 py-0.5 text-[var(--font-base)] font-medium text-text-secondary"
-                                                }
+                                    <Select
+                                        value={newInputType}
+                                        onChange={(e) => {
+                                            setNewInputType(e.target.value);
+                                            setNewConfig({});
+                                        }}
+                                    >
+                                        {INPUT_TYPES.map((t) => (
+                                            <option
+                                                key={t.value}
+                                                value={t.value}
                                             >
-                                                {roleLabels[r]}
-                                            </button>
+                                                {t.label}
+                                            </option>
                                         ))}
-                                    </div>
+                                    </Select>
                                 </div>
+                                <ConfigEditor
+                                    inputType={newInputType}
+                                    config={newConfig}
+                                    onChange={setNewConfig}
+                                />
                                 <div className="flex justify-end">
                                     <Button
-                                        type="submit"
-                                        disabled={paramForm.processing}
+                                        onClick={saveNew}
+                                        disabled={
+                                            paramSaving || !newName.trim()
+                                        }
                                     >
-                                        {paramForm.processing
+                                        {paramSaving
                                             ? "Menyimpan…"
                                             : "Tambah Parameter"}
                                     </Button>
                                 </div>
-                            </form>
+                            </div>
                         </div>
                     </DialogBody>
                     <DialogFooter>
@@ -679,74 +793,170 @@ export default function LeaderboardIndex({
                 </DialogContent>
             </Dialog>
 
-            {/* Manual Point Entry Modal */}
-            <Dialog open={pointOpen} onOpenChange={setPointOpen}>
+            {/* === Edit Param Modal === */}
+            <Dialog
+                open={!!editParam}
+                onOpenChange={(open) => !open && setEditParam(null)}
+            >
+                <DialogContent size="md">
+                    <DialogHeader>
+                        <DialogTitle>Edit Parameter</DialogTitle>
+                    </DialogHeader>
+                    <DialogBody className="flex flex-col gap-md">
+                        <div>
+                            <Label className="mb-1.5 text-text-secondary">
+                                Nama
+                            </Label>
+                            <Input
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <Label className="mb-1.5 text-text-secondary">
+                                Tipe Input
+                            </Label>
+                            <Select
+                                value={editInputType}
+                                onChange={(e) => {
+                                    setEditInputType(e.target.value);
+                                    setEditConfig({});
+                                }}
+                            >
+                                {INPUT_TYPES.map((t) => (
+                                    <option key={t.value} value={t.value}>
+                                        {t.label}
+                                    </option>
+                                ))}
+                            </Select>
+                        </div>
+                        <ConfigEditor
+                            inputType={editInputType}
+                            config={editConfig}
+                            onChange={setEditConfig}
+                        />
+                        <p className="text-[var(--font-sm)] text-text-muted">
+                            Perubahan hanya berlaku untuk entry baru. Entry lama
+                            tidak terpengaruh kecuali lo trigger Recalculate.
+                        </p>
+                    </DialogBody>
+                    <DialogFooter>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setEditParam(null)}
+                        >
+                            Batal
+                        </Button>
+                        <Button onClick={saveEdit}>Simpan Perubahan</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* === Input Poin Modal === */}
+            <Dialog open={entryOpen} onOpenChange={setEntryOpen}>
                 <DialogContent size="sm">
                     <DialogHeader>
-                        <DialogTitle>Input Poin Manual</DialogTitle>
+                        <DialogTitle>Input Poin</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={submitPoint}>
+                    <form onSubmit={submitEntry}>
                         <DialogBody className="flex flex-col gap-md">
                             <div>
                                 <Label className="mb-1.5 text-text-secondary">
-                                    User *
+                                    Kuartal & Tahun
+                                </Label>
+                                <div className="grid grid-cols-2 gap-sm">
+                                    <Select
+                                        value={entryForm.data.quarter}
+                                        onChange={(e) =>
+                                            entryForm.setData(
+                                                "quarter",
+                                                e.target.value,
+                                            )
+                                        }
+                                    >
+                                        {QUARTERS.map((q) => (
+                                            <option key={q} value={q}>
+                                                {q}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                    <Input
+                                        type="number"
+                                        min={2020}
+                                        max={2099}
+                                        value={entryForm.data.year}
+                                        onChange={(e) =>
+                                            entryForm.setData(
+                                                "year",
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 text-text-secondary">
+                                    User
                                 </Label>
                                 <Select
-                                    value={pointForm.data.user_id}
+                                    value={entryForm.data.user_id}
                                     onChange={(e) =>
-                                        pointForm.setData(
+                                        entryForm.setData(
                                             "user_id",
                                             e.target.value,
                                         )
                                     }
                                 >
                                     <option value="">— Pilih user —</option>
-                                    {manualParamUsers.map((s) => (
-                                        <option
-                                            key={s.user_id}
-                                            value={s.user_id}
-                                        >
-                                            {s.name} ({roleLabels[s.role]})
+                                    {members.map((m) => (
+                                        <option key={m.id} value={m.id}>
+                                            {m.name} ({m.role})
                                         </option>
                                     ))}
                                 </Select>
                             </div>
                             <div>
                                 <Label className="mb-1.5 text-text-secondary">
-                                    Parameter *
+                                    Parameter
                                 </Label>
                                 <Select
-                                    value={pointForm.data.parameter_id}
+                                    value={entryForm.data.parameter_id}
                                     onChange={(e) =>
-                                        pointForm.setData(
+                                        entryForm.setData(
                                             "parameter_id",
                                             e.target.value,
                                         )
                                     }
                                 >
                                     <option value="">
-                                        — Pilih parameter manual —
+                                        — Pilih parameter —
                                     </option>
-                                    {manualParameters.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.name} (max {p.max_points})
-                                        </option>
-                                    ))}
+                                    {parameters
+                                        .filter((p) => p.input_type !== "auto")
+                                        .map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                [{SCHEME_LABELS[p.scheme]}]{" "}
+                                                {p.name}
+                                            </option>
+                                        ))}
                                 </Select>
                             </div>
                             <div>
                                 <Label className="mb-1.5 text-text-secondary">
-                                    Poin *
+                                    Nilai Mentah
+                                    <span className="ml-1 text-text-muted text-[var(--font-sm)]">
+                                        (jumlah sesi / skor TOEFL / persentase —
+                                        sistem hitung poinnya)
+                                    </span>
                                 </Label>
                                 <Input
                                     type="number"
-                                    min={0}
-                                    step={0.1}
-                                    value={pointForm.data.points}
+                                    step="any"
+                                    value={entryForm.data.raw_value}
                                     onChange={(e) =>
-                                        pointForm.setData(
-                                            "points",
-                                            parseFloat(e.target.value),
+                                        entryForm.setData(
+                                            "raw_value",
+                                            e.target.value,
                                         )
                                     }
                                 />
@@ -756,14 +966,14 @@ export default function LeaderboardIndex({
                                     Catatan
                                 </Label>
                                 <Input
-                                    value={pointForm.data.notes}
+                                    value={entryForm.data.notes}
                                     onChange={(e) =>
-                                        pointForm.setData(
+                                        entryForm.setData(
                                             "notes",
                                             e.target.value,
                                         )
                                     }
-                                    placeholder="Opsional..."
+                                    placeholder="Opsional"
                                 />
                             </div>
                         </DialogBody>
@@ -771,28 +981,37 @@ export default function LeaderboardIndex({
                             <Button
                                 type="button"
                                 variant="secondary"
-                                onClick={() => setPointOpen(false)}
+                                onClick={() => setEntryOpen(false)}
                             >
                                 Batal
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={pointForm.processing}
+                                disabled={entryForm.processing}
                             >
-                                {pointForm.processing ? "Menyimpan…" : "Simpan"}
+                                {entryForm.processing ? "Menyimpan…" : "Simpan"}
                             </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
+
+            {/* === Confirm Delete Param === */}
             <ConfirmDialog
                 open={deleteParamId !== null}
-                onOpenChange={(open) => {
-                    if (!open) setDeleteParamId(null);
-                }}
+                onOpenChange={(open) => !open && setDeleteParamId(null)}
                 title="Hapus Parameter"
-                description="Parameter ini akan dihapus permanen. Lanjutkan?"
-                onConfirm={confirmDeleteParam}
+                description="Parameter ini dihapus permanen. Entry lama tetap ada tapi tidak terhitung lagi. Lanjutkan?"
+                onConfirm={confirmDelete}
+            />
+
+            {/* === Confirm Recalculate === */}
+            <ConfirmDialog
+                open={recalcOpen}
+                onOpenChange={setRecalcOpen}
+                title={`Recalculate ${quarter} ${year}`}
+                description={`Semua entry ${quarter} ${year} akan dihitung ulang dengan config parameter terbaru. Entry lama akan dioverride. Tidak bisa dibatalkan.`}
+                onConfirm={doRecalc}
             />
         </AuthenticatedLayout>
     );

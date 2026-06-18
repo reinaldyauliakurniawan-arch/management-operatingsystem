@@ -77,10 +77,13 @@ class DashboardController extends Controller
             $calculator = app(
                 \App\Modules\Leaderboard\Actions\CalculateLeaderboardScores::class,
             );
-            $all = $calculator->execute($teamId);
+            $quarter = "Q" . (int) ceil(now()->month / 3);
+            $all = $calculator->execute($teamId, $quarter, now()->year);
 
             foreach (["leader", "member", "tutor"] as $roleKey) {
-                $roleEntries = $all->where("role", $roleKey)->values();
+                $roleEntries = $all
+                    ->filter(fn($e) => $e["role"] === $roleKey)
+                    ->values();
                 if ($roleEntries->isNotEmpty()) {
                     $leaderboardTop3ByRole[$roleKey] = $roleEntries
                         ->take(3)
@@ -95,16 +98,19 @@ class DashboardController extends Controller
             $calculator = app(
                 \App\Modules\Leaderboard\Actions\CalculateLeaderboardScores::class,
             );
-            $all = $calculator->execute($teamId);
+            $quarter = "Q" . (int) ceil(now()->month / 3);
+            $all = $calculator->execute($teamId, $quarter, now()->year);
             $selfEntry = $all->firstWhere("user_id", $userId);
             if ($selfEntry) {
-                $sameRole = $all->where("role", $role)->values();
+                $sameRole = $all
+                    ->filter(fn($e) => $e["role"] === $role)
+                    ->values();
                 $rankIndex = $sameRole->search(
                     fn($e) => $e["user_id"] === $userId,
                 );
                 $rank = $rankIndex !== false ? $rankIndex + 1 : null;
                 $selfLeaderboard = [
-                    "score" => $selfEntry["score"],
+                    "score" => $selfEntry["total"],
                     "rank" => $rank,
                     "total" => $sameRole->count(),
                 ];

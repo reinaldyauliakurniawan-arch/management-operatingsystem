@@ -310,27 +310,34 @@ Klik **Tutup Cycle** — cycle yang ditutup tidak bisa menerima submission baru 
 
 **Siapa yang bisa konfigurasi:** Team Leader
 
-Menampilkan ranking performa anggota tim berdasarkan akumulasi poin dari berbagai parameter.
+Menampilkan dua leaderboard terpisah: **Tutor** dan **Manajemen**. Poin dihitung per kuartal berdasarkan parameter yang dikonfigurasi HR.
 
 ### Cara melihat Leaderboard:
 1. Buka menu **Leaderboard**
-2. Pilih periode cepat (Q1–Q4) atau atur tanggal manual
-3. Klik **Filter**
-4. Klik **Breakdown** di baris anggota untuk melihat detail poin per parameter
+2. Pilih quarter (Q1–Q4) dan tahun
+3. Klik **Tampilkan**
+4. Klik **Detail** di baris anggota untuk melihat breakdown poin per parameter
 
 ### Konfigurasi Parameter (Leader):
 1. Klik **Konfigurasi**
-2. Di bagian **Tambah Parameter Baru**, isi nama, poin maksimal, tipe (Manual / Otomatis), dan assign ke role
-3. Parameter **Otomatis** terhitung dari data sistem: Rocks completion, Scorecard green rate, To-Do completion, Event attendance, atau Leadership Assessment score
-4. Klik **Tambah Parameter**
-5. Untuk menghapus parameter, klik **Hapus** di daftar parameter aktif
+2. Lihat daftar parameter aktif per skema (Tutor / Manajemen)
+3. Klik **Edit** di baris parameter untuk ubah nama, tipe input, atau config:
+   - **Per Unit** — isi bobot per unit (negatif = penalti)
+   - **Tiered** — isi bracket nilai minimum → poin via editor bracket
+   - **Normalized** — isi poin maksimum (sistem hitung dari persentase)
+   - **Auto** — pilih sumber data dari modul lain
+4. Untuk tambah parameter baru, isi form di bagian bawah dialog
+5. Perubahan config **tidak mengubah poin masa lalu** — hanya berlaku untuk entry baru
 
-### Input Poin Manual (Leader):
+### Input Poin (Leader):
 1. Klik **+ Input Poin**
-2. Pilih user, parameter, dan jumlah poin
-3. Isi catatan opsional
-4. Klik **Simpan**
+2. Pilih quarter, tahun, user, dan parameter
+3. Isi **Nilai Mentah** — angka asli sebelum dikonversi (jumlah sesi, skor TOEFL, persentase kehadiran, dll)
+4. Sistem kalkulasi poin otomatis saat simpan
+5. Klik **Simpan**
 
+### Recalculate:
+Klik **Recalculate** untuk menghitung ulang semua entry di kuartal tertentu menggunakan config parameter terbaru. Ada confirmation dialog — aksi ini tidak bisa dibatalkan.
 ---
 
 ## 15. Roles & Permissions
