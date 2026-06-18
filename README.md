@@ -6,9 +6,11 @@
 
 1. Buka aplikasi di browser
 2. Login dengan email dan password
-3. Jika baru pertama kali, sistem akan arahkan ke halaman **buat organisasi**
-4. Jika punya lebih dari 1 team, sistem akan arahkan ke **team picker** — pilih team yang ingin diakses
-5. Setelah login, landing page adalah **Dashboard**
+3. Jika user hanya terdaftar di **1 team**, sistem otomatis set team tersebut sebagai aktif dan langsung masuk ke **Dashboard**
+4. Jika user terdaftar di **lebih dari 1 team**, sistem akan arahkan ke **team picker** — pilih team yang ingin diakses
+5. Untuk berpindah team, pergi ke menu **Teams** → klik **Switch ke Team Ini** di baris team yang dituju
+
+> Organisasi dan team sudah dikonfigurasi. User tidak perlu membuat organisasi baru.
 
 ---
 
@@ -355,10 +357,13 @@ Menampilkan ranking performa anggota tim berdasarkan akumulasi poin dari berbaga
 
 ## 16. Tips & Catatan Penting
 
-- **Session team** — jika akses tiba-tiba redirect ke team picker, pilih ulang team aktif
+- **Session team** — jika akses tiba-tiba redirect ke team picker, pilih ulang team aktif. Ini normal jika session expired
+- **User 1 team = auto-login ke dashboard** — jika user hanya punya 1 team, team picker tidak akan muncul; sistem langsung set team aktif
+- **Tombol kelola tidak muncul?** — pastikan role user di team aktif adalah `leader`. Cek di menu Teams → Edit Role
 - **VTO satu per organisasi** — semua leader dalam org yang sama melihat dan mengedit VTO yang sama
 - **Rocks ditinjau setiap L10 Meeting** — update status rock secara rutin
 - **IDS diselesaikan dalam meeting** — angkat issue, diskusi, dan tandai resolved setelah ada keputusan
 - **Leadership Assessment bersifat anonim** — assessor tidak bisa diidentifikasi dari hasil
 - **Hapus user permanen** — tidak bisa dibatalkan; pastikan sudah dikeluarkan dari semua team terlebih dahulu
 - **Sidebar mobile** — di layar kecil, buka sidebar lewat tombol hamburger (☰) di pojok kiri atas topbar
+- **Default password semua user** — `admin123`; minta masing-masing user ganti password setelah login pertama

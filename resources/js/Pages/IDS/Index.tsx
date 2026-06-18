@@ -180,7 +180,7 @@ export default function IDSIndex({
                     <TableHeader>
                         <TableRow>
                             {[
-                                { key: "priority", label: "P" },
+                                { key: "priority", label: "Skala" },
                                 { key: "issue", label: "Issue" },
                                 { key: "root_cause", label: "Akar Masalah" },
                                 { key: "solution", label: "Solusi" },
