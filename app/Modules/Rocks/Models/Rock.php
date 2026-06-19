@@ -11,6 +11,10 @@ class Rock extends Model
 {
     use SoftDeletes, HasTeam;
 
+    protected $casts = [
+        'due_date' => 'date',
+    ];
+
     protected $fillable = [
         'team_id',
         'title',
