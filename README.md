@@ -308,17 +308,21 @@ Klik **Tutup Cycle** — cycle yang ditutup tidak bisa menerima submission baru 
 
 ## 14. Leaderboard
 
-**Siapa yang bisa konfigurasi:** Team Leader
+**Siapa yang bisa konfigurasi:** Team Leader atau Org Admin
 
-Menampilkan dua leaderboard terpisah: **Tutor** dan **Manajemen**. Poin dihitung per kuartal berdasarkan parameter yang dikonfigurasi HR.
+Menampilkan leaderboard performa seluruh organisasi, bisa difilter per view dan per team. Poin dihitung per kuartal berdasarkan parameter yang dikonfigurasi leader/admin.
 
 ### Cara melihat Leaderboard:
 1. Buka menu **Leaderboard**
-2. Pilih quarter (Q1–Q4) dan tahun
-3. Klik **Tampilkan**
-4. Klik **Detail** di baris anggota untuk melihat breakdown poin per parameter
+2. Pilih **View** di toggle atas:
+   - **All Management** — tampilkan semua anggota non-tutor dari seluruh org, diurutkan poin tertinggi
+   - **Per Team** — tampilkan leaderboard team spesifik; setelah klik Per Team, muncul pill selector nama-nama team — klik team yang ingin dilihat
+   - **All Tutors** — tampilkan semua tutor dari seluruh org, diurutkan poin tertinggi
+3. Pilih quarter (Q1–Q4) dan tahun, lalu klik **Tampilkan**
+4. Di mode All Management dan All Tutors, kolom **Team** menunjukkan asal team tiap anggota
+5. Klik **Detail** di baris anggota untuk melihat breakdown poin per parameter
 
-### Konfigurasi Parameter (Leader):
+### Konfigurasi Parameter (Leader / Org Admin):
 1. Klik **Konfigurasi**
 2. Lihat daftar parameter aktif per skema (Tutor / Manajemen)
 3. Klik **Edit** di baris parameter untuk ubah nama, tipe input, atau config:
@@ -329,7 +333,7 @@ Menampilkan dua leaderboard terpisah: **Tutor** dan **Manajemen**. Poin dihitung
 4. Untuk tambah parameter baru, isi form di bagian bawah dialog
 5. Perubahan config **tidak mengubah poin masa lalu** — hanya berlaku untuk entry baru
 
-### Input Poin (Leader):
+### Input Poin (Leader / Org Admin):
 1. Klik **+ Input Poin**
 2. Pilih quarter, tahun, user, dan parameter
 3. Isi **Nilai Mentah** — angka asli sebelum dikonversi (jumlah sesi, skor TOEFL, persentase kehadiran, dll)
@@ -358,6 +362,7 @@ Klik **Recalculate** untuk menghitung ulang semua entry di kuartal tertentu meng
 | Edit Accountability Chart | ✗ | ✗ | ✓ | ✓ |
 | People Analyzer | ✗ | ✗ | ✓ | ✓ |
 | Konfigurasi Leaderboard | ✗ | ✗ | ✓ | ✓ |
+| Lihat Leaderboard semua team & org | ✓ | ✓ | ✓ | ✓ |
 | Manage Team & User | ✗ | ✗ | ✗ | ✓ |
 
 ---

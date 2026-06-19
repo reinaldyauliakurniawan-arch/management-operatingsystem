@@ -18,29 +18,69 @@ class LeaderboardController extends Controller
         $teamId = session("active_team_id");
         $year = (int) $request->input("year", now()->year);
         $quarter = $request->input("quarter", "Q" . ceil(now()->month / 3));
+        $view = $request->input("view", "all_management"); // all_management | per_team | all_tutors
 
-        $scores = $calc->execute($teamId, $quarter, $year);
+        // Ambil semua teams di org yang sama
+        $currentTeam = \App\Modules\Teams\Models\Team::findOrFail($teamId);
+        $orgId = $currentTeam->organization_id;
+        $orgTeamIds = \App\Modules\Teams\Models\Team::where("organization_id", $orgId)->pluck("id");
+
+        // Untuk input poin: tetap hanya member team aktif
+        $members = TeamMember::with("user")
+            ->where("team_id", $teamId)
+            ->get()
+            ->map(fn($m) => [
+                "id" => $m->user_id,
+                "name" => $m->user->name,
+                "role" => $m->role,
+            ]);
+
+        // Parameters tetap dari team aktif
         $parameters = LeaderboardParameter::where("team_id", $teamId)
             ->orderBy("sort_order")
             ->orderBy("id")
             ->get();
 
-        $members = TeamMember::with("user")
-            ->where("team_id", $teamId)
+        // Daftar teams di org (untuk filter per_team)
+        $orgTeams = \App\Modules\Teams\Models\Team::where("organization_id", $orgId)
             ->get()
-            ->map(
-                fn($m) => [
-                    "id" => $m->user_id,
-                    "name" => $m->user->name,
-                    "role" => $m->role,
-                ],
-            );
+            ->map(fn($t) => ["id" => $t->id, "name" => $t->name]);
+
+        // Hitung scores sesuai view
+        if ($view === "per_team") {
+            // Gunakan selected_team_id kalau ada, fallback ke active team
+            $selectedTeamId = (int) $request->input("selected_team_id", $teamId);
+            // Validasi: harus masih dalam org yang sama
+            if (!$orgTeamIds->contains($selectedTeamId)) {
+                $selectedTeamId = $teamId;
+            }
+            $scores = $calc->execute($selectedTeamId, $quarter, $year);
+        } elseif ($view === "all_tutors") {
+            // Semua tutor dari semua teams di org
+            $scores = $calc->executeAcrossTeams($orgTeamIds->toArray(), $quarter, $year, "tutor");
+        } else {
+            // all_management: semua non-tutor dari semua teams di org
+            $scores = $calc->executeAcrossTeams($orgTeamIds->toArray(), $quarter, $year, "management");
+        }
+
+        $selectedTeamId = $view === "per_team"
+            ? (int) $request->input("selected_team_id", $teamId)
+            : $teamId;
+        if (!$orgTeamIds->contains($selectedTeamId)) {
+            $selectedTeamId = $teamId;
+        }
 
         return Inertia::render("Leaderboard/Index", [
             "scores" => $scores,
             "parameters" => $parameters,
             "members" => $members,
-            "filters" => compact("year", "quarter"),
+            "orgTeams" => $orgTeams,
+            "filters" => [
+                "year" => $year,
+                "quarter" => $quarter,
+                "view" => $view,
+                "selected_team_id" => $selectedTeamId,
+            ],
         ]);
     }
 
@@ -181,6 +221,7 @@ class LeaderboardController extends Controller
 
     private function requireLeader(): void
     {
+        if (Auth::user()->is_org_admin) return;
         $role = Auth::user()
             ->teamMemberships()
             ->where("team_id", session("active_team_id"))

@@ -291,7 +291,7 @@ auto: tarik data dari modul lain sebagai persentase, lalu konversi via tiers ata
 
 ---
 
-### 12A — Konfigurasi Parameter (oleh Leader/HR via UI)
+### 12A — Konfigurasi Parameter (oleh Leader atau Org Admin via UI)
 
 **CRUD:**
 - **Create:** HR tambah parameter baru via form di halaman Leaderboard → Konfigurasi. Pilih skema, nama, input_type, lalu isi config via form dinamis
@@ -301,9 +301,9 @@ auto: tarik data dari modul lain sebagai persentase, lalu konversi via tiers ata
 
 ---
 
-### 12B — Input Poin per Kuartal (oleh Leader/HR)
+### 12B — Input Poin per Kuartal (oleh Leader atau Org Admin)
 
-HR memilih quarter (Q1–Q4) dan tahun, lalu input raw_value per parameter per user. Sistem kalkulasi poin saat simpan.
+Leader atau Org Admin memilih quarter (Q1–Q4) dan tahun, lalu input raw_value per parameter per user. Sistem kalkulasi poin saat simpan.
 
 **CRUD:**
 - **Create:** Buka modal Input Poin, pilih quarter, tahun, user, parameter, isi raw_value
@@ -316,11 +316,15 @@ HR memilih quarter (Q1–Q4) dan tahun, lalu input raw_value per parameter per u
 ### 12C — Dashboard & Ranking
 
 **Semua user:**
-- Dua tabel terpisah: Leaderboard Tutor dan Leaderboard Manajemen
+- Toggle view tiga opsi: **All Management** (semua non-tutor seluruh org), **Per Team** (pilih team spesifik), **All Tutors** (semua tutor seluruh org)
+- Di mode Per Team, muncul sub-filter berupa pill selector nama-nama team dalam org — klik untuk ganti team yang ditampilkan
+- Di mode All Management dan All Tutors, tabel menampilkan kolom Team agar terlihat asal team tiap anggota
+- Di mode Per Team, dua tabel terpisah: Leaderboard Tutor dan Leaderboard Manajemen untuk team yang dipilih
 - Filter by quarter + tahun
 - Klik Detail di baris anggota untuk melihat breakdown poin per parameter
 
-**Leader:**
+**Leader atau Org Admin:**
+- Tombol Input Poin dan Konfigurasi Parameter
 - Tombol Recalculate — hitung ulang semua entry kuartal tertentu dengan config parameter terbaru
 - Ada confirmation dialog sebelum eksekusi — tidak bisa dibatalkan
 

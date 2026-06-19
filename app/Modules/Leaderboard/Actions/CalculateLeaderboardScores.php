@@ -14,6 +14,72 @@ use App\Modules\LeadershipAssessment\Models\AssessmentResponse;
 
 class CalculateLeaderboardScores
 {
+    public function executeAcrossTeams(
+        array $teamIds,
+        string $quarter,
+        int $year,
+        string $scheme, // "tutor" | "management"
+    ): \Illuminate\Support\Collection {
+        // Kumpulkan semua member dari semua teams, dedupe by user_id
+        $allMembers = TeamMember::with(["user", "team"])
+            ->whereIn("team_id", $teamIds)
+            ->get()
+            ->unique("user_id");
+
+        // Filter by scheme
+        $filtered = $allMembers->filter(fn($m) => $this->schemeFor($m->role) === $scheme);
+
+        // Ambil params dari semua teams (gabung)
+        $params = LeaderboardParameter::whereIn("team_id", $teamIds)
+            ->where("scheme", $scheme)
+            ->orderBy("sort_order")
+            ->orderBy("id")
+            ->get();
+
+        return $filtered
+            ->map(function ($member) use ($params, $teamIds, $quarter, $year, $scheme) {
+                $userId = $member->user_id;
+                $teamId = $member->team_id;
+                $breakdown = [];
+                $total = 0;
+
+                foreach ($params as $param) {
+                    if ($param->input_type === "auto") {
+                        $points = $this->calcAuto($param, $userId, $teamId, $quarter, $year);
+                    } else {
+                        $entry = LeaderboardEntry::where([
+                            "parameter_id" => $param->id,
+                            "user_id" => $userId,
+                            "quarter" => $quarter,
+                            "year" => $year,
+                        ])->first();
+                        $points = $entry ? $entry->points : 0;
+                    }
+
+                    $total += $points;
+                    $breakdown[] = [
+                        "parameter_id" => $param->id,
+                        "parameter" => $param->name,
+                        "input_type" => $param->input_type,
+                        "points" => round($points, 2),
+                        "is_auto" => $param->input_type === "auto",
+                    ];
+                }
+
+                return [
+                    "user_id" => $userId,
+                    "name" => $member->user->name,
+                    "role" => $member->role,
+                    "team_name" => $member->team->name ?? null,
+                    "scheme" => $scheme,
+                    "total" => round($total, 2),
+                    "breakdown" => $breakdown,
+                ];
+            })
+            ->sortByDesc("total")
+            ->values();
+    }
+
     public function execute(
         int $teamId,
         string $quarter,

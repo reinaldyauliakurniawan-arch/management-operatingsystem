@@ -307,22 +307,45 @@ function ParamRow({
 
 // ---- Main Page ----
 
+type ViewMode = "all_management" | "per_team" | "all_tutors";
+
+const VIEW_OPTIONS: { value: ViewMode; label: string }[] = [
+    { value: "all_management", label: "All Management" },
+    { value: "per_team", label: "Per Team" },
+    { value: "all_tutors", label: "All Tutors" },
+];
+
 export default function LeaderboardIndex({
     scores,
     parameters,
     members,
+    orgTeams,
     filters,
 }: {
     scores: ScoreRow[];
     parameters: Parameter[];
     members: Member[];
-    filters: { year: number; quarter: string };
+    orgTeams: { id: number; name: string }[];
+    filters: {
+        year: number;
+        quarter: string;
+        view: ViewMode;
+        selected_team_id: number;
+    };
 }) {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
+    const isOrgAdmin = auth.isOrgAdmin ?? false;
+    const canManage = isLeader || isOrgAdmin;
 
     const [quarter, setQuarter] = useState(filters.quarter);
     const [year, setYear] = useState(String(filters.year));
+    const [viewMode, setViewMode] = useState<ViewMode>(
+        filters.view ?? "all_management",
+    );
+    const [selectedTeamId, setSelectedTeamId] = useState<number>(
+        filters.selected_team_id ?? auth.activeTeamId ?? 0,
+    );
     const [expanded, setExpanded] = useState<number | null>(null);
 
     // modals
@@ -355,10 +378,28 @@ export default function LeaderboardIndex({
         notes: "",
     });
 
-    const applyFilter = () => {
+    const applyFilter = (
+        overrides?: Partial<{
+            quarter: string;
+            year: string;
+            viewMode: ViewMode;
+            selectedTeamId: number;
+        }>,
+    ) => {
+        const resolvedView = overrides?.viewMode ?? viewMode;
         router.get(
             route("leaderboard.index"),
-            { quarter, year },
+            {
+                quarter: overrides?.quarter ?? quarter,
+                year: overrides?.year ?? year,
+                view: resolvedView,
+                ...(resolvedView === "per_team"
+                    ? {
+                          selected_team_id:
+                              overrides?.selectedTeamId ?? selectedTeamId,
+                      }
+                    : {}),
+            },
             { preserveState: true },
         );
     };
@@ -435,9 +476,12 @@ export default function LeaderboardIndex({
         );
     };
 
-    // Group by scheme
+    // scores sudah difilter dari backend sesuai viewMode
+    // untuk per_team, kita masih pakai SchemeTable dua-duanya
     const tutorScores = scores.filter((s) => s.scheme === "tutor");
     const mgmtScores = scores.filter((s) => s.scheme === "management");
+
+    const showTeamCol = viewMode !== "per_team";
 
     const SchemeTable = ({
         rows,
@@ -447,6 +491,7 @@ export default function LeaderboardIndex({
         label: string;
     }) => {
         if (rows.length === 0) return null;
+        const colSpanTotal = showTeamCol ? 5 : 4;
         return (
             <div>
                 <h2 className="mb-3 text-[var(--font-md)] font-semibold text-text-primary">
@@ -462,6 +507,11 @@ export default function LeaderboardIndex({
                                 <th className="px-5 py-3.5 text-left text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
                                     Nama
                                 </th>
+                                {showTeamCol && (
+                                    <th className="px-5 py-3.5 text-left text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
+                                        Team
+                                    </th>
+                                )}
                                 <th className="px-5 py-3.5 text-right text-[var(--font-sm)] font-semibold uppercase tracking-widest text-text-secondary">
                                     Total Poin
                                 </th>
@@ -474,9 +524,9 @@ export default function LeaderboardIndex({
                                     <tr className="transition-colors hover:bg-surface-subtle">
                                         <td className="px-5 py-4">
                                             {idx === 0 ? (
-                                                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                                                <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
                                                     1
-                                                    <Trophy className="absolute ml-3 -mt-3 h-3 w-3 text-primary" />
+                                                    <Trophy className="absolute -top-2 -right-2 h-3 w-3 text-yellow-400" />
                                                 </span>
                                             ) : (
                                                 <span className="text-sm font-semibold text-text-secondary">
@@ -492,6 +542,14 @@ export default function LeaderboardIndex({
                                                 {row.role}
                                             </p>
                                         </td>
+                                        {showTeamCol && (
+                                            <td className="px-5 py-4">
+                                                <span className="text-sm text-text-secondary">
+                                                    {(row as any).team_name ??
+                                                        "—"}
+                                                </span>
+                                            </td>
+                                        )}
                                         <td className="px-5 py-4 text-right">
                                             <span className="text-[var(--font-md)] font-bold text-primary">
                                                 {row.total.toLocaleString()}
@@ -525,7 +583,7 @@ export default function LeaderboardIndex({
                                     {expanded === row.user_id && (
                                         <tr>
                                             <td
-                                                colSpan={4}
+                                                colSpan={colSpanTotal}
                                                 className="bg-surface-subtle px-5 py-4"
                                             >
                                                 <div className="flex flex-col gap-1.5">
@@ -579,7 +637,7 @@ export default function LeaderboardIndex({
                 title="Leaderboard"
                 subtitle={`${quarter} ${year}`}
                 action={
-                    isLeader && (
+                    canManage && (
                         <div className="flex gap-sm">
                             <Button
                                 variant="secondary"
@@ -596,46 +654,97 @@ export default function LeaderboardIndex({
             />
 
             {/* Filter */}
-            <div className="mb-xl flex flex-wrap items-end gap-4">
-                <div className="flex bg-surface-subtle p-1 rounded-full border border-border gap-1">
-                    {QUARTERS.map((q) => (
-                        <button
-                            key={q}
-                            type="button"
-                            onClick={() => setQuarter(q)}
-                            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                                quarter === q
-                                    ? "bg-surface shadow-sm border border-border text-primary font-semibold"
-                                    : "text-text-secondary hover:text-text-primary"
-                            }`}
-                        >
-                            {q}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex items-end gap-2">
-                    <div>
-                        <Label className="mb-1 text-text-secondary">
-                            Tahun
-                        </Label>
-                        <Input
-                            type="number"
-                            value={year}
-                            min={2020}
-                            max={2099}
-                            onChange={(e) => setYear(e.target.value)}
-                            className="w-28"
-                        />
+            <div className="mb-xl flex flex-col gap-4">
+                {/* View Toggle */}
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex bg-surface-subtle p-1 rounded-full border border-border gap-1">
+                        {VIEW_OPTIONS.map((opt) => (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => {
+                                    setViewMode(opt.value);
+                                    applyFilter({ viewMode: opt.value });
+                                }}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                    viewMode === opt.value
+                                        ? "bg-surface shadow-sm border border-border text-primary font-semibold"
+                                        : "text-text-secondary hover:text-text-primary"
+                                }`}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
                     </div>
-                    <Button onClick={applyFilter}>Tampilkan</Button>
-                    {isLeader && (
-                        <Button
-                            variant="secondary"
-                            onClick={() => setRecalcOpen(true)}
-                        >
-                            Recalculate
-                        </Button>
+
+                    {/* Team selector — hanya muncul di mode per_team */}
+                    {viewMode === "per_team" && orgTeams.length > 1 && (
+                        <div className="flex bg-surface-subtle p-1 rounded-lg border border-border gap-1 flex-wrap">
+                            {orgTeams.map((team) => (
+                                <button
+                                    key={team.id}
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedTeamId(team.id);
+                                        applyFilter({
+                                            selectedTeamId: team.id,
+                                        });
+                                    }}
+                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                                        selectedTeamId === team.id
+                                            ? "bg-surface shadow-sm border border-border text-primary font-semibold"
+                                            : "text-text-secondary hover:text-text-primary"
+                                    }`}
+                                >
+                                    {team.name}
+                                </button>
+                            ))}
+                        </div>
                     )}
+                </div>
+
+                <div className="flex flex-wrap items-end gap-4">
+                    {/* Quarter pills */}
+                    <div className="flex bg-surface-subtle p-1 rounded-full border border-border gap-1">
+                        {QUARTERS.map((q) => (
+                            <button
+                                key={q}
+                                type="button"
+                                onClick={() => setQuarter(q)}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                    quarter === q
+                                        ? "bg-surface shadow-sm border border-border text-primary font-semibold"
+                                        : "text-text-secondary hover:text-text-primary"
+                                }`}
+                            >
+                                {q}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex items-end gap-2">
+                        <div>
+                            <Label className="mb-1 text-text-secondary">
+                                Tahun
+                            </Label>
+                            <Input
+                                type="number"
+                                value={year}
+                                min={2020}
+                                max={2099}
+                                onChange={(e) => setYear(e.target.value)}
+                                className="w-28"
+                            />
+                        </div>
+                        <Button onClick={() => applyFilter()}>Tampilkan</Button>
+                        {canManage && (
+                            <Button
+                                variant="secondary"
+                                onClick={() => setRecalcOpen(true)}
+                            >
+                                Recalculate
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -644,7 +753,7 @@ export default function LeaderboardIndex({
                 {scores.length === 0 && (
                     <div className="rounded-lg border border-border bg-surface py-16 text-center text-text-muted">
                         Belum ada data untuk {quarter} {year}.
-                        {isLeader &&
+                        {canManage &&
                             " Input poin atau tambah parameter di Konfigurasi."}
                     </div>
                 )}
