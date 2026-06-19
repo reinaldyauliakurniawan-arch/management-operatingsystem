@@ -117,6 +117,279 @@ function SymbolBadge({ symbol }: { symbol: string }) {
     );
 }
 
+// ── EvalFormBody diangkat ke luar agar tidak re-mount tiap render ──
+interface EvalFormBodyProps {
+    evalFormData: any;
+    setEvalFormData: (key: string, value: any) => void;
+    editEval: Evaluation | null;
+    users: User[];
+    seats: Seat[];
+    vto_core_values: string[];
+}
+
+function EvalFormBody({
+    evalFormData,
+    setEvalFormData,
+    editEval,
+    users,
+    seats,
+    vto_core_values,
+}: EvalFormBodyProps) {
+    const addCoreValue = () =>
+        setEvalFormData("core_values_scores", [
+            ...evalFormData.core_values_scores,
+            { value: "", symbol: "+" },
+        ]);
+
+    const removeCoreValue = (i: number) =>
+        setEvalFormData(
+            "core_values_scores",
+            evalFormData.core_values_scores.filter(
+                (_: any, idx: number) => idx !== i,
+            ),
+        );
+
+    const updateCoreValue = (
+        i: number,
+        field: "value" | "symbol",
+        val: string,
+    ) => {
+        const updated = [...evalFormData.core_values_scores];
+        updated[i] = { ...updated[i], [field]: val };
+        setEvalFormData("core_values_scores", updated);
+    };
+
+    return (
+        <div className="flex flex-col gap-lg">
+            {/* Candidate toggle */}
+            {!editEval && (
+                <div className="flex items-center gap-md rounded-lg border border-border bg-surface-raised px-md py-sm">
+                    <span className="text-[var(--font-base)] text-text-secondary">
+                        Mode penilaian:
+                    </span>
+                    <div className="flex gap-sm">
+                        {[
+                            { val: false, label: "Anggota Tim" },
+                            { val: true, label: "Kandidat Eksternal" },
+                        ].map(({ val, label }) => (
+                            <button
+                                key={label}
+                                type="button"
+                                onClick={() =>
+                                    setEvalFormData("is_candidate", val)
+                                }
+                                className={`rounded-xs px-md py-xs text-[var(--font-base)] font-medium transition-colors ${evalFormData.is_candidate === val ? "bg-primary-subtle text-primary-text" : "bg-surface-overlay text-text-muted"}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Evaluatee / Candidate name */}
+            {evalFormData.is_candidate ? (
+                <div className="flex flex-col gap-xs">
+                    <Label>Nama Kandidat *</Label>
+                    <Input
+                        value={evalFormData.candidate_name}
+                        onChange={(e) =>
+                            setEvalFormData("candidate_name", e.target.value)
+                        }
+                        placeholder="Nama lengkap kandidat"
+                        required
+                    />
+                </div>
+            ) : !editEval ? (
+                <div className="flex flex-col gap-xs">
+                    <Label>Evaluatee *</Label>
+                    <Select
+                        value={evalFormData.evaluatee_id}
+                        onChange={(e) =>
+                            setEvalFormData("evaluatee_id", e.target.value)
+                        }
+                    >
+                        <option value="">— Pilih anggota —</option>
+                        {users.map((u) => (
+                            <option key={u.id} value={u.id}>
+                                {u.name}
+                            </option>
+                        ))}
+                    </Select>
+                </div>
+            ) : null}
+
+            {/* Seat / Posisi */}
+            <div className="flex flex-col gap-xs">
+                <Label>Posisi yang Dinilai (opsional)</Label>
+                <Select
+                    value={evalFormData.seat_id}
+                    onChange={(e) => setEvalFormData("seat_id", e.target.value)}
+                >
+                    <option value="">— Tidak spesifik —</option>
+                    {seats.map((s) => (
+                        <option key={s.id} value={s.id}>
+                            {s.title}
+                        </option>
+                    ))}
+                </Select>
+                <p className="text-[var(--font-sm)] text-text-muted">
+                    Untuk kandidat: posisi yang dilamar. Untuk anggota: posisi
+                    yang sedang dijabat.
+                </p>
+            </div>
+
+            <div className="flex flex-col gap-xs">
+                <Label>Periode (opsional)</Label>
+                <Input
+                    value={evalFormData.period}
+                    onChange={(e) => setEvalFormData("period", e.target.value)}
+                    placeholder="Misal: Q3 2025"
+                />
+            </div>
+
+            {/* GWC */}
+            <div className="flex flex-col gap-xs">
+                <Label>GWC Assessment</Label>
+                <div className="flex flex-col gap-sm rounded-lg border border-border bg-surface-raised p-md">
+                    {(["gwc_get", "gwc_want", "gwc_capacity"] as const).map(
+                        (key) => {
+                            const labels: Record<string, string> = {
+                                gwc_get: "Get it — Paham peran & ekspektasi",
+                                gwc_want: "Want it — Mau & termotivasi",
+                                gwc_capacity:
+                                    "Capacity — Mampu secara waktu & kapasitas",
+                            };
+                            return (
+                                <label
+                                    key={key}
+                                    className="flex cursor-pointer items-center justify-between"
+                                >
+                                    <span className="text-[var(--font-base)] text-text-primary">
+                                        {labels[key]}
+                                    </span>
+                                    <div className="flex gap-sm">
+                                        {["Y", "N"].map((opt) => (
+                                            <button
+                                                key={opt}
+                                                type="button"
+                                                onClick={() =>
+                                                    setEvalFormData(
+                                                        key,
+                                                        opt === "Y",
+                                                    )
+                                                }
+                                                className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${evalFormData[key] === (opt === "Y") ? (opt === "Y" ? "bg-primary-subtle text-primary-text" : "bg-error-subtle text-error-text") : "bg-surface-overlay text-text-muted hover:bg-surface-overlay/70"}`}
+                                            >
+                                                {opt}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </label>
+                            );
+                        },
+                    )}
+                </div>
+            </div>
+
+            {/* Core Values */}
+            <div className="flex flex-col gap-xs">
+                <div className="flex items-center justify-between">
+                    <Label>Core Values</Label>
+                    <div className="flex gap-xs">
+                        {vto_core_values.length > 0 && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                    setEvalFormData(
+                                        "core_values_scores",
+                                        vto_core_values.map((v) => ({
+                                            value: v,
+                                            symbol: "+",
+                                        })),
+                                    )
+                                }
+                            >
+                                ↺ Reset dari VTO
+                            </Button>
+                        )}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={addCoreValue}
+                        >
+                            + Tambah
+                        </Button>
+                    </div>
+                </div>
+                {vto_core_values.length > 0 && (
+                    <p className="text-[var(--font-sm)] text-text-muted">
+                        Core values dari VTO otomatis dimuat. Ubah simbol sesuai
+                        penilaian.
+                    </p>
+                )}
+                <div className="flex flex-col gap-sm">
+                    {evalFormData.core_values_scores.map(
+                        (cv: any, i: number) => (
+                            <div key={i} className="flex items-center gap-sm">
+                                <Input
+                                    value={cv.value}
+                                    onChange={(e) =>
+                                        updateCoreValue(
+                                            i,
+                                            "value",
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder={`Core value ${i + 1}`}
+                                    className="flex-1"
+                                />
+                                <select
+                                    value={cv.symbol}
+                                    onChange={(e) =>
+                                        updateCoreValue(
+                                            i,
+                                            "symbol",
+                                            e.target.value,
+                                        )
+                                    }
+                                    className="bg-surface-raised border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-colors appearance-none"
+                                >
+                                    <option value="+">+</option>
+                                    <option value="+/-">+/-</option>
+                                    <option value="-">-</option>
+                                </select>
+                                {evalFormData.core_values_scores.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeCoreValue(i)}
+                                        className="text-[var(--font-base)] text-text-muted hover:text-error-text transition-colors"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+                        ),
+                    )}
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-xs">
+                <Label>Catatan (opsional)</Label>
+                <Textarea
+                    value={evalFormData.notes}
+                    onChange={(e) => setEvalFormData("notes", e.target.value)}
+                    placeholder="Observasi atau konteks tambahan..."
+                    rows={3}
+                />
+            </div>
+        </div>
+    );
+}
+
 export default function PeopleAnalyzerIndex({
     evaluations,
     users,
@@ -163,7 +436,6 @@ export default function PeopleAnalyzerIndex({
         gwc_capacity: standard?.gwc_capacity ?? "Y",
     });
 
-    // Pre-fill core values from VTO when opening create modal
     const openCreate = () => {
         evalForm.reset();
         const cvScores = vto_core_values.length
@@ -223,27 +495,6 @@ export default function PeopleAnalyzerIndex({
             onSuccess: () => setDeleteId(null),
         });
 
-    const addCoreValue = () =>
-        evalForm.setData("core_values_scores", [
-            ...evalForm.data.core_values_scores,
-            { value: "", symbol: "+" },
-        ]);
-    const removeCoreValue = (i: number) =>
-        evalForm.setData(
-            "core_values_scores",
-            evalForm.data.core_values_scores.filter((_, idx) => idx !== i),
-        );
-    const updateCoreValue = (
-        i: number,
-        field: "value" | "symbol",
-        val: string,
-    ) => {
-        const updated = [...evalForm.data.core_values_scores];
-        updated[i] = { ...updated[i], [field]: val };
-        evalForm.setData("core_values_scores", updated);
-    };
-
-    // Tab filtering
     const memberEvals = evaluations.filter((e) => !e.is_candidate);
     const candidateEvals = evaluations.filter((e) => e.is_candidate);
     const tabData =
@@ -252,228 +503,6 @@ export default function PeopleAnalyzerIndex({
             : tab === "candidates"
               ? candidateEvals
               : evaluations;
-
-    const EvalFormBody = () => (
-        <div className="flex flex-col gap-lg">
-            {/* Candidate toggle */}
-            {!editEval && (
-                <div className="flex items-center gap-md rounded-lg border border-border bg-surface-raised px-md py-sm">
-                    <span className="text-[var(--font-base)] text-text-secondary">
-                        Mode penilaian:
-                    </span>
-                    <div className="flex gap-sm">
-                        {[
-                            { val: false, label: "Anggota Tim" },
-                            { val: true, label: "Kandidat Eksternal" },
-                        ].map(({ val, label }) => (
-                            <button
-                                key={label}
-                                type="button"
-                                onClick={() =>
-                                    evalForm.setData("is_candidate", val)
-                                }
-                                className={`rounded-xs px-md py-xs text-[var(--font-base)] font-medium transition-colors ${evalForm.data.is_candidate === val ? "bg-primary-subtle text-primary-text" : "bg-surface-overlay text-text-muted"}`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Evaluatee / Candidate name */}
-            {evalForm.data.is_candidate ? (
-                <div className="flex flex-col gap-xs">
-                    <Label>Nama Kandidat *</Label>
-                    <Input
-                        value={evalForm.data.candidate_name}
-                        onChange={(e) =>
-                            evalForm.setData("candidate_name", e.target.value)
-                        }
-                        placeholder="Nama lengkap kandidat"
-                        required
-                    />
-                </div>
-            ) : !editEval ? (
-                <div className="flex flex-col gap-xs">
-                    <Label>Evaluatee *</Label>
-                    <Select
-                        value={evalForm.data.evaluatee_id}
-                        onChange={(e) =>
-                            evalForm.setData("evaluatee_id", e.target.value)
-                        }
-                    >
-                        <option value="">— Pilih anggota —</option>
-                        {users.map((u) => (
-                            <option key={u.id} value={u.id}>
-                                {u.name}
-                            </option>
-                        ))}
-                    </Select>
-                </div>
-            ) : null}
-
-            {/* Seat / Posisi */}
-            <div className="flex flex-col gap-xs">
-                <Label>Posisi yang Dinilai (opsional)</Label>
-                <Select
-                    value={evalForm.data.seat_id}
-                    onChange={(e) =>
-                        evalForm.setData("seat_id", e.target.value)
-                    }
-                >
-                    <option value="">— Tidak spesifik —</option>
-                    {seats.map((s) => (
-                        <option key={s.id} value={s.id}>
-                            {s.title}
-                        </option>
-                    ))}
-                </Select>
-                <p className="text-[var(--font-sm)] text-text-muted">
-                    Untuk kandidat: posisi yang dilamar. Untuk anggota: posisi
-                    yang sedang dijabat.
-                </p>
-            </div>
-
-            <div className="flex flex-col gap-xs">
-                <Label>Periode (opsional)</Label>
-                <Input
-                    value={evalForm.data.period}
-                    onChange={(e) => evalForm.setData("period", e.target.value)}
-                    placeholder="Misal: Q3 2025"
-                />
-            </div>
-
-            {/* GWC */}
-            <div className="flex flex-col gap-xs">
-                <Label>GWC Assessment</Label>
-                <div className="flex flex-col gap-sm rounded-lg border border-border bg-surface-raised p-md">
-                    {(["gwc_get", "gwc_want", "gwc_capacity"] as const).map(
-                        (key) => {
-                            const labels: Record<string, string> = {
-                                gwc_get: "Get it — Paham peran & ekspektasi",
-                                gwc_want: "Want it — Mau & termotivasi",
-                                gwc_capacity:
-                                    "Capacity — Mampu secara waktu & kapasitas",
-                            };
-                            return (
-                                <label
-                                    key={key}
-                                    className="flex cursor-pointer items-center justify-between"
-                                >
-                                    <span className="text-[var(--font-base)] text-text-primary">
-                                        {labels[key]}
-                                    </span>
-                                    <div className="flex gap-sm">
-                                        {["Y", "N"].map((opt) => (
-                                            <button
-                                                key={opt}
-                                                type="button"
-                                                onClick={() =>
-                                                    evalForm.setData(
-                                                        key,
-                                                        opt === "Y",
-                                                    )
-                                                }
-                                                className={`rounded-xs px-md py-xs text-[var(--font-base)] font-semibold transition-colors ${evalForm.data[key] === (opt === "Y") ? (opt === "Y" ? "bg-primary-subtle text-primary-text" : "bg-error-subtle text-error-text") : "bg-surface-overlay text-text-muted hover:bg-surface-overlay/70"}`}
-                                            >
-                                                {opt}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </label>
-                            );
-                        },
-                    )}
-                </div>
-            </div>
-
-            {/* Core Values */}
-            <div className="flex flex-col gap-xs">
-                <div className="flex items-center justify-between">
-                    <Label>Core Values</Label>
-                    <div className="flex gap-xs">
-                        {vto_core_values.length > 0 && (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                    evalForm.setData(
-                                        "core_values_scores",
-                                        vto_core_values.map((v) => ({
-                                            value: v,
-                                            symbol: "+",
-                                        })),
-                                    )
-                                }
-                            >
-                                ↺ Reset dari VTO
-                            </Button>
-                        )}
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={addCoreValue}
-                        >
-                            + Tambah
-                        </Button>
-                    </div>
-                </div>
-                {vto_core_values.length > 0 && (
-                    <p className="text-[var(--font-sm)] text-text-muted">
-                        Core values dari VTO otomatis dimuat. Ubah simbol sesuai
-                        penilaian.
-                    </p>
-                )}
-                <div className="flex flex-col gap-sm">
-                    {evalForm.data.core_values_scores.map((cv, i) => (
-                        <div key={i} className="flex items-center gap-sm">
-                            <Input
-                                value={cv.value}
-                                onChange={(e) =>
-                                    updateCoreValue(i, "value", e.target.value)
-                                }
-                                placeholder={`Core value ${i + 1}`}
-                                className="flex-1"
-                            />
-                            <select
-                                value={cv.symbol}
-                                onChange={(e) =>
-                                    updateCoreValue(i, "symbol", e.target.value)
-                                }
-                                className="bg-surface-raised border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-colors appearance-none"
-                            >
-                                <option value="+">+</option>
-                                <option value="+/-">+/-</option>
-                                <option value="-">-</option>
-                            </select>
-                            {evalForm.data.core_values_scores.length > 1 && (
-                                <button
-                                    type="button"
-                                    onClick={() => removeCoreValue(i)}
-                                    className="text-[var(--font-base)] text-text-muted hover:text-error-text transition-colors"
-                                >
-                                    ✕
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <div className="flex flex-col gap-xs">
-                <Label>Catatan (opsional)</Label>
-                <Textarea
-                    value={evalForm.data.notes}
-                    onChange={(e) => evalForm.setData("notes", e.target.value)}
-                    placeholder="Observasi atau konteks tambahan..."
-                    rows={3}
-                />
-            </div>
-        </div>
-    );
 
     const EvalTable = ({ data }: { data: Evaluation[] }) => (
         <div className="overflow-x-auto">
@@ -700,7 +729,14 @@ export default function PeopleAnalyzerIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form id="eval-create-form" onSubmit={submitEval}>
-                            <EvalFormBody />
+                            <EvalFormBody
+                                evalFormData={evalForm.data}
+                                setEvalFormData={evalForm.setData}
+                                editEval={editEval}
+                                users={users}
+                                seats={seats}
+                                vto_core_values={vto_core_values}
+                            />
                         </form>
                     </DialogBody>
                     <DialogFooter>
@@ -734,7 +770,14 @@ export default function PeopleAnalyzerIndex({
                     </DialogHeader>
                     <DialogBody>
                         <form id="eval-edit-form" onSubmit={submitEval}>
-                            <EvalFormBody />
+                            <EvalFormBody
+                                evalFormData={evalForm.data}
+                                setEvalFormData={evalForm.setData}
+                                editEval={editEval}
+                                users={users}
+                                seats={seats}
+                                vto_core_values={vto_core_values}
+                            />
                         </form>
                     </DialogBody>
                     <DialogFooter>

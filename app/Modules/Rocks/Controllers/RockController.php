@@ -37,7 +37,10 @@ class RockController extends Controller
             abort(403, 'Hanya leader yang bisa membuat Rock.');
         }
 
-        $createRock->execute($request->validated());
+        $createRock->execute(array_merge($request->validated(), [
+            'team_id'    => $teamId,
+            'created_by' => $request->user()->id,
+        ]));
 
         return back()->with('message', 'Rock created successfully');
     }
