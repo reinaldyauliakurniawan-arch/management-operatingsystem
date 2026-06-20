@@ -8,7 +8,9 @@ use App\Modules\Scorecard\Actions\LogWeeklyScore;
 use App\Modules\Scorecard\Models\Metric;
 use App\Modules\Scorecard\Resources\MetricResource;
 use App\Models\User;
+use App\Services\TenantContext;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
@@ -16,10 +18,9 @@ class ScorecardController extends Controller
 {
     public function index(Request $request)
     {
-        $teamId = session('active_team_id');
-        $users = $teamId
-            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
-            : User::all(['id', 'name']);
+        $teamId = TenantContext::teamId();
+        abort_if(!$teamId, 403, 'Tidak ada active team.');
+        $users = User::inTeam($teamId);
 
         // Load team settings
         $team = \App\Modules\Teams\Models\Team::withoutGlobalScopes()->find($teamId);
@@ -87,22 +88,22 @@ class ScorecardController extends Controller
 
     public function store(Request $request, CreateMetric $createMetric)
     {
-        $teamId = session('active_team_id');
-        $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $teamId = TenantContext::teamId();
+        abort_if(!$teamId, 403, 'Tidak ada active team.');
+        $role   = $request->user()->roleIn($teamId);
 
-        if ($role !== 'leader') {
+        if ($role !== 'leader' && !$request->user()->is_org_admin) {
             abort(403, 'Hanya leader yang bisa membuat metric.');
         }
 
         $validated = $request->validate([
             'title'               => 'required|string|max:255',
-            'owner_id'            => 'required|exists:users,id',
+            'owner_id'            => ['required', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
             'goal_value'          => 'required|numeric',
             'comparison_operator' => 'required|in:>=,<=,==',
             'frequency'           => 'nullable|in:weekly,monthly',
         ]);
 
-        // HasTeam trait auto-injects team_id via session, tapi explicit lebih aman
         $validated['team_id'] = $teamId;
         $createMetric->execute($validated);
 
@@ -111,16 +112,17 @@ class ScorecardController extends Controller
 
     public function update(Request $request, Metric $metric)
     {
-        $teamId = session('active_team_id');
-        $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $teamId = TenantContext::teamId();
+        abort_unless($metric->team_id === $teamId, 403, 'Metric bukan milik team aktif.');
+        $role   = $request->user()->roleIn($teamId);
 
-        if ($role !== 'leader') {
+        if ($role !== 'leader' && !$request->user()->is_org_admin) {
             abort(403, 'Hanya leader yang bisa mengedit metric.');
         }
 
         $validated = $request->validate([
             'title'               => 'sometimes|string|max:255',
-            'owner_id'            => 'sometimes|exists:users,id',
+            'owner_id'            => ['sometimes', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
             'goal_value'          => 'sometimes|numeric',
             'comparison_operator' => 'sometimes|in:>=,<=,==',
             'frequency'           => 'nullable|in:weekly,monthly',
@@ -133,10 +135,12 @@ class ScorecardController extends Controller
 
     public function destroy(Metric $metric)
     {
-        $teamId = session('active_team_id');
-        $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $teamId = TenantContext::teamId();
+        abort_unless($metric->team_id === $teamId, 403, 'Metric bukan milik team aktif.');
+        $user   = request()->user();
+        $role   = $user->roleIn($teamId);
 
-        if ($role !== 'leader') {
+        if ($role !== 'leader' && !$user->is_org_admin) {
             abort(403, 'Hanya leader yang bisa menghapus metric.');
         }
 
@@ -146,9 +150,9 @@ class ScorecardController extends Controller
 
     public function updateSettings(Request $request)
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $user   = $request->user();
-        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
+        $role   = $user->roleIn($teamId);
 
         if (!$user->is_org_admin && $role !== 'leader') {
             abort(403);
@@ -163,11 +167,11 @@ class ScorecardController extends Controller
             ->where('id', $teamId)
             ->update($validated);
 
-        // Single source of truth: setiap kali scorecard setting berubah,
-        // event L10/Quarterly/Annual di calendar otomatis sinkron ulang.
+        // ponytail: dispatch regeneration async instead of inline — prevents write-on-GET
+        // race when multiple users hit /events simultaneously.
         $team = \App\Modules\Teams\Models\Team::withoutGlobalScopes()->find($teamId);
         if ($team) {
-            \App\Modules\Event\Controllers\EventController::regenerateForTeam($team);
+            \App\Jobs\RegenerateTeamEvents::dispatch($team);
         }
 
         return back()->with('message', 'Settings disimpan & event otomatis sinkron.');
@@ -175,9 +179,10 @@ class ScorecardController extends Controller
 
     public function logScore(Request $request, LogWeeklyScore $logWeeklyScore)
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
+        abort_if(!$teamId, 403, 'Tidak ada active team.');
         $userId = $request->user()->id;
-        $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $role   = $request->user()->roleIn($teamId);
 
         $validated = $request->validate([
             'metric_id'       => 'required|exists:metrics,id',
@@ -185,14 +190,12 @@ class ScorecardController extends Controller
             'actual_value'    => 'required|numeric',
         ]);
 
-        // Verifikasi metric milik team aktif
         $metric = Metric::withoutGlobalScopes()
             ->where('id', $validated['metric_id'])
             ->where('team_id', $teamId)
             ->firstOrFail();
 
-        // Member/tutor hanya bisa input untuk metric yang di-assign ke mereka
-        if ($role !== 'leader' && $metric->owner_id !== $userId) {
+        if ($role !== 'leader' && !$request->user()->is_org_admin && $metric->owner_id !== $userId) {
             abort(403, 'Kamu hanya bisa input score untuk metricmu sendiri.');
         }
 

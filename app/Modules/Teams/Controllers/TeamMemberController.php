@@ -6,141 +6,116 @@ use App\Http\Controllers\Controller;
 use App\Modules\Teams\Models\Team;
 use App\Modules\Teams\Models\TeamMember;
 use App\Models\User;
+use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class TeamMemberController extends Controller
 {
     /**
-     * List members of active team.
-     * Leader: lihat semua. Member/tutor: hanya lihat, tidak bisa manage.
+     * List members of a team. Caller must be a member of that team OR an org admin.
      */
     public function index(Request $request)
     {
-        $teamId = $request->input("team_id", session("active_team_id"));
-        $team = Team::with("members.user")->findOrFail($teamId);
+        $teamId = (int) $request->input('team_id', TenantContext::teamId());
+        abort_if(!$teamId, 403, 'Tidak ada active team.');
 
-        $members = $team->members->map(
-            fn($m) => [
-                "id" => $m->id,
-                "user_id" => $m->user_id,
-                "name" => $m->user->name,
-                "email" => $m->user->email,
-                "role" => $m->role,
-                "is_integrator" => $m->is_integrator,
-            ],
-        );
+        $team = Team::withoutGlobalScopes()->with('members.user')->findOrFail($teamId);
 
-        return response()->json(["members" => $members]);
-    }
+        // ponytail: enforce membership check — prevent IDOR across teams.
+        $user = $request->user();
+        $isMember = $user->is_org_admin
+            || TeamMember::where('team_id', $teamId)->where('user_id', $user->id)->exists();
+        abort_unless($isMember, 403, 'Anda bukan anggota team ini.');
 
-    /**
-     * Org admin: tambah user ke team, atau leader assign role.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            "team_id" => "required|exists:teams,id",
-            "user_id" => "required|exists:users,id",
-            "role" => "required|in:leader,member,tutor",
-            "is_integrator" => "boolean",
+        $members = $team->members->map(fn($m) => [
+            'id'            => $m->id,
+            'user_id'       => $m->user_id,
+            'name'          => $m->user->name,
+            'email'         => $m->user->email,
+            'role'          => $m->role,
+            'is_integrator' => $m->is_integrator,
         ]);
 
-        $teamId = $validated["team_id"];
-        $user = Auth::user();
-        $role = $user
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        return response()->json(['members' => $members]);
+    }
 
-        if (!$user->is_org_admin && $role !== "leader") {
-            abort(
-                403,
-                "Hanya org admin atau leader yang bisa menambah anggota.",
-            );
+    public function store(Request $request)
+    {
+        $orgId = TenantContext::organizationId();
+
+        $validated = $request->validate([
+            'team_id'       => ['required', Rule::exists('teams', 'id')->where(fn($q) => $q->where('organization_id', $orgId))],
+            'user_id'       => 'required|exists:users,id',
+            'role'          => 'required|in:leader,member,tutor',
+            'is_integrator' => 'boolean',
+        ]);
+
+        $teamId = $validated['team_id'];
+        $user   = Auth::user();
+        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
+
+        if (!$user->is_org_admin && $role !== 'leader') {
+            abort(403, 'Hanya org admin atau leader yang bisa menambah anggota.');
         }
 
-        // Cegah duplikat
-        $existing = TeamMember::where("team_id", $teamId)
-            ->where("user_id", $validated["user_id"])
+        $existing = TeamMember::where('team_id', $teamId)
+            ->where('user_id', $validated['user_id'])
             ->first();
 
         if ($existing) {
-            return back()->withErrors([
-                "user_id" => "User sudah menjadi anggota team ini.",
-            ]);
+            return back()->withErrors(['user_id' => 'User sudah menjadi anggota team ini.']);
         }
 
         TeamMember::create([
-            "team_id" => $validated["team_id"],
-            "user_id" => $validated["user_id"],
-            "role" => $validated["role"],
-            "is_integrator" => $validated["is_integrator"] ?? false,
+            'team_id'       => $validated['team_id'],
+            'user_id'       => $validated['user_id'],
+            'role'          => $validated['role'],
+            'is_integrator' => $validated['is_integrator'] ?? false,
         ]);
 
-        return back()->with("message", "Anggota ditambahkan.");
+        return back()->with('message', 'Anggota ditambahkan.');
     }
 
-    /**
-     * Leader: update role anggota di team-nya.
-     */
     public function update(Request $request, TeamMember $member)
     {
-        $teamId = session("active_team_id");
-        $user = Auth::user();
-        $role = $user
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        $teamId = TenantContext::teamId();
+        $user   = Auth::user();
+        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if (!$user->is_org_admin && $role !== "leader") {
+        if (!$user->is_org_admin && $role !== 'leader') {
             abort(403);
         }
 
-        // Pastikan member ini memang di team aktif
-        abort_unless($member->team_id === (int) $teamId, 403);
+        abort_unless($member->team_id === $teamId, 403, 'Member bukan dari team aktif.');
 
         $validated = $request->validate([
-            "role" => "required|in:leader,member,tutor",
-            "is_integrator" => "boolean",
+            'role'          => 'required|in:leader,member,tutor',
+            'is_integrator' => 'boolean',
         ]);
 
         $member->update($validated);
 
-        return back()->with("message", "Role diperbarui.");
+        return back()->with('message', 'Role diperbarui.');
     }
 
-    /**
-     * Org admin / leader: remove member dari team.
-     */
     public function destroy(TeamMember $member)
     {
-        $teamId = session("active_team_id");
-        $user = Auth::user();
-        $role = $user
-            ->teamMemberships()
-            ->where("team_id", $teamId)
-            ->value("role");
+        $teamId = TenantContext::teamId();
+        $user   = Auth::user();
+        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if (!$user->is_org_admin && $role !== "leader") {
-            abort(
-                403,
-                "Hanya org admin atau leader yang bisa mengeluarkan anggota.",
-            );
+        if (!$user->is_org_admin && $role !== 'leader') {
+            abort(403, 'Hanya org admin atau leader yang bisa mengeluarkan anggota.');
         }
 
-        abort_unless($member->team_id === (int) $teamId, 403);
-
-        // Cegah remove diri sendiri
-        abort_if(
-            $member->user_id === Auth::id(),
-            422,
-            "Tidak bisa mengeluarkan diri sendiri.",
-        );
+        abort_unless($member->team_id === $teamId, 403, 'Member bukan dari team aktif.');
+        abort_if($member->user_id === Auth::id(), 422, 'Tidak bisa mengeluarkan diri sendiri.');
 
         $member->delete();
 
-        return back()->with("message", "Anggota dikeluarkan dari team.");
+        return back()->with('message', 'Anggota dikeluarkan dari team.');
     }
 }

@@ -7,8 +7,11 @@ use App\Modules\Event\Models\Event;
 use App\Modules\Event\Models\EventAttendance;
 use App\Modules\Teams\Models\Team;
 use App\Models\User;
+use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
@@ -190,49 +193,21 @@ class EventController extends Controller
     // ─────────────────────────────────────────────────────────────────
     public function index()
     {
-        $teamId = session('active_team_id');
-        $userId = Auth::id();
-        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
-        $isLeader = $role === 'leader';
-        $team   = Team::find($teamId);
+        $teamId   = TenantContext::teamId();
+        abort_if(!$teamId, 403, 'Tidak ada active team.');
+        $userId   = Auth::id();
+        $role     = Auth::user()->roleIn($teamId);
+        $isLeader = $role === 'leader' || Auth::user()->is_org_admin;
+        $team     = Team::withoutGlobalScopes()->find($teamId);
 
-        // Auto-extend window L10/Quarterly/Annual setiap kali halaman dibuka,
-        // kalau gap terdeteksi (gak ada L10 yang jaraknya >7 hari ke depan).
-        // Ini gantiin cron/scheduler — user pasti buka halaman ini buat liat kalendernya.
-        if ($team && $team->q1_start_date) {
-            $hasUpcomingL10 = Event::where('team_id', $teamId)
-                ->where('type', 'l10')
-                ->whereDate('event_date', '>=', Carbon::now()->addDays(7))
-                ->exists();
+        // ponytail: removed the write-on-GET auto-regenerate loop. It was a
+        // race condition (multiple users hitting /events would each fire a
+        // delete+insert) plus write amplification across all org teams. Event
+        // regeneration now runs only from ScorecardController::updateSettings
+        // via RegenerateTeamEvents job. Future: add a scheduled command for
+        // daily/weekly auto-extension.
 
-            if (!$hasUpcomingL10) {
-                self::regenerateForTeam($team);
-            }
-        }
-
-        // Auto-generate juga untuk semua tim lain dalam organisasi yang sama,
-        // supaya kalender lintas tim selalu punya data terbaru tanpa perlu
-        // masing-masing leader buka halaman event timnya dulu.
-        if ($team && $team->organization_id) {
-            $otherTeams = Team::where('organization_id', $team->organization_id)
-                ->where('id', '!=', $teamId)
-                ->whereNotNull('q1_start_date')
-                ->get();
-
-            foreach ($otherTeams as $otherTeam) {
-                $hasUpcoming = Event::withoutGlobalScope(\App\Scopes\TeamScope::class)
-                    ->where('team_id', $otherTeam->id)
-                    ->where('type', 'l10')
-                    ->whereDate('event_date', '>=', Carbon::now()->addDays(7))
-                    ->exists();
-
-                if (!$hasUpcoming) {
-                    self::regenerateForTeam($otherTeam);
-                }
-            }
-        }
-
-        $eventsQuery = Event::with([
+        $eventsQuery = Event::withoutGlobalScopes()->with([
             'attendances' => fn($q) => $isLeader
                 ? $q->with('user')
                 : $q->where('user_id', $userId),
@@ -273,9 +248,7 @@ class EventController extends Controller
                 ];
             });
 
-        $users = $isLeader && $teamId
-            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
-            : collect();
+        $users = $isLeader ? User::inTeam($teamId) : collect();
 
         // Event L10/Quarterly/Annual dari tim lain di organisasi yang sama,
         // ditampilkan read-only di kalender supaya org_admin/leader bisa lihat

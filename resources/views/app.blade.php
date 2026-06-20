@@ -6,16 +6,13 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        {{-- ponytail: Inter is bundled via @fontsource-variable/inter in CSS, no external request needed. --}}
 
-        <!-- Scripts -->
+        {{-- Scripts --}}
         @routes
+        @inertiaHead
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/Pages/{$page['component']}.tsx"])
-        @inertiaHead
     </head>
     <body class="font-sans antialiased">
         @inertia

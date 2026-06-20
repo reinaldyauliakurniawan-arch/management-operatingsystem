@@ -11,17 +11,19 @@ use App\Modules\LeadershipAssessment\Models\LeadershipItem;
 use App\Modules\LeadershipAssessment\Models\LeadershipRubric;
 use App\Modules\Teams\Models\TeamMember;
 use App\Models\User;
+use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class LeadershipAssessmentController extends Controller
 {
     private function requireLeader(): void
     {
-        $teamId = session('active_team_id');
-        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
-        if ($role !== 'leader') {
+        $teamId = TenantContext::teamId();
+        $role   = Auth::user()->roleIn($teamId);
+        if ($role !== 'leader' && !Auth::user()->is_org_admin) {
             abort(403, 'Hanya leader.');
         }
     }
@@ -138,7 +140,8 @@ class LeadershipAssessmentController extends Controller
 
     public function index()
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
+        abort_if(!$teamId, 403, 'Tidak ada active team.');
         $userId = Auth::id();
 
         $cycles = AssessmentCycle::where('team_id', $teamId)
@@ -147,9 +150,7 @@ class LeadershipAssessmentController extends Controller
             ->map(fn ($cycle) => $this->formatCycle($cycle, $teamId));
 
         $leadershipTypes = LeadershipType::with('items.rubrics')->get();
-
-        $users = User::whereHas('teamMemberships', fn ($q) => $q->where('team_id', $teamId))
-            ->get(['id', 'name']);
+        $users           = User::inTeam($teamId);
 
         return Inertia::render('LeadershipAssessment/Index', [
             'cycles'              => $cycles,
@@ -162,7 +163,7 @@ class LeadershipAssessmentController extends Controller
     public function storeCycle(Request $request)
     {
         $this->requireLeader();
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
 
         $validated = $request->validate([
             'name'          => 'required|string|max:255',
@@ -186,7 +187,8 @@ class LeadershipAssessmentController extends Controller
     public function assignAssessee(Request $request, AssessmentCycle $cycle)
     {
         $this->requireLeader();
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
+        abort_unless($cycle->team_id === $teamId, 403, 'Cycle bukan milik team aktif.');
 
         if ($cycle->isClosed()) {
             abort(422, 'Cycle sudah ditutup.');
@@ -234,6 +236,7 @@ class LeadershipAssessmentController extends Controller
     public function updateCycle(Request $request, AssessmentCycle $cycle)
     {
         $this->requireLeader();
+        abort_unless($cycle->team_id === TenantContext::teamId(), 403, 'Cycle bukan milik team aktif.');
 
         if ($cycle->isClosed()) {
             abort(422, 'Cycle sudah ditutup, tidak bisa diedit.');
@@ -253,6 +256,7 @@ class LeadershipAssessmentController extends Controller
     public function closeCycle(AssessmentCycle $cycle)
     {
         $this->requireLeader();
+        abort_unless($cycle->team_id === TenantContext::teamId(), 403, 'Cycle bukan milik team aktif.');
         $cycle->update(['status' => 'closed']);
 
         return back()->with('message', 'Cycle ditutup.');
@@ -261,6 +265,7 @@ class LeadershipAssessmentController extends Controller
     public function destroyCycle(AssessmentCycle $cycle)
     {
         $this->requireLeader();
+        abort_unless($cycle->team_id === TenantContext::teamId(), 403, 'Cycle bukan milik team aktif.');
 
         if (!$cycle->canBeDeleted()) {
             abort(422, 'Cycle tidak bisa dihapus — sudah ada submission.');
@@ -274,7 +279,8 @@ class LeadershipAssessmentController extends Controller
     public function takeAssessment(AssessmentCycle $cycle, User $assessee)
     {
         $userId = Auth::id();
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
+        abort_unless($cycle->team_id === $teamId, 403, 'Cycle bukan milik team aktif.');
 
         if ($assessee->id === $userId) {
             abort(403, 'Tidak bisa menilai diri sendiri.');
@@ -318,6 +324,8 @@ class LeadershipAssessmentController extends Controller
     public function submitResponse(Request $request, AssessmentCycle $cycle, User $assessee)
     {
         $userId = Auth::id();
+        $teamId = TenantContext::teamId();
+        abort_unless($cycle->team_id === $teamId, 403, 'Cycle bukan milik team aktif.');
 
         if ($assessee->id === $userId) {
             abort(403);
@@ -326,23 +334,39 @@ class LeadershipAssessmentController extends Controller
             abort(403, 'Cycle sudah ditutup.');
         }
 
+        // ponytail: validate that every item_id belongs to a leadership type
+        // assigned to this assessee in this cycle — prevents assessor from
+        // submitting responses for items outside the assignment scope.
         $validated = $request->validate([
             'responses'           => 'required|array',
             'responses.*.item_id' => 'required|exists:leadership_items,id',
             'responses.*.level'   => 'required|integer|between:1,5',
         ]);
 
-        foreach ($validated['responses'] as $r) {
-            AssessmentResponse::updateOrCreate(
-                [
-                    'cycle_id'    => $cycle->id,
-                    'assessor_id' => $userId,
-                    'assessee_id' => $assessee->id,
-                    'item_id'     => $r['item_id'],
-                ],
-                ['rubric_level' => $r['level']]
-            );
-        }
+        $assignedTypeIds = AssessmentAssignment::where('cycle_id', $cycle->id)
+            ->where('user_id', $assessee->id)
+            ->pluck('leadership_type_id');
+
+        $validItemIds = \App\Modules\LeadershipAssessment\Models\LeadershipItem::whereIn('leadership_type_id', $assignedTypeIds)
+            ->pluck('id');
+
+        $submittedItemIds = collect($validated['responses'])->pluck('item_id');
+        $invalid = $submittedItemIds->diff($validItemIds);
+        abort_if($invalid->isNotEmpty(), 422, 'Salah satu item tidak termasuk dalam assignment assessee.');
+
+        DB::transaction(function () use ($validated, $cycle, $userId, $assessee) {
+            foreach ($validated['responses'] as $r) {
+                AssessmentResponse::updateOrCreate(
+                    [
+                        'cycle_id'    => $cycle->id,
+                        'assessor_id' => $userId,
+                        'assessee_id' => $assessee->id,
+                        'item_id'     => $r['item_id'],
+                    ],
+                    ['rubric_level' => $r['level']]
+                );
+            }
+        });
 
         return redirect()
             ->route('leadership-assessment.index')
@@ -352,8 +376,9 @@ class LeadershipAssessmentController extends Controller
     public function results(AssessmentCycle $cycle, User $assessee)
     {
         $userId = Auth::id();
-        $teamId = session('active_team_id');
-        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $teamId = TenantContext::teamId();
+        abort_unless($cycle->team_id === $teamId, 403, 'Cycle bukan milik team aktif.');
+        $role   = Auth::user()->roleIn($teamId);
 
         if ($assessee->id === $userId && !$cycle->isClosed()) {
             abort(403, 'Hasil baru tersedia setelah cycle ditutup.');
@@ -388,17 +413,19 @@ class LeadershipAssessmentController extends Controller
     }
 
     // ---- Rubrik CRUD ----
+    // ponytail: every rubrik route now requires the caller to be a leader or
+    // org admin via the requireLeader() gate (was completely unprotected before).
 
     public function rubrikIndex()
     {
+        $this->requireLeader();
         $types = LeadershipType::with('items.rubrics')->orderBy('id')->get();
-        return Inertia::render('LeadershipAssessment/Rubrik', [
-            'types' => $types,
-        ]);
+        return Inertia::render('LeadershipAssessment/Rubrik', ['types' => $types]);
     }
 
     public function storeType(Request $request)
     {
+        $this->requireLeader();
         $validated = $request->validate(['name' => 'required|string|max:255']);
         LeadershipType::create($validated);
         return back()->with('message', 'Tipe ditambahkan.');
@@ -406,6 +433,7 @@ class LeadershipAssessmentController extends Controller
 
     public function updateType(Request $request, LeadershipType $type)
     {
+        $this->requireLeader();
         $validated = $request->validate(['name' => 'required|string|max:255']);
         $type->update($validated);
         return back()->with('message', 'Tipe diperbarui.');
@@ -413,12 +441,14 @@ class LeadershipAssessmentController extends Controller
 
     public function destroyType(LeadershipType $type)
     {
+        $this->requireLeader();
         $type->delete();
         return back()->with('message', 'Tipe dihapus.');
     }
 
     public function storeItem(Request $request, LeadershipType $type)
     {
+        $this->requireLeader();
         $validated = $request->validate(['title' => 'required|string|max:255']);
         $type->items()->create($validated);
         return back()->with('message', 'Item ditambahkan.');
@@ -426,6 +456,7 @@ class LeadershipAssessmentController extends Controller
 
     public function updateItem(Request $request, LeadershipItem $item)
     {
+        $this->requireLeader();
         $validated = $request->validate(['title' => 'required|string|max:255']);
         $item->update($validated);
         return back()->with('message', 'Item diperbarui.');
@@ -433,12 +464,14 @@ class LeadershipAssessmentController extends Controller
 
     public function destroyItem(LeadershipItem $item)
     {
+        $this->requireLeader();
         $item->delete();
         return back()->with('message', 'Item dihapus.');
     }
 
     public function storeRubric(Request $request, LeadershipItem $item)
     {
+        $this->requireLeader();
         $validated = $request->validate([
             'level'       => 'required|integer|between:1,5',
             'description' => 'required|string',
@@ -452,6 +485,7 @@ class LeadershipAssessmentController extends Controller
 
     public function updateRubric(Request $request, LeadershipRubric $rubric)
     {
+        $this->requireLeader();
         $validated = $request->validate(['description' => 'required|string']);
         $rubric->update($validated);
         return back()->with('message', 'Rubrik diperbarui.');
@@ -459,6 +493,7 @@ class LeadershipAssessmentController extends Controller
 
     public function destroyRubric(LeadershipRubric $rubric)
     {
+        $this->requireLeader();
         $rubric->delete();
         return back()->with('message', 'Rubrik dihapus.');
     }
