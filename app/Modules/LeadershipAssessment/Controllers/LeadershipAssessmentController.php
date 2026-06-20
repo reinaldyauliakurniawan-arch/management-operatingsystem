@@ -453,7 +453,17 @@ class LeadershipAssessmentController extends Controller
     public function destroyType(LeadershipType $type)
     {
         $this->requireLeader();
+        // ponytail: audit log — rubrik changes affect all assessments that
+        // use this type; deletion is destructive.
+        $typeName = $type->name;
         $type->delete();
+
+        activity('rubrik-admin')
+            ->causedBy(Auth::user())
+            ->performedOn($type)
+            ->withProperties(['type_name' => $typeName])
+            ->log('Deleted leadership type');
+
         return back()->with('message', 'Tipe dihapus.');
     }
 

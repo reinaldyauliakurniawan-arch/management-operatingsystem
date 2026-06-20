@@ -202,7 +202,20 @@ class AccountabilityChartController extends Controller
         $teamId = TenantContext::teamId();
         abort_unless($seat->team_id === $teamId, 403, 'Seat bukan milik team aktif.');
 
+        // ponytail: audit log seat deletion (title captured before delete).
+        $seatTitle = $seat->title;
+        $seatUserId = $seat->user_id;
         $seat->delete();
+
+        activity('org-chart')
+            ->causedBy(Auth::user())
+            ->performedOn($seat)
+            ->withProperties([
+                'team_id' => $teamId,
+                'seat_title' => $seatTitle,
+                'seat_user_id' => $seatUserId,
+            ])
+            ->log('Seat deleted from accountability chart');
 
         return response()->json(['message' => 'Seat deleted']);
     }

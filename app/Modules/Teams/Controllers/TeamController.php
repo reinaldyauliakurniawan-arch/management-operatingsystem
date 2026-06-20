@@ -121,6 +121,16 @@ class TeamController extends Controller
             // ponytail: is_org_admin changed → invalidate target user's sessions
             // so the cached HandleInertiaRequests::isOrgAdmin gets refreshed.
             \App\Services\SessionInvalidator::forUser($user->id);
+
+            // ponytail: audit log — promote/demote is a security-sensitive change.
+            activity('admin-action')
+                ->causedBy(Auth::user())
+                ->performedOn($user)
+                ->withProperties([
+                    'organization_id' => $orgId,
+                    'granted' => $wantAdmin,
+                ])
+                ->log($wantAdmin ? 'Promoted to org admin' : 'Demoted from org admin');
         }
 
         return back()->with('message', 'User diperbarui.');
@@ -137,6 +147,13 @@ class TeamController extends Controller
         $user->update(['password' => Hash::make($validated['password'])]);
         \App\Services\SessionInvalidator::forUser($user->id);
 
+        // ponytail: audit log — who reset whose password, when.
+        activity('admin-action')
+            ->causedBy(Auth::user())
+            ->performedOn($user)
+            ->withProperties(['target_email' => $user->email])
+            ->log('Password reset for user');
+
         return back()->with('message', 'Password direset.');
     }
 
@@ -151,6 +168,12 @@ class TeamController extends Controller
             TeamMember::where('user_id', $user->id)->delete();
             $user->delete();
         });
+
+        // ponytail: audit log — account deletion is irreversible.
+        activity('admin-action')
+            ->causedBy(Auth::user())
+            ->withProperties(['deleted_email' => $user->email])
+            ->log('User account deleted');
 
         return back()->with('message', 'User dihapus.');
     }
