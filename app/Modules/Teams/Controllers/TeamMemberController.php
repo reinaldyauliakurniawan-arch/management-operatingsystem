@@ -26,7 +26,7 @@ class TeamMemberController extends Controller
 
         // ponytail: enforce membership check — prevent IDOR across teams.
         $user = $request->user();
-        $isMember = $user->is_org_admin
+        $isMember = $user->isAdminOfActiveOrg()
             || TeamMember::where('team_id', $teamId)->where('user_id', $user->id)->exists();
         abort_unless($isMember, 403, 'Anda bukan anggota team ini.');
 
@@ -57,7 +57,7 @@ class TeamMemberController extends Controller
         $user   = Auth::user();
         $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if (!$user->is_org_admin && $role !== 'leader') {
+        if (!$user->isAdminOfActiveOrg() && $role !== 'leader') {
             abort(403, 'Hanya org admin atau leader yang bisa menambah anggota.');
         }
 
@@ -85,7 +85,7 @@ class TeamMemberController extends Controller
         $user   = Auth::user();
         $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if (!$user->is_org_admin && $role !== 'leader') {
+        if (!$user->isAdminOfActiveOrg() && $role !== 'leader') {
             abort(403);
         }
 
@@ -111,7 +111,7 @@ class TeamMemberController extends Controller
         $user   = Auth::user();
         $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if (!$user->is_org_admin && $role !== 'leader') {
+        if (!$user->isAdminOfActiveOrg() && $role !== 'leader') {
             abort(403, 'Hanya org admin atau leader yang bisa mengeluarkan anggota.');
         }
 

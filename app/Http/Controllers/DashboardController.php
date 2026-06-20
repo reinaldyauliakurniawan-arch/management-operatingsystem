@@ -23,7 +23,7 @@ class DashboardController extends Controller
             : null;
 
         // Org admin yang sekaligus leader di active team → pastikan role terbaca
-        if (!$role && $teamId && auth()->user()->is_org_admin) {
+        if (!$role && $teamId && auth()->user()->isAdminOfActiveOrg()) {
             $role = "leader";
         }
 

@@ -7,34 +7,50 @@ use App\Modules\VTO\Actions\UpdateVTO;
 use App\Modules\VTO\Models\VTOPlan;
 use App\Modules\VTO\Requests\UpdateVTORequest;
 use App\Modules\VTO\Resources\VTOResource;
+use App\Services\TenantContext;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class VTOController extends Controller
 {
     public function index()
     {
-        $teamId = session('active_team_id');
-        $orgId  = session('active_organization_id');
+        $teamId = TenantContext::teamId();
+        $orgId  = TenantContext::organizationId();
+        abort_if(!$orgId, 403, 'Tidak ada active organization.');
 
-        $vto = VTOPlan::withoutGlobalScopes()->firstOrCreate(
-            ['organization_id' => $orgId],
-            ['organization_id' => $orgId, 'created_by' => auth()->id()]
-        );
+        // ponytail: lockForUpdate + transaction prevents the race where two
+        // concurrent firstOrCreate calls each insert a VTOPlan row.
+        $vto = DB::transaction(function () use ($orgId) {
+            $vto = VTOPlan::withoutGlobalScopes()
+                ->where('organization_id', $orgId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$vto) {
+                $vto = VTOPlan::withoutGlobalScopes()->create([
+                    'organization_id' => $orgId,
+                    'created_by'      => auth()->id(),
+                ]);
+            }
+
+            return $vto;
+        });
 
         return Inertia::render('VTO/Index', [
             'vto'     => VTOResource::make($vto)->resolve(),
-            'canEdit' => auth()->user()->is_org_admin
-                         || auth()->user()->teamMemberships()->where('team_id', $teamId)->value('role') === 'leader',
+            'canEdit' => auth()->user()->isAdminOfActiveOrg()
+                         || auth()->user()->roleIn($teamId) === 'leader',
         ]);
     }
 
     public function update(UpdateVTORequest $request, UpdateVTO $updateVTO)
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $user   = $request->user();
-        $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
+        $role   = $user->roleIn($teamId);
 
-        if (!$user->is_org_admin && $role !== 'leader') {
+        if (!$user->isAdminOfActiveOrg() && $role !== 'leader') {
             abort(403, 'Hanya org admin atau leader yang bisa mengubah VTO.');
         }
 
