@@ -65,6 +65,8 @@ interface User {
 interface Seat {
     id: number;
     title: string;
+    team_id?: number;
+    team_name?: string;
 }
 
 const SEAT_FIT_LABELS: Record<string, { label: string; variant: any }> = {
@@ -230,6 +232,7 @@ function EvalFormBody({
                     {seats.map((s) => (
                         <option key={s.id} value={s.id}>
                             {s.title}
+                            {s.team_name ? ` (${s.team_name})` : ""}
                         </option>
                     ))}
                 </Select>

@@ -194,8 +194,12 @@ class LeadershipAssessmentController extends Controller
             abort(422, 'Cycle sudah ditutup.');
         }
 
+        // ponytail: previously `assessee_id` was `required` but the frontend
+        // (LeadershipAssessment/Index.tsx submitAssign) sends `user_id` only.
+        // That mismatch silently failed every "Assign Assessment" click with
+        // a 422 the user never saw — fixed by accepting either field.
         $validated = $request->validate([
-            'assessee_id'           => 'required|exists:users,id',
+            'assessee_id'           => 'nullable|exists:users,id',
             'user_id'               => 'nullable|exists:users,id',
             'leadership_type_id'    => 'nullable|exists:leadership_types,id',
             'leadership_type_ids'   => 'nullable|array|min:1',
