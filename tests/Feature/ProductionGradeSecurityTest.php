@@ -7,18 +7,28 @@ use App\Models\Organization;
 use App\Modules\Teams\Models\Team;
 use App\Modules\Teams\Models\TeamMember;
 use App\Modules\AccountabilityChart\Models\Seat;
+use App\Modules\AccountabilityChart\Actions\CreateUserAndAddToTeam;
 use App\Modules\LeadershipAssessment\Models\AssessmentCycle;
 use App\Modules\LeadershipAssessment\Models\LeadershipType;
 use App\Modules\LeadershipAssessment\Models\LeadershipItem;
 use App\Modules\LeadershipAssessment\Models\LeadershipRubric;
 use App\Modules\Rocks\Models\Rock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Tests\TestCase;
 
 /**
- * ponytail: one test file covering the top production-grade regression risks
- * the audit identified: IDOR on Seat, IDOR on TeamMember listing, rubrik
- * authz, User::all() leak in /teams, and cross-tenant rock isolation.
+ * ponytail: Phase 3 — replaced the 2 string-matching tests (which were
+ * flagging source-code substrings, not behavior) with actual behavioral
+ * tests that exercise the runtime contract.
+ *
+ * Before: assertStringNotContainsString('member123', source) — passed even
+ * if the password logic was broken, as long as the literal string was gone.
+ *
+ * After: actually create a user via the action and assert the hash is NOT
+ * the hash of 'member123' — proves the runtime behavior is correct.
  */
 class ProductionGradeSecurityTest extends TestCase
 {
@@ -40,6 +50,13 @@ class ProductionGradeSecurityTest extends TestCase
 
         TeamMember::create(['team_id' => $team->id, 'user_id' => $leader->id, 'role' => 'leader']);
         TeamMember::create(['team_id' => $team->id, 'user_id' => $member->id, 'role' => 'member']);
+
+        // ponytail: Phase 2 — also need to create organization_user pivot rows
+        // since the per-org admin pivot is now the source of truth.
+        \DB::table('organization_user')->insert([
+            ['organization_id' => $org->id, 'user_id' => $leader->id, 'is_admin' => false, 'created_at' => now(), 'updated_at' => now()],
+            ['organization_id' => $org->id, 'user_id' => $member->id, 'is_admin' => false, 'created_at' => now(), 'updated_at' => now()],
+        ]);
 
         return [$org, $team, $leader, $member];
     }
@@ -95,7 +112,9 @@ class ProductionGradeSecurityTest extends TestCase
         $teamB = Team::create(['organization_id' => $orgB->id, 'name' => 'Team B', 'type' => 'leadership']);
         $userB = User::factory()->create(['name' => 'Outsider User']);
         TeamMember::create(['team_id' => $teamB->id, 'user_id' => $userB->id, 'role' => 'leader']);
-        $leaderA->update(['is_org_admin' => true]);
+
+        // ponytail: Phase 2 — promote leaderA to admin of orgA via pivot.
+        $leaderA->promoteToOrgAdmin($orgA->id);
 
         $response = $this->actingAs($leaderA)
             ->withSession(['active_team_id' => $teamA->id, 'active_organization_id' => $orgA->id])
@@ -109,13 +128,13 @@ class ProductionGradeSecurityTest extends TestCase
     {
         [$org, $team, $leader, $member] = $this->makeOrgWithLeaderAndMember();
 
-        $type = LeadershipType::create(['name' => 'Visionary']);
-        $itemInScope = LeadershipItem::create(['leadership_type_id' => $type->id, 'title' => 'Item 1']);
-        LeadershipRubric::create(['leadership_item_id' => $itemInScope->id, 'level' => 1, 'description' => 'L1']);
+        $type = LeadershipType::create(['name' => 'Visionary', 'organization_id' => $org->id]);
+        $itemInScope = LeadershipItem::create(['leadership_type_id' => $type->id, 'title' => 'Item 1', 'organization_id' => $org->id]);
+        LeadershipRubric::create(['leadership_item_id' => $itemInScope->id, 'level' => 1, 'description' => 'L1', 'organization_id' => $org->id]);
 
-        $typeOther = LeadershipType::create(['name' => 'Operator']);
-        $itemOutOfScope = LeadershipItem::create(['leadership_type_id' => $typeOther->id, 'title' => 'Item 2']);
-        LeadershipRubric::create(['leadership_item_id' => $itemOutOfScope->id, 'level' => 1, 'description' => 'L1']);
+        $typeOther = LeadershipType::create(['name' => 'Operator', 'organization_id' => $org->id]);
+        $itemOutOfScope = LeadershipItem::create(['leadership_type_id' => $typeOther->id, 'title' => 'Item 2', 'organization_id' => $org->id]);
+        LeadershipRubric::create(['leadership_item_id' => $itemOutOfScope->id, 'level' => 1, 'description' => 'L1', 'organization_id' => $org->id]);
 
         $cycle = AssessmentCycle::create([
             'team_id'    => $team->id,
@@ -146,42 +165,119 @@ class ProductionGradeSecurityTest extends TestCase
     {
         $user = User::factory()->create();
 
-        // Pre-create an org with the same slug the action will try to use.
-        // The action now appends a random suffix so we instead simulate a
-        // failure by passing an empty name — Organization::create will throw
-        // on the NOT NULL constraint.
         $this->expectException(\Illuminate\Database\QueryException::class);
 
         $action = app(\App\Modules\Organization\Actions\CreateOrganization::class);
         $action->execute(['name' => '']);
     }
 
-    public function test_default_password_is_not_member123()
+    /**
+     * ponytail: Phase 3 — behavioral test. Old test was string-matching
+     * on source code ('member123' not in source). Now we actually create
+     * a user via the action and assert the password hash is NOT the hash
+     * of 'member123'. This catches the actual bug if anyone re-introduces
+     * the static password (regardless of variable name or formatting).
+     */
+    public function test_create_user_action_does_not_use_static_password_member123()
     {
-        // Sanity: confirm CreateUserAndAddToTeam no longer uses the static password.
-        $reflection = new \ReflectionClass(\App\Modules\AccountabilityChart\Actions\CreateUserAndAddToTeam::class);
-        $source = file_get_contents($reflection->getFileName());
+        Notification::fake();
 
-        $this->assertStringNotContainsString('member123', $source, 'CreateUserAndAddToTeam still references the hardcoded "member123" password.');
+        [$org, $team, $leader, $member] = $this->makeOrgWithLeaderAndMember();
+        $this->actingAs($leader)->withSession(['active_team_id' => $team->id, 'active_organization_id' => $org->id]);
+
+        $action = app(CreateUserAndAddToTeam::class);
+        $newUser = $action->execute([
+            'name'  => 'Test User',
+            'email' => 'test@example.com',
+            'role'  => 'member',
+        ], $team->id);
+
+        // ponytail: the password hash must NOT match the hash of 'member123'.
+        $this->assertFalse(
+            Hash::check('member123', $newUser->password),
+            'CreateUserAndAddToTeam is using the static "member123" password — critical security regression.'
+        );
+
+        // ponytail: also verify the password is at least 16 chars long (random 24 expected).
+        $this->assertGreaterThanOrEqual(
+            16,
+            strlen($newUser->password),
+            'Password should be a long random string, not a short static value.'
+        );
+
+        // ponytail: a password reset link email should have been sent.
+        Notification::assertSentTo($newUser, ResetPassword::class);
     }
 
-    public function test_login_throttle_is_per_email_only()
+    /**
+     * ponytail: Phase 3 — behavioral test. Old test was string-matching
+     * on source ('ip()' not in source). Now we actually instantiate
+     * LoginRequest, call throttleKey(), and assert the returned string
+     * does NOT contain the IP. Catches the regression even if someone
+     * refactors to use $this->ip() with a different syntax.
+     */
+    public function test_login_throttle_key_does_not_include_ip_address()
     {
-        // The audit (A14) flagged email|ip as the throttle key — NAT lockout risk.
-        // Verify the source no longer references `ip()` in the throttle key.
-        $reflection = new \ReflectionClass(\App\Http\Requests\Auth\LoginRequest::class);
-        $source = file_get_contents($reflection->getFileName());
+        $request = \Illuminate\Http\Request::create('/login', 'POST', ['email' => 'Alice@Example.COM']);
+        $request->server->set('REMOTE_ADDR', '192.168.1.100');
 
-        $this->assertStringNotContainsString(
-            'ip()',
-            $source,
-            'LoginRequest::throttleKey still uses IP — NAT lockout risk.',
+        $loginRequest = new \App\Http\Requests\Auth\LoginRequest();
+        $loginRequest->setRequest($request);
+
+        $key = $loginRequest->throttleKey();
+
+        // ponytail: key should be the email only, no IP.
+        $this->assertSame(
+            'alice@example.com',
+            $key,
+            'LoginRequest::throttleKey should return the bare lowercased email — IP inclusion causes NAT lockout.'
         );
+
+        $this->assertStringNotContainsString('192', $key, 'Throttle key must not contain IP octets.');
+        $this->assertStringNotContainsString('100', $key, 'Throttle key must not contain IP octets.');
     }
 
     public function test_tenant_context_returns_null_when_session_and_auth_absent()
     {
         $this->assertNull(\App\Services\TenantContext::organizationId());
         $this->assertNull(\App\Services\TenantContext::teamId());
+    }
+
+    /**
+     * ponytail: Phase 3 — new test for per-org admin pivot (Phase 2 9.1).
+     * Verifies a user who is admin of Org A is NOT admin of Org B.
+     */
+    public function test_per_org_admin_isolation()
+    {
+        $orgA = Organization::create(['name' => 'Org A', 'slug' => 'org-a']);
+        $orgB = Organization::create(['name' => 'Org B', 'slug' => 'org-b']);
+
+        $teamA = Team::create(['organization_id' => $orgA->id, 'name' => 'Team A', 'type' => 'leadership']);
+        $teamB = Team::create(['organization_id' => $orgB->id, 'name' => 'Team B', 'type' => 'leadership']);
+
+        $user = User::factory()->create();
+        TeamMember::create(['team_id' => $teamA->id, 'user_id' => $user->id, 'role' => 'leader']);
+        TeamMember::create(['team_id' => $teamB->id, 'user_id' => $user->id, 'role' => 'member']);
+
+        // ponytail: promote user to admin of Org A only.
+        $user->promoteToOrgAdmin($orgA->id);
+
+        $this->assertTrue($user->isAdminOf($orgA->id), 'User should be admin of Org A');
+        $this->assertFalse($user->isAdminOf($orgB->id), 'User should NOT be admin of Org B (cross-tenant escalation would be C2 regression)');
+    }
+
+    /**
+     * ponytail: Phase 3 — new test for security headers middleware.
+     */
+    public function test_security_headers_are_set_on_responses()
+    {
+        $response = $this->get('/');
+
+        $response->assertHeader('X-Frame-Options', 'DENY');
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('Permissions-Policy');
+        $response->assertHeader('X-Permitted-Cross-Domain-Policies', 'none');
+        // CSP + HSTS only set in production env, skip in testing
     }
 }

@@ -26,3 +26,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# ponytail: Phase 3 — secret files gitignore
+.env.local
+.env.*.local
+*.pem
+*.p12
