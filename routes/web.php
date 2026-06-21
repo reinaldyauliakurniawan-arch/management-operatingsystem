@@ -22,7 +22,7 @@ Route::get('/', function () {
 Route::get('/up', HealthController::class)->name('health');
 
 Route::get('/dashboard', \App\Http\Controllers\DashboardController::class)
-    ->middleware(['auth', 'verified', \App\Http\Middleware\EnsureHasOrganization::class])
+    ->middleware(['auth', \App\Http\Middleware\EnsureHasOrganization::class])
     ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
