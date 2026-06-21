@@ -36,6 +36,6 @@
         "@fullcalendar/list": "^6.1.21",
         "@fullcalendar/react": "^6.1.21",
         "@xyflow/react": "^12.11.0",
-        "axios": "^1.17.0"
+        "axios": "^1.18.0"
     }
 }
