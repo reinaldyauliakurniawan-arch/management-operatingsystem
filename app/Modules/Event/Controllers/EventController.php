@@ -197,7 +197,7 @@ class EventController extends Controller
         abort_if(!$teamId, 403, 'Tidak ada active team.');
         $userId   = Auth::id();
         $role     = Auth::user()->roleIn($teamId);
-        $isLeader = $role === 'leader' || Auth::user()->is_org_admin;
+        $isLeader = $role === 'leader' || Auth::user()->isAdminOfActiveOrg();
         $team     = Team::withoutGlobalScopes()->find($teamId);
 
         // ponytail: removed the write-on-GET auto-regenerate loop. It was a

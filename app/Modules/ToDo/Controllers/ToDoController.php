@@ -65,7 +65,7 @@ class ToDoController extends Controller
         $user = request()->user();
         $role = $user->roleIn($teamId);
 
-        if ($role !== 'leader' && !$user->is_org_admin && $todo->owner_id !== $user->id) {
+        if ($role !== 'leader' && !$user->isAdminOfActiveOrg() && $todo->owner_id !== $user->id) {
             abort(403, 'Kamu hanya bisa mengubah status to-do milikmu sendiri.');
         }
 
@@ -80,7 +80,7 @@ class ToDoController extends Controller
         $user   = request()->user();
         $role   = $user->roleIn($teamId);
 
-        if ($role !== 'leader' && !$user->is_org_admin) {
+        if ($role !== 'leader' && !$user->isAdminOfActiveOrg()) {
             abort(403, 'Hanya leader yang bisa carry forward to-dos.');
         }
 
@@ -95,7 +95,7 @@ class ToDoController extends Controller
         $user   = request()->user();
         $role   = $user->roleIn($teamId);
 
-        if ($role !== 'leader' && !$user->is_org_admin && $todo->owner_id !== $user->id) {
+        if ($role !== 'leader' && !$user->isAdminOfActiveOrg() && $todo->owner_id !== $user->id) {
             abort(403, 'Kamu hanya bisa menghapus to-do milikmu sendiri.');
         }
 

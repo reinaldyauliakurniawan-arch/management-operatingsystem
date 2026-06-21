@@ -35,7 +35,7 @@ class RockController extends Controller
         $teamId = TenantContext::teamId();
         $role   = $request->user()->roleIn($teamId);
 
-        if ($role !== 'leader' && !$request->user()->is_org_admin) {
+        if ($role !== 'leader' && !$request->user()->isAdminOfActiveOrg()) {
             abort(403, 'Hanya leader yang bisa membuat Rock.');
         }
 

@@ -23,7 +23,7 @@ class LeadershipAssessmentController extends Controller
     {
         $teamId = TenantContext::teamId();
         $role   = Auth::user()->roleIn($teamId);
-        if ($role !== 'leader' && !Auth::user()->is_org_admin) {
+        if ($role !== 'leader' && !Auth::user()->isAdminOfActiveOrg()) {
             abort(403, 'Hanya leader.');
         }
     }
@@ -453,6 +453,9 @@ class LeadershipAssessmentController extends Controller
     public function destroyType(LeadershipType $type)
     {
         $this->requireLeader();
+        // ponytail: audit log — rubrik changes affect all assessments that
+        // use this type; deletion is destructive.
+        $typeName = $type->name;
         $type->delete();
 
         activity('rubrik-admin')

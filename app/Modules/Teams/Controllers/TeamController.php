@@ -19,7 +19,7 @@ class TeamController extends Controller
 {
     private function requireOrgAdmin(): void
     {
-        if (!Auth::user()->is_org_admin) {
+        if (!Auth::user()->isAdminOfActiveOrg()) {
             abort(403, 'Hanya org admin yang bisa mengelola team.');
         }
     }
@@ -110,8 +110,27 @@ class TeamController extends Controller
         ]);
 
         if (array_key_exists('is_org_admin', $validated)) {
-            $user->is_org_admin = (bool) $validated['is_org_admin'];
-            $user->save();
+            // ponytail: promote/demote via the per-org pivot (was global
+            // is_org_admin column — closed C2 cross-tenant escalation).
+            $wantAdmin = (bool) $validated['is_org_admin'];
+            if ($wantAdmin) {
+                $user->promoteToOrgAdmin($orgId);
+            } else {
+                $user->demoteFromOrgAdmin($orgId);
+            }
+            // ponytail: is_org_admin changed → invalidate target user's sessions
+            // so the cached HandleInertiaRequests::isOrgAdmin gets refreshed.
+            \App\Services\SessionInvalidator::forUser($user->id);
+
+            // ponytail: audit log — promote/demote is a security-sensitive change.
+            activity('admin-action')
+                ->causedBy(Auth::user())
+                ->performedOn($user)
+                ->withProperties([
+                    'organization_id' => $orgId,
+                    'granted' => $wantAdmin,
+                ])
+                ->log($wantAdmin ? 'Promoted to org admin' : 'Demoted from org admin');
         }
 
         return back()->with('message', 'User diperbarui.');
@@ -126,7 +145,14 @@ class TeamController extends Controller
 
         // ponytail: invalidate all sessions for the user after password reset.
         $user->update(['password' => Hash::make($validated['password'])]);
-        DB::table('sessions')->where('user_id', $user->id)->delete();
+        \App\Services\SessionInvalidator::forUser($user->id);
+
+        // ponytail: audit log — who reset whose password, when.
+        activity('admin-action')
+            ->causedBy(Auth::user())
+            ->performedOn($user)
+            ->withProperties(['target_email' => $user->email])
+            ->log('Password reset for user');
 
         return back()->with('message', 'Password direset.');
     }
@@ -138,10 +164,16 @@ class TeamController extends Controller
 
         // ponytail: invalidate sessions + soft-delete memberships to keep audit trail.
         DB::transaction(function () use ($user) {
-            DB::table('sessions')->where('user_id', $user->id)->delete();
+            \App\Services\SessionInvalidator::forUser($user->id);
             TeamMember::where('user_id', $user->id)->delete();
             $user->delete();
         });
+
+        // ponytail: audit log — account deletion is irreversible.
+        activity('admin-action')
+            ->causedBy(Auth::user())
+            ->withProperties(['deleted_email' => $user->email])
+            ->log('User account deleted');
 
         return back()->with('message', 'User dihapus.');
     }
@@ -160,13 +192,20 @@ class TeamController extends Controller
             'role'          => 'nullable|in:leader,member,tutor',
         ]);
 
-        DB::transaction(function () use ($validated) {
+        DB::transaction(function () use ($validated, $orgId) {
             $user = User::create([
                 'name'         => $validated['name'],
                 'email'        => $validated['email'],
                 'password'     => Hash::make($validated['password']),
+                // ponytail: legacy column kept as cache; actual admin grant
+                // happens via promoteToOrgAdmin() below for the active org.
                 'is_org_admin' => $validated['is_org_admin'] ?? false,
             ]);
+
+            // ponytail: if caller wants admin, grant it via per-org pivot.
+            if (!empty($validated['is_org_admin'])) {
+                $user->promoteToOrgAdmin($orgId);
+            }
 
             if (!empty($validated['team_id']) && !empty($validated['role'])) {
                 TeamMember::create([
@@ -266,6 +305,9 @@ class TeamController extends Controller
                 'role'    => 'leader',
             ]);
         }
+
+        // ponytail: new leader's session cache of teamRole needs refresh.
+        \App\Services\SessionInvalidator::forUser((int) $validated['user_id']);
 
         return back()->with('message', 'Leader di-assign.');
     }

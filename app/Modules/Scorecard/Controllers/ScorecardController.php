@@ -92,7 +92,7 @@ class ScorecardController extends Controller
         abort_if(!$teamId, 403, 'Tidak ada active team.');
         $role   = $request->user()->roleIn($teamId);
 
-        if ($role !== 'leader' && !$request->user()->is_org_admin) {
+        if ($role !== 'leader' && !$request->user()->isAdminOfActiveOrg()) {
             abort(403, 'Hanya leader yang bisa membuat metric.');
         }
 
@@ -116,7 +116,7 @@ class ScorecardController extends Controller
         abort_unless($metric->team_id === $teamId, 403, 'Metric bukan milik team aktif.');
         $role   = $request->user()->roleIn($teamId);
 
-        if ($role !== 'leader' && !$request->user()->is_org_admin) {
+        if ($role !== 'leader' && !$request->user()->isAdminOfActiveOrg()) {
             abort(403, 'Hanya leader yang bisa mengedit metric.');
         }
 
@@ -140,7 +140,7 @@ class ScorecardController extends Controller
         $user   = request()->user();
         $role   = $user->roleIn($teamId);
 
-        if ($role !== 'leader' && !$user->is_org_admin) {
+        if ($role !== 'leader' && !$user->isAdminOfActiveOrg()) {
             abort(403, 'Hanya leader yang bisa menghapus metric.');
         }
 
@@ -195,7 +195,7 @@ class ScorecardController extends Controller
             ->where('team_id', $teamId)
             ->firstOrFail();
 
-        if ($role !== 'leader' && !$request->user()->is_org_admin && $metric->owner_id !== $userId) {
+        if ($role !== 'leader' && !$request->user()->isAdminOfActiveOrg() && $metric->owner_id !== $userId) {
             abort(403, 'Kamu hanya bisa input score untuk metricmu sendiri.');
         }
 

@@ -24,7 +24,7 @@ class L10MeetingController extends Controller
     {
         $teamId = TenantContext::teamId();
         $role = Auth::user()->roleIn($teamId);
-        if ($role !== 'leader' && !Auth::user()->is_org_admin) {
+        if ($role !== 'leader' && !Auth::user()->isAdminOfActiveOrg()) {
             abort(403, 'Hanya leader yang bisa melakukan ini.');
         }
     }
