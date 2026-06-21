@@ -1,10 +1,5 @@
 name: CI
 
-# ponytail: Phase 3 — CI pipeline that runs on every push/PR.
-# Closes the "tests are never run automatically" gap flagged in audit.
-# Three parallel jobs: lint/typecheck (frontend), test (backend), build (frontend bundle).
-# All must pass before merge to main.
-
 on:
   push:
     branches: [main]
@@ -19,9 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ─────────────────────────────────────────────────────────────────────
-  # Backend: PHP + Composer + Pest tests
-  # ─────────────────────────────────────────────────────────────────────
   backend-tests:
     name: Backend (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
@@ -49,11 +41,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: composer-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
+          key: composer-${{ matrix.php }}-${{ hashFiles('composer.json') }}
           restore-keys: composer-${{ matrix.php }}-
 
-       - name: Install Composer dependencies
-         run: composer update --no-interaction --prefer-dist --no-progress
+      - name: Install Composer dependencies
+        run: composer update --no-interaction --prefer-dist --no-progress
 
       - name: Prepare environment
         run: |
@@ -61,21 +53,17 @@ jobs:
           php artisan key:generate
           touch database/database.sqlite
           php artisan migrate --force
-          # ponytail: run seeder so tests have org/team/user data
           php artisan db:seed --force || true
 
       - name: Run tests (Pest)
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
-          run: php artisan test --coverage --min=20 --coverage-text
+        run: php artisan test --coverage --min=20 --coverage-text
 
       - name: Check code style (Pint)
         run: vendor/bin/pint --test
 
-  # ─────────────────────────────────────────────────────────────────────
-  # Frontend: Node + npm + TypeScript check + Vite build
-  # ─────────────────────────────────────────────────────────────────────
   frontend-build:
     name: Frontend (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
@@ -102,12 +90,3 @@ jobs:
 
       - name: Build frontend (Vite + SSR)
         run: npm run build
-
-      - name: Check bundle size (warning threshold)
-        run: |
-          # ponytail: warn if build output exceeds 500KB gzipped
-          BUILD_SIZE=$(du -sh public/build | awk '{print $1}')
-          echo "Build size: $BUILD_SIZE"
-          if [ $(du -sb public/build | awk '{print $1}') -gt 524288000 ]; then
-            echo "::warning::Bundle size > 500MB. Consider code splitting."
-          fi
