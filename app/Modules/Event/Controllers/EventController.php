@@ -287,7 +287,7 @@ class EventController extends Controller
 
     public function store(Request $request)
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
         if ($role !== 'leader') {
@@ -335,7 +335,7 @@ class EventController extends Controller
 
     public function storeBulk(Request $request)
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
         if ($role !== 'leader') abort(403);
@@ -365,7 +365,7 @@ class EventController extends Controller
 
     public function update(Request $request, Event $event)
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
         if ($role !== 'leader') abort(403);
@@ -395,7 +395,7 @@ class EventController extends Controller
     public function markAttended(Request $request, Event $event)
     {
         $userId = Auth::id();
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
         if ($event->team_id !== $teamId) abort(403);
@@ -415,7 +415,7 @@ class EventController extends Controller
 
     public function overrideAttendance(Request $request, Event $event)
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
         if ($role !== 'leader') abort(403);
@@ -435,7 +435,7 @@ class EventController extends Controller
 
     public function destroy(Event $event)
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
         if ($role !== 'leader') abort(403);
