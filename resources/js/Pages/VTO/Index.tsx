@@ -816,7 +816,7 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
                 without needing the destructive useEffect that wiped fields
                 mid-edit when other fields were saved. */}
             <Dialog
-                key={editTarget ? `${editTarget.type}-${editTarget.index ?? 0}` : "closed"}
+                key={editTarget ? editTarget.type : "closed"}
                 open={!!editTarget}
                 onOpenChange={(open) => !open && setEditTarget(null)}
             >
