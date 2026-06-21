@@ -1,353 +1,173 @@
-# Manual Book — Management Operating System (Just Speak) by Reinaldy
+# Management Operating System (Just Speak)
+
+A Laravel 13 + Inertia 2 + React 19 + TypeScript + Tailwind 4 web application implementing the EOS (Entrepreneurial Operating System) framework for organizational management.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Laravel 13 (PHP 8.3+), MySQL/SQLite |
+| Frontend | React 19, TypeScript, Tailwind CSS 4, Inertia.js 2 |
+| UI Components | shadcn/ui (base-ui), Lucide icons |
+| Auth | Laravel Breeze (session-based) |
+| Build | Vite 8, SSR enabled |
+| Testing | Pest 4 (backend), PHPUnit 12 |
+| CI/CD | GitHub Actions (PHP 8.3/8.4 + Node 20/22) |
+
+## Quick Start
+
+```bash
+# Clone
+git clone https://github.com/reinaldyauliakurniakan-arch/management-operatingsystem.git
+cd management-operatingsystem
+
+# Backend
+composer install
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite  # or configure MySQL in .env
+php artisan migrate --force
+php artisan db:seed --force
+
+# Frontend
+npm install
+npm run build
+
+# Serve
+php artisan serve
+# Open http://localhost:8000
+```
+
+## Default Credentials (after seed)
+
+| User | Email | Password | Role |
+|------|-------|----------|------|
+| Alice | alice@acme.com | password | Org Admin + Leader |
+| Bob | bob@acme.com | password | Leader (Sales) + Member (Leadership) |
+| Carol | carol@acme.com | password | Member (Sales) |
 
 ---
 
-## 1. Login & Akses
+## Modules
 
-1. Buka aplikasi di browser
-2. Login dengan email dan password
-3. Jika user hanya terdaftar di **1 team**, sistem otomatis set team tersebut sebagai aktif dan langsung masuk ke **Dashboard**
-4. Jika user terdaftar di **lebih dari 1 team**, sistem akan arahkan ke **team picker** — pilih team yang ingin diakses
-5. Untuk berpindah team, pergi ke menu **Teams** → klik **Switch ke Team Ini** di baris team yang dituju
+### 1. Dashboard
+Role-aware summary: rocks stats, scorecard reds, open issues, overdue todos, upcoming L10 meeting, leaderboard top 3, upcoming events.
 
-> Organisasi dan team sudah dikonfigurasi. User tidak perlu membuat organisasi baru.
+### 2. VTO (Vision/Traction Organizer)
+**Access:** Org Admin or Team Leader (edit), all members (view)
 
----
+Two tabs:
+- **Vision:** Core Values, Core Focus (Purpose + Niche), 10-Year Target, Marketing Strategy (Target Market, 3 Uniques, Proven Process, Guarantee), 3-Year Picture
+- **Traction:** 1-Year Plan, Rocks (link to Rocks module), Issues (link to IDS module)
 
-## 2. Navigasi Utama
+One VTO per organization — all leaders in the same org see the same VTO.
 
-Sidebar kiri berisi menu:
-- **Dashboard** — ringkasan aktivitas
-- **VTO** — Vision/Traction Organizer
-- **Teams** — manajemen team dan user
-- **Accountability Chart** — struktur organisasi
-- **People Analyzer** — evaluasi orang
-- **Scorecard** — metrik mingguan
-- **Issues / IDS** — Issues list
-- **Rocks** — prioritas 90 hari
-- **To-Do** — daftar tugas
-- **L10 Meeting** — meeting mingguan
-- **Leadership Assessment** — assessment kepemimpinan
-- **Events** — jadwal acara
-- **Leaderboard** — peringkat performa
+### 3. Rocks (90-Day Priorities)
+**Access:** All team members (view), Leader (create/delete/update status)
 
-Di mobile, sidebar tersembunyi dan bisa dibuka lewat tombol hamburger di pojok kiri atas.
+- Create rock with title, description, owner, quarter, year, due date
+- Status: On Track, Off Track, Done
+- Milestones: add, toggle complete, delete
+- Owner can update own rocks; leader can update all + change owner
 
----
+### 4. Scorecard
+**Access:** All team members (view + input own metrics), Leader (create/delete metrics + settings)
 
-## 3. VTO (Vision/Traction Organizer)
+- Metrics with goal value, comparison operator (>=, <=, ==), owner, frequency
+- Weekly score input per metric
+- Auto status: green (on track) / red (off track)
+- Settings: Q1 start date + weekly evaluation day
+- Auto-issue creation: 2 consecutive red weeks → Issue auto-created in IDS
 
-**Siapa yang bisa edit:** Org Admin atau Team Leader
+### 5. To-Do
+**Access:** All team members
 
-### Cara mengisi VTO:
-1. Buka menu **VTO**
-2. Halaman terbagi dua tab: **Vision** dan **Traction**
-3. Klik tombol **Edit** di setiap section untuk mengisi data
-4. Isi form di modal yang muncul
-5. Klik **Simpan**
+- Create to-do with title, assignee, due date
+- Link to meeting or issue
+- Toggle complete/incomplete
+- Edit title, owner, due date
+- Carry Forward: leader moves all incomplete to-dos to next week
 
-### Section di tab Vision:
-- **Core Values** — nilai-nilai organisasi (bisa tambah banyak item)
-- **Core Focus** — Purpose/Cause/Passion dan Niche organisasi
-- **10-Year Target** — target besar 10 tahun
-- **Marketing Strategy** — Target Market, 3 Uniques, Proven Process, Guarantee
-- **3-Year Picture** — target date, revenue, profit, measurables, dan gambaran 3 tahun ke depan
+### 6. IDS (Issues — Identify, Discuss, Solve)
+**Access:** All team members (identify + resolve), Leader (delete), Tutor (view only)
 
-### Section di tab Traction:
-- **1-Year Plan** — target date, revenue, profit, measurables, goals tahun ini
-- **Rocks** — link ke modul Rocks
-- **Issues** — link ke modul IDS
+- Create issue with title, description, root cause, solution, priority (0-10), owner
+- Priority levels: High (7-10), Medium (4-6), Low (0-3)
+- Resolve issues (mark as resolved)
+- Auto-created issues from Scorecard repeated reds
 
-> VTO hanya ada 1 per organisasi — semua leader dalam org yang sama melihat VTO yang sama.
+### 7. L10 Meeting
+**Access:** Leader (create/delete/finish), all members (workspace)
 
----
+- Create meeting with title, schedule, attendees
+- Workspace with 7 sections: Segue, Scorecard, Rock Review, Headlines, To-Do Review, IDS, Conclude
+- Start meeting (set started_at)
+- Add To-Do or Issue from within meeting
+- Finish meeting (lock data, set rating 1-10)
+- Read-only after finish
 
-## 4. Rocks (90-Day Priorities)
+### 8. Teams & User Management
+**Access:** Org Admin
 
-**Siapa yang bisa akses:** semua member team; hanya leader yang bisa tambah dan hapus rock
+- **Teams tab:** Create team (name, type, leader, parent team), view members, switch team
+- **Users tab:** Create user, edit user, reset password, delete user, toggle org admin
+- Roles: leader, member, tutor (per-team, not global)
+- Org Admin: per-organization via `organization_user` pivot (not global flag)
 
-### Cara membuat Rock:
-1. Buka menu **Rocks**
-2. Klik **Tambah Rock**
-3. Isi judul, deskripsi (opsional), owner, quarter, year, dan due date
-4. Klik **Simpan Rock**
+### 9. Accountability Chart
+**Access:** Leader or Org Admin
 
-### Status Rock:
-- **On Track** — berjalan sesuai rencana
-- **Off Track** — perlu perhatian
-- **Done** — selesai
+- Visual org chart with seats (positions) and reporting lines
+- Create seat: assign existing user or create new user
+- Edit/delete seats (seat deletion does NOT delete user account)
+- Generate chart from team structure (auto-create seats for all teams + leaders)
 
-### Milestones:
-1. Klik **Detail** di baris rock
-2. Di modal detail, tambah milestone dengan mengetik judul lalu klik **Tambah**
-3. Centang milestone untuk menandai selesai
-4. Klik ✕ untuk menghapus milestone
+### 10. People Analyzer
+**Access:** Leader or Org Admin
 
----
+- Evaluate team members + external candidates using GWC (Get it, Want it, Capacity) + Core Values
+- Core Values pulled from VTO
+- Auto-compute Seat Fit: Right Person Right Seat, Wrong Person Right Seat, Right Person Wrong Seat, Wrong Person Wrong Seat
+- Set Bare Minimum Standard (threshold for +, +/-, -, GWC)
+- View evaluations org-wide (not just active team)
+- Seat selection org-wide (cross-division candidates)
 
-## 5. Scorecard
+### 11. Leadership Assessment
+**Access:** Leader (create cycles, assign, view results), all members (take assessment)
 
-**Siapa yang bisa akses:** semua member team; hanya leader yang bisa tambah dan hapus metrik
+- 360° anonymous assessment: each member assesses others
+- Create assessment cycle (name, period)
+- Assign assessee + leadership type
+- Take assessment: rate each item on rubric scale 1-5
+- Submit is final (cannot re-submit)
+- Results: average score per type + breakdown per item
+- Rubrik admin: create/edit/delete leadership types, items, rubric levels (per-org scoped)
 
-### Cara mengisi Scorecard:
-1. Buka menu **Scorecard**
-2. Pilih quarter (Q1–Q4) di dropdown kanan atas
-3. Klik pada kolom nilai di baris metrik untuk mengisi angka minggu tersebut
-4. Klik di luar kolom untuk menyimpan — status otomatis terhitung: hijau (on track), merah (off track)
+### 12. Events
+**Access:** Leader (create/edit/delete), all members (view + mark attendance)
 
-### Cara menambah Metrik:
-1. Klik **Tambah Metric**
-2. Isi nama, goal value, operator (≥ / ≤ / =), owner, dan frekuensi
-3. Klik **Simpan Metric**
+- Event types: Training, Townhall, L10, Quarterly, Annual, Custom
+- Auto-generated L10/Quarterly/Annual events from Scorecard settings
+- Mark attendance (self), override attendance (leader)
+- View events from other teams in same org (read-only)
+- Bulk event creation
 
-### Scorecard Settings (Leader / Org Admin):
-- Klik ikon ⚙ di kanan atas untuk mengatur **Q1 Start Date** dan **hari evaluasi mingguan**
-- Q2, Q3, Q4 dihitung otomatis per 13 minggu dari Q1 start date
+### 13. Leaderboard
+**Access:** All members (view), Leader (configure + input points)
 
----
-
-## 6. To-Do
-
-**Siapa yang bisa akses:** semua member team
-
-### Cara membuat To-Do:
-1. Buka menu **To-Do**
-2. Klik **Tambah To-Do**
-3. Isi judul, assignee, dan due date
-4. Klik **Simpan**
-5. Centang item untuk menandai selesai
-
-### Carry Forward (Leader):
-Klik **Carry Forward** untuk memindahkan semua to-do yang belum selesai ke minggu berikutnya.
+- Views: All Management, Per Team, All Tutors
+- Parameters: Per Unit, Tiered, Normalized, Auto (from Rocks/Scorecard/Events/Leadership)
+- Configure parameters per scheme (tutor/management)
+- Input points for any org member (not just active team)
+- Recalculate all entries for a quarter
+- Org-wide parameter + member queries (sinkronisasi antar team)
 
 ---
 
-## 7. IDS (Issues — Identify, Discuss, Solve)
-
-**Siapa yang bisa akses:** semua member team
-
-### Cara mengangkat Issue:
-1. Buka menu **Issues / IDS**
-2. Klik **Identify Issue**
-3. Isi judul, deskripsi, prioritas (0–10), dan owner
-4. Klik **Identify**
-
-### Priority level:
-- **High** (7–10)
-- **Medium** (4–6)
-- **Low** (0–3)
-
-### Status Issue:
-- **Open** — belum diselesaikan
-- **Resolved** — sudah diselesaikan; klik **Solve** untuk menandai resolved
-
----
-
-## 8. L10 Meeting
-
-**Siapa yang bisa buat meeting:** Team Leader
-
-### Cara membuat L10 Meeting:
-1. Buka menu **L10 Meeting**
-2. Klik **Buat Meeting**
-3. Isi judul, jadwal, dan pilih peserta
-4. Klik **Simpan**
-
-### Cara menjalankan meeting (Workspace):
-1. Klik **Workspace** di baris meeting
-2. Klik **Mulai Meeting**
-3. Navigasi antar section lewat tab di atas: Segue, Scorecard, Rock Review, Headlines, To-Do Review, IDS, Conclude
-4. Di section **To-Do Review** dan **IDS** bisa tambah item baru langsung dari workspace
-5. Di section **Conclude**, isi catatan penutup dan rating (1–10)
-6. Klik **Akhiri Meeting** — semua data terkunci setelah ini
-
-> Meeting yang sudah diakhiri tetap bisa dibuka dalam mode read-only.
-
----
-
-## 9. Teams & User Management
-
-**Siapa yang bisa akses:** Org Admin
-
-### Tab Teams — Kelola Team:
-1. Buka menu **Teams**
-2. Klik **+ Buat Team** untuk membuat team baru
-3. Isi nama, tipe (Leadership / Departmental / Project), pilih leader, dan parent team (opsional)
-4. Klik chevron ▼ di baris team untuk melihat daftar anggota
-5. Klik **+ Tambah Anggota** untuk menambah user ke team dan assign role
-6. Klik **Edit Role** di baris anggota untuk mengubah role mereka
-7. Klik **Hapus** di baris anggota untuk mengeluarkan mereka dari team (akun tidak ikut terhapus)
-8. Klik **Switch ke Team Ini** untuk berpindah ke team lain
-
-### Tab Users — Kelola Akun:
-1. Klik tab **Users** di halaman Teams
-2. Klik **+ Buat User** untuk membuat akun baru
-3. Isi nama, email, password, centang **Jadikan Org Admin** jika perlu
-4. Opsional: assign langsung ke team dan pilih role-nya
-5. Klik **⋮** di baris user untuk:
-   - **Edit** — ubah nama, email, atau status org admin
-   - **Reset Password** — set password baru untuk user tersebut
-   - **Hapus** — hapus akun permanen (tidak bisa hapus akun sendiri)
-
-### Perbedaan Role:
-| Role | Lingkup | Keterangan |
-|---|---|---|
-| Org Admin | Seluruh sistem | Bisa manage semua team, user, dan organisasi |
-| Leader | Per team | Bisa manage anggota dan konten di team-nya |
-| Member | Per team | Akses standar |
-| Tutor | Per team | Akses khusus tutor |
-
-> Satu user bisa menjadi leader di satu team dan member di team lain secara bersamaan.
-
----
-
-## 10. Accountability Chart
-
-**Siapa yang bisa edit:** Org Admin atau Team Leader
-
-### Cara menggunakan:
-1. Buka menu **Accountability Chart**
-2. Toggle **Tim Saya** untuk melihat chart team aktif, atau **Seluruh Org** untuk melihat semua team
-3. Chart ditampilkan sebagai pohon hierarki dari atas ke bawah
-
-### Cara menambah Seat:
-1. Klik **+ Tambah Seat**
-2. Pilih tab **User yang Ada** atau **Buat User Baru**
-3. **User yang Ada** — isi nama posisi, responsibilities (satu per baris), pilih user, dan parent seat
-4. **Buat User Baru** — isi nama lengkap, email, role di team, nama posisi, dan parent seat. Password default: `member123`
-5. Klik **Simpan Seat**
-
-### Cara edit atau hapus Seat:
-- Hover di atas card seat — tombol **Edit** dan **Hapus** akan muncul di pojok kanan atas card
-- Hapus seat tidak menghapus akun user yang terhubung
-
----
-
-## 11. People Analyzer
-
-**Siapa yang bisa akses:** Team Leader
-
-Digunakan untuk mengevaluasi anggota tim berdasarkan GWC (Get it, Want it, Capacity) dan Core Values organisasi.
-
-### Cara membuat Evaluasi:
-1. Buka menu **People Analyzer**
-2. Klik **+ Buat Evaluasi**
-3. Pilih user yang dievaluasi (Evaluatee)
-4. Isi periode (opsional, misal: Q3 2025)
-5. Isi GWC Assessment — pilih Y atau N untuk masing-masing:
-   - **Get it** — paham peran dan ekspektasi
-   - **Want it** — mau dan termotivasi
-   - **Capacity** — mampu secara waktu dan kapasitas
-6. Tambah Core Values dan pilih simbol: **(+)**, **(+/-)**, atau **(-)** untuk setiap value
-7. Isi catatan opsional
-8. Klik **Simpan**
-
-### Hasil Evaluasi:
-Sistem otomatis menghitung **Seat Fit**:
-- **Right Person, Right Seat** — GWC semua Y, core values memenuhi standard
-- **Wrong Person, Right Seat** — GWC tidak memenuhi
-- **Right Person, Wrong Seat** — Core values tidak memenuhi
-- **Wrong Person, Wrong Seat** — keduanya tidak memenuhi
-
-### Atur Bare Minimum Standard:
-1. Klik **Atur Standard**
-2. Tentukan threshold minimum: jumlah minimum (+), maksimum (+/-), maksimum (-), dan GWC minimum
-3. Klik **Simpan Standard**
-
----
-
-## 12. Leadership Assessment
-
-**Siapa yang bisa buat cycle:** Team Leader
-
-Digunakan untuk penilaian kepemimpinan 360° — setiap anggota menilai anggota lain secara anonim.
-
-### Cara membuat Cycle:
-1. Buka menu **Leadership Assessment**
-2. Klik **+ Buat Cycle**
-3. Isi nama cycle (misal: Q3 2025) dan periode opsional
-4. Klik **Buat Cycle**
-
-### Cara assign Assessment:
-1. Klik **+ Assign Assessment**
-2. Pilih cycle, user yang dinilai (assessee), dan tipe leadership
-3. Klik **Assign**
-
-### Cara mengisi Assessment (sebagai assessor):
-1. Di bagian **Assessment Menunggu Kamu**, klik **Nilai Sekarang →**
-2. Untuk setiap item, pilih level rubrik yang sesuai
-3. Semua item harus dijawab sebelum bisa submit
-4. Klik **Submit Assessment Anonim** — jawaban tidak bisa diubah setelah submit
-
-### Melihat Hasil:
-1. Klik **Hasil** di baris assignment
-2. Lihat rata-rata keseluruhan dan breakdown per tipe leadership
-3. Hasil hanya bisa dilihat oleh leader atau setelah cycle ditutup
-
-### Menutup Cycle:
-Klik **Tutup Cycle** — cycle yang ditutup tidak bisa menerima submission baru tapi hasilnya tetap bisa dilihat.
-
----
-
-## 13. Events
-
-**Siapa yang bisa buat event:** Team Leader
-
-### Cara membuat Event:
-1. Buka menu **Events**
-2. Klik **+ Tambah Event**
-3. Isi nama, tipe (Training / Townhall), tanggal, deskripsi (opsional)
-4. Opsional: assign ke user tertentu
-5. Klik **Simpan Event**
-
-### Cara mencatat kehadiran:
-- Sebagai peserta: klik **Hadir** di baris event sebelum tanggal event lewat
-- Sebagai leader: buka **Detail** event, lalu klik **Override** di baris peserta yang belum tercatat hadir
-
----
-
-## 14. Leaderboard
-
-**Siapa yang bisa konfigurasi:** Team Leader atau Org Admin
-
-Menampilkan leaderboard performa seluruh organisasi, bisa difilter per view dan per team. Poin dihitung per kuartal berdasarkan parameter yang dikonfigurasi leader/admin.
-
-### Cara melihat Leaderboard:
-1. Buka menu **Leaderboard**
-2. Pilih **View** di toggle atas:
-   - **All Management** — tampilkan semua anggota non-tutor dari seluruh org, diurutkan poin tertinggi
-   - **Per Team** — tampilkan leaderboard team spesifik; setelah klik Per Team, muncul pill selector nama-nama team — klik team yang ingin dilihat
-   - **All Tutors** — tampilkan semua tutor dari seluruh org, diurutkan poin tertinggi
-3. Pilih quarter (Q1–Q4) dan tahun, lalu klik **Tampilkan**
-4. Di mode All Management dan All Tutors, kolom **Team** menunjukkan asal team tiap anggota
-5. Klik **Detail** di baris anggota untuk melihat breakdown poin per parameter
-
-### Konfigurasi Parameter (Leader / Org Admin):
-1. Klik **Konfigurasi**
-2. Lihat daftar parameter aktif per skema (Tutor / Manajemen)
-3. Klik **Edit** di baris parameter untuk ubah nama, tipe input, atau config:
-   - **Per Unit** — isi bobot per unit (negatif = penalti)
-   - **Tiered** — isi bracket nilai minimum → poin via editor bracket
-   - **Normalized** — isi poin maksimum (sistem hitung dari persentase)
-   - **Auto** — pilih sumber data dari modul lain
-4. Untuk tambah parameter baru, isi form di bagian bawah dialog
-5. Perubahan config **tidak mengubah poin masa lalu** — hanya berlaku untuk entry baru
-
-### Input Poin (Leader / Org Admin):
-1. Klik **+ Input Poin**
-2. Pilih quarter, tahun, user, dan parameter
-3. Isi **Nilai Mentah** — angka asli sebelum dikonversi (jumlah sesi, skor TOEFL, persentase kehadiran, dll)
-4. Sistem kalkulasi poin otomatis saat simpan
-5. Klik **Simpan**
-
-### Recalculate:
-Klik **Recalculate** untuk menghitung ulang semua entry di kuartal tertentu menggunakan config parameter terbaru. Ada confirmation dialog — aksi ini tidak bisa dibatalkan.
----
-
-## 15. Roles & Permissions
+## Roles & Permissions
 
 | Fitur | Member | Tutor | Leader | Org Admin |
-|---|---|---|---|---|
+|-------|--------|-------|--------|-----------|
 | Lihat Dashboard | ✓ | ✓ | ✓ | ✓ |
 | Edit VTO | ✗ | ✗ | ✓ | ✓ |
 | Tambah Rock | ✓ | ✗ | ✓ | ✓ |
@@ -362,20 +182,126 @@ Klik **Recalculate** untuk menghitung ulang semua entry di kuartal tertentu meng
 | Edit Accountability Chart | ✗ | ✗ | ✓ | ✓ |
 | People Analyzer | ✗ | ✗ | ✓ | ✓ |
 | Konfigurasi Leaderboard | ✗ | ✗ | ✓ | ✓ |
-| Lihat Leaderboard semua team & org | ✓ | ✓ | ✓ | ✓ |
+| Lihat Leaderboard | ✓ | ✓ | ✓ | ✓ |
 | Manage Team & User | ✗ | ✗ | ✗ | ✓ |
+| Rubrik Admin (Leadership Assessment) | ✗ | ✗ | ✓ | ✓ |
 
 ---
 
-## 16. Tips & Catatan Penting
+## Security Features
 
-- **Session team** — jika akses tiba-tiba redirect ke team picker, pilih ulang team aktif. Ini normal jika session expired
-- **User 1 team = auto-login ke dashboard** — jika user hanya punya 1 team, team picker tidak akan muncul; sistem langsung set team aktif
-- **Tombol kelola tidak muncul?** — pastikan role user di team aktif adalah `leader`. Cek di menu Teams → Edit Role
-- **VTO satu per organisasi** — semua leader dalam org yang sama melihat dan mengedit VTO yang sama
-- **Rocks ditinjau setiap L10 Meeting** — update status rock secara rutin
-- **IDS diselesaikan dalam meeting** — angkat issue, diskusi, dan tandai resolved setelah ada keputusan
-- **Leadership Assessment bersifat anonim** — assessor tidak bisa diidentifikasi dari hasil
-- **Hapus user permanen** — tidak bisa dibatalkan; pastikan sudah dikeluarkan dari semua team terlebih dahulu
-- **Sidebar mobile** — di layar kecil, buka sidebar lewat tombol hamburger (☰) di pojok kiri atas topbar
-- **Default password semua user** — `admin123`; minta masing-masing user ganti password setelah login pertama
+- **Per-organization admin** via `organization_user` pivot (no global admin flag)
+- **Security headers:** CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- **CORS** explicit allowlist (no wildcard)
+- **Rate limiting** on register (5/min), login (10/min), forgot/reset (5/min)
+- **Session encryption** (SESSION_ENCRYPT=true)
+- **Audit logging** via spatie/activitylog (password reset, user delete, admin toggle, seat delete, rubrik delete)
+- **Session invalidation** on role change, password reset, account deletion
+- **IDOR protection** on all entity operations (team_id check)
+- **Multi-tenancy** via TenantContext + OrganizationScope + TeamScope
+- **XSS sanitization** server-side + client-side (hardened for unquoted handlers, javascript: URLs, iframe/object/embed)
+
+---
+
+## Infrastructure
+
+- **CI/CD:** GitHub Actions (PHP 8.3/8.4 + Node 20/22 matrix)
+  - Backend: composer install, migrate, Pest tests with coverage (20% min), Pint lint
+  - Frontend: npm ci, tsc --noEmit, Vite build
+- **Health check:** `/up` probes DB + cache + queue (200/503 JSON)
+- **Backup:** Custom `php artisan backup:run` (mysqldump/sqlite3, 14-day retention, nightly schedule)
+- **Error reporting:** Email alerting via Monolog (ERROR_REPORTING_EMAIL env)
+- **Audit log cleanup:** Activity log pruned after 90 days (nightly schedule)
+- **Dependabot:** Weekly composer + npm + GitHub Actions updates
+
+---
+
+## Testing
+
+| Category | Files | Methods |
+|----------|-------|---------|
+| Security regression | `ProductionGradeSecurityTest.php` | 11 (behavioral: IDOR, authz, per-org admin, security headers, password, throttle) |
+| Module tests | 8 files (Rocks, ToDo, IDS, AccountabilityChart, Event, Leaderboard, Teams, Scorecard) | ~45 (CRUD + authz + IDOR per module) |
+| Existing tests | MultiTenancy, Organization, VTO, L10Meeting, LeadershipAssessment, ScorecardIntegration | ~20 |
+| Auth tests | Breeze default (Registration, Login, PasswordReset, EmailVerification, Profile) | ~15 |
+
+Total: ~91 test methods across 20 test files.
+
+---
+
+## Project Structure
+
+```
+app/
+├── Http/
+│   ├── Controllers/       # Auth, Dashboard, Profile, Health
+│   └── Middleware/        # EnsureHasOrganization, EnsureTeamRole, HandleInertia, SetSecurityHeaders
+├── Models/                # User, Organization
+├── Services/              # TenantContext, SessionInvalidator
+├── Modules/
+│   ├── Auth/              # RegisterUser action
+│   ├── Organization/      # CreateOrganization action + controller
+│   ├── Teams/             # Team + TeamMember controllers, models
+│   ├── VTO/               # VTOPlan model, UpdateVTO action
+│   ├── Rocks/             # Rock + RockMilestone models, CRUD
+│   ├── Scorecard/         # Metric + WeeklyScore models, LogWeeklyScore action
+│   ├── ToDo/              # ToDo model, CarryForwardToDos action
+│   ├── IDS/               # Issue model, CreateIssue action
+│   ├── L10Meeting/        # Meeting model, CreateMeeting action
+│   ├── AccountabilityChart/ # Seat model, CreateUserAndAddToTeam action
+│   ├── PeopleAnalyzer/    # Evaluation + Standard models
+│   ├── LeadershipAssessment/ # Cycle, Assignment, Response, Type, Item, Rubric models
+│   ├── Event/             # Event + EventAttendance models
+│   └── Leaderboard/       # Parameter + Entry models, CalculateLeaderboardScores action
+├── Console/Commands/      # BackupDatabase
+├── Providers/             # AppServiceProvider, ErrorReportingServiceProvider
+└── Helpers/               # activity_polyfill.php (defensive)
+
+database/
+├── migrations/            # 24 migrations (including production-grade indexes + constraints)
+├── seeders/               # DatabaseSeeder, LeadershipDataSeeder, LeaderboardParameterSeeder
+└── factories/             # UserFactory
+
+resources/js/
+├── Pages/                 # 13 module pages + Auth + Profile + Dashboard + Welcome
+├── Components/ui/         # shadcn-style UI primitives (button, card, dialog, etc.)
+├── Layouts/               # AuthenticatedLayout, GuestLayout
+└── Lib/                   # sanitize-html.ts, utils.ts
+
+tests/
+├── Feature/               # 20 test files (security + module + integration)
+└── Unit/                  # ExampleTest
+```
+
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| APP_DEBUG | false | Show stack traces (set true in dev) |
+| SESSION_ENCRYPT | true | Encrypt session data |
+| SESSION_SECURE_COOKIE | null | Set true in HTTPS production |
+| CORS_ALLOWED_ORIGINS | (empty) | Comma-separated origins, no wildcard |
+| ERROR_REPORTING_EMAIL | (empty) | Email for production error alerts |
+| BACKUP_DISK | local | Storage disk for backups (or s3) |
+| BACKUP_NOTIFICATION_EMAIL | (empty) | Email for backup success/failure alerts |
+| ACTIVITYLOG_ENABLED | true | Enable/disable audit logging |
+| ACTIVITYLOG_DELETE_DAYS | 90 | Days to retain audit logs |
+
+---
+
+## Documentation
+
+- [PRODUCTION-GRADE-REPORT.md](PRODUCTION-GRADE-REPORT.md) — Full audit + hardening report
+- [CHANGELOG.md](CHANGELOG.md) — Versioned changelog (Phase 1-3)
+- [RUNBOOK.md](RUNBOOK.md) — Operations + troubleshooting guide
+- [SECURITY.md](SECURITY.md) — Vulnerability disclosure policy
+- [DESIGN.md](DESIGN.md) — Design decisions
+- [PRD.md](PRD.md) — Product requirements document
+
+---
+
+## License
+
+MIT

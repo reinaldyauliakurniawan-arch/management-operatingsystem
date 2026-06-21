@@ -1,4 +1,20 @@
-# PRD Final — Management Operating System
+# PRD — Management Operating System
+
+## Overview
+
+Sistem manajemen operasional berbasis EOS (Entrepreneurial Operating System) untuk Just Speak English. Multi-tenant (Organization + Team), 13 modul bisnis, role-based access control per-team.
+
+## Tech Stack
+
+- **Backend:** Laravel 13 (PHP 8.3+), MySQL/SQLite
+- **Frontend:** React 19, TypeScript, Tailwind CSS 4, Inertia.js 2
+- **UI:** shadcn/ui (base-ui), Lucide icons
+- **Auth:** Laravel Breeze (session-based)
+- **Build:** Vite 8 (SSR enabled)
+- **Testing:** Pest 4 + PHPUnit 12
+- **CI/CD:** GitHub Actions
+
+---
 
 ## ROLES
 
@@ -14,10 +30,13 @@
 
 ## ORG ADMIN
 
-User dengan flag `is_org_admin` (assigned via Spatie Permission):
+User dengan `is_admin = true` di pivot table `organization_user` (per-organization, bukan global):
 - Satu-satunya yang bisa buat team baru, hapus team, assign leader ke team
 - Biasanya Visionary atau Integrator
 - Team Leader hanya bisa manage anggota & konten di dalam team-nya sendiri
+- Org Admin di Org A TIDAK otomatis admin di Org B (closed C2 cross-tenant escalation)
+
+> **Catatan:** Kolom `users.is_org_admin` telah dihapus. Admin status exclusively dari pivot `organization_user`.
 
 ---
 
@@ -25,337 +44,334 @@ User dengan flag `is_org_admin` (assigned via Spatie Permission):
 
 - User hanya ada di 1 team → langsung masuk dashboard, tidak perlu pilih
 - User ada di multiple team → muncul **team picker** saat login
-- Setelah masuk, ada **team switcher di navbar** untuk ganti active team kapan saja
+- Setelah masuk, ada **team switcher di sidebar** untuk ganti active team kapan saja
 - Semua data (Rocks, Scorecard, Leaderboard, dll) otomatis filter berdasarkan `active_team_id` di session
+- `TenantContext` service resolve org/team dari session → fallback DB query (bukan Eloquent, untuk hindari recursion)
+
+---
+
+## MULTI-TENANCY
+
+- **OrganizationScope:** global scope di model yang punya `organization_id` — filter otomik berdasarkan `active_organization_id` dari session
+- **TeamScope:** global scope di model yang punya `team_id` — filter otomatis berdasarkan `active_team_id` dari session
+- Scopes throw exception di production web request kalau tenant id gak bisa di-resolve (fail-closed)
+- Scopes no-op di CLI/artisan (migrations, seeders, tinker)
 
 ---
 
 ## Module 0 — Dashboard
-Deskripsi: Halaman pertama setelah login. Konten role-aware, scoped ke active team. Tidak ada CRUD — pure read, semua data derived dari modul lain.
 
-Leader lihat:
+Halaman pertama setelah login. Konten role-aware, scoped ke active team. Read-only, semua data derived dari modul lain.
 
-Active team indicator + team switcher (jika multi-team)
-Rocks summary team: total, on-track, off-track, done
-Scorecard: jumlah metric merah minggu ini
-Issues: jumlah open issues
-To-Do: jumlah overdue across team
-Upcoming L10 Meeting terdekat (tanggal + countdown)
-Top 3 leaderboard team (semua role)
-Upcoming events (training/townhall dalam 7 hari)
+**Leader lihat:**
+- Active team indicator + team switcher
+- Rocks summary: total, on-track, off-track, done
+- Scorecard: jumlah metric merah minggu ini
+- Issues: jumlah open issues
+- To-Do: jumlah overdue across team
+- Upcoming L10 Meeting terdekat (tanggal + countdown)
+- Top 3 leaderboard team (semua role)
+- Upcoming events (training/townhall dalam 7 hari)
 
-Member lihat:
-
-Active team indicator + team switcher (jika multi-team)
-Rocks milik sendiri: progress per Rock
-To-Do milik sendiri: yang due hari ini & overdue
-Skor leaderboard diri sendiri + posisi ranking di role-nya
-Upcoming events yang di-assign ke dirinya
-
-Tutor lihat:
-
-Active team indicator + team switcher (jika multi-team)
-To-Do milik sendiri: yang due hari ini & overdue
-Skor leaderboard diri sendiri + posisi ranking di role tutor
-Upcoming events yang di-assign ke dirinya
+**Member lihat:**
+- Active team indicator + team switcher
+- Rocks milik sendiri: progress per Rock
+- To-Do milik sendiri yang overdue/due today
+- Scorecard milik sendiri yang merah
+- Top 3 leaderboard team
+- Upcoming events
 
 ---
 
-## MODULE 1 — ORGANIZATION & TEAMS
+## Module 1 — VTO (Vision/Traction Organizer)
 
-**Deskripsi:** Master data struktur organisasi dan tim.
+**Access:** Org Admin atau Team Leader (edit), semua member (view)
+
+Satu VTO per organisasi. Semua leader dalam org yang sama melihat VTO yang sama.
+
+**Tab Vision:**
+- Core Values — nilai-nilai organisasi (array, bisa tambah/hapus)
+- Core Focus — Purpose/Cause/Passion + Niche
+- 10-Year Target — target besar 10 tahun
+- Marketing Strategy — Target Market, 3 Uniques, Proven Process, Guarantee
+- 3-Year Picture — target date, revenue, profit, measurables, look-like bullets
+
+**Tab Traction:**
+- 1-Year Plan — target date, revenue, profit, measurables, goals
+- Rocks — link ke modul Rocks
+- Issues — link ke modul IDS
+
+**Rich text fields** (Core Focus, Target Market, 3 Uniques, Proven Process) disanitize server-side (strip tags + strip all attributes + strip javascript: URLs) dan client-side (DOMParser + attribute removal + comment removal).
+
+**Race condition prevention:** VTO upsert pakai `DB::transaction` + `lockForUpdate` (sebelumnya `firstOrCreate` bisa 500 pada concurrent request).
+
+---
+
+## Module 2 — Rocks (90-Day Priorities)
+
+**Access:** Semua member (view), Leader (create/delete/update status)
 
 **CRUD:**
-- **Create:** Org admin buat organization, buat team, assign leader ke team. Leader assign member ke team-nya, assign role per user per team, bisa via accountability chart add usernya
-- **Read:** Semua user lihat struktur org, leader lihat detail team-nya
-- **Update:** Org admin edit nama org/team. Leader edit member & role di team-nya, pindah member antar team. data tersinkron ke semuanya
-- **Delete:** Org admin hapus team (soft delete, data historis tetap), remove member dari team
+- Create: title, description (opsional), owner (must be team member), quarter, year, due date
+- Update: title, description, owner (leader only), due date
+- Update status: On Track, Off Track, Done (leader only, validated enum)
+- Delete: leader only
+
+**Milestones:**
+- Add milestone: title, due date (opsional), sort order
+- Toggle milestone complete/incomplete (owner or leader)
+- Delete milestone (leader only)
+
+**Route ordering:** Milestone routes defined BEFORE `{rock}` param routes to prevent Laravel matching "milestones" as a rock ID.
 
 ---
 
-## MODULE 2 — VISION / VTO (Vision Traction Organizer)
+## Module 3 — Scorecard
 
-**Deskripsi:** Dokumen visi jangka panjang organisasi (Core Values, Core Focus, 10-Year Target, Marketing Strategy, 3-Year Picture, 1-Year Plan, Rocks, Issues). Scope: per organization (satu VTO untuk seluruh org).
+**Access:** Semua member (view + input own metrics), Leader (create/delete metrics + settings)
+
+**Metric CRUD:**
+- Create: title, owner (team member), goal_value, comparison_operator (>=, <=, ==), frequency (weekly/monthly)
+- Update: leader only
+- Delete: leader only
+
+**Score input:**
+- Member: hanya bisa input score untuk metric yang di-assign ke mereka
+- Leader: bisa input score untuk semua metric
+- Auto-compute status: green (meets goal) / red (misses goal)
+
+**Settings (Leader/Org Admin):**
+- Q1 Start Date — awal kuartal 1 (Q2-Q4 dihitung per 13 minggu)
+- Scorecard Day — hari evaluasi mingguan (0=Sun, 1=Mon, ..., 6=Sat)
+
+**Auto-issue creation:**
+- 2 consecutive red weeks → Issue auto-created di IDS
+- Race condition prevention: `DB::transaction` + `lockForUpdate` pada metric row
+
+**Settings change → Event regeneration:**
+- Scorecard settings change dispatches `RegenerateTeamEvents` queue job (async, no write-on-GET)
+
+---
+
+## Module 4 — To-Do
+
+**Access:** Semua member
 
 **CRUD:**
-- **Create:** Org admin buat/inisiasi VTO per organization
-- **Read:** Semua user lihat VTO (read-only untuk member/tutor)
-- **Update:** Org admin & top leader edit tiap section VTO
-- **Delete:** Tidak ada delete — VTO di-archive jika diganti versi baru
+- Create: title, assignee (team member), due date, optional meeting_id + issue_id
+- Update: title, owner (leader only), due date
+- Toggle complete/incomplete (owner or leader)
+- Delete: owner (own) or leader
+- Carry Forward: leader moves all incomplete to-dos to next week
 
 ---
 
-## MODULE 3 — PEOPLE / ACCOUNTABILITY CHART
+## Module 5 — IDS (Issues — Identify, Discuss, Solve)
 
-**Deskripsi:** Struktur organisasi visual — siapa duduk di seat apa, roles & responsibilities per seat. Scope: per organization dengan sub-chart per team sebagai drill-down dari chart utama.
+**Access:** Semua member (identify + resolve), Tutor (view only), Leader (delete)
 
 **CRUD:**
-- **Create:** Org admin buat seat/posisi di chart utama. Leader buat sub-chart untuk team-nya sebagai drill-down
-- **Read:** Semua user lihat chart utama & sub-chart team-nya
-- **Update:** Org admin edit chart utama. Leader edit sub-chart team-nya, reassign user, update responsibilities
-- **Delete:** Org admin hapus seat di chart utama (soft delete). Leader hapus seat di sub-chart team-nya (soft delete)
+- Create: title, description, root_cause, solution, priority (0-10), owner
+- Update: leader or member (tutor cannot)
+- Resolve: leader or member (tutor cannot)
+- Delete: leader only
+
+**Priority levels:** High (7-10), Medium (4-6), Low (0-3)
 
 ---
 
-## MODULE 4 — PEOPLE ANALYZER / GWC
+## Module 6 — L10 Meeting
 
-**Deskripsi:** Evaluasi per user berdasarkan 3 kriteria: Get it, Want it, Capacity to do it (GWC). Plus Core Values fit. Core values dinilai menggunakan simbol +, +/-, -. Scope: per team. harus ada bare minimum kelulusan untuk menentukan right person in the right seat. misal: 3+, 2+/-, 0 - dan GWC Y/Y/N. jika tidak begini maka di flag apakah wrong person in the right seat, atau right person in the wrong seat, atau wrong person in the wrong seat, atau right person in the right seat. bare minimum sangat tergantung pada kebutuhan perusahaan (customizable)
+**Access:** Leader (create/delete/finish), all members (workspace)
 
 **CRUD:**
-- **Create:** Leader buat evaluasi GWC per user per periode di team-nya atau calon team baru dan bare minimum
-- **Read:** Leader lihat semua evaluasi team-nya, user lihat evaluasi diri sendiri
-- **Update:** Leader update evaluasi dan bare minimum standard
-- **Delete:** Leader hapus evaluasi (soft delete) dan bare minimum yg tadi disebutkan
+- Create: title (opsional), scheduled_at (opsional), attendee_ids (team members)
+- Start: set started_at = now (leader only, cannot start twice)
+- Workspace: 7 sections (Segue, Scorecard, Rock Review, Headlines, To-Do Review, IDS, Conclude)
+- Update section notes: segue_notes, headlines_notes, conclude_notes + rating (1-10)
+- Create To-Do from meeting (linked to meeting_id)
+- Create Issue from meeting (linked to team_id)
+- Finish: set ended_at = now, lock all data (read-only after finish)
+- Delete: leader only
+
+**Workspace data:** Rocks (non-done), Metrics (+ latest score), To-Dos (incomplete), Issues (open) — all scoped to active team.
 
 ---
 
-## MODULE 5 — DATA / SCORECARD
+## Module 7 — Teams & User Management
 
-**Deskripsi:** Weekly measurables per user/seat. Tiap metric punya goal, actual, status (green/yellow/red). Scope: per team. toggle: quarterly. bisa pilih year and quarter, logic nya ada dua: the more the better atau the less the better. misal untuk sales: the more the better kan logic nya. tapi untuk HR, semakin sedikit complain per minggu semakin bagus. ini pake logic the less the better.
+**Access:** Org Admin (per-organization via pivot)
+
+**Teams tab:**
+- Create team: name, type (leadership/departmental/project), leader_user_id (must be org member), parent_team_id (opsional)
+- View team members
+- Switch active team
+- Delete team (hard delete seats, soft delete team, clear session if active team deleted)
+
+**Users tab:**
+- Create user: name, email, password, optional is_org_admin, optional team assignment
+- Edit user: name, email
+- Toggle org admin: via `promoteToOrgAdmin()` / `demoteFromOrgAdmin()` (pivot table, not column)
+- Reset password: set new password + invalidate all sessions
+- Delete user: invalidate sessions + soft delete memberships + delete user (cannot delete self)
+
+**Member management:**
+- Add member to team (org admin or leader)
+- Update member role (leader/admin only)
+- Remove member from team (leader/admin only, cannot remove self)
+
+**Session invalidation:** On role change, password reset, account deletion, org admin toggle — `SessionInvalidator::forUser()` clears all sessions for the target user.
+
+---
+
+## Module 8 — Accountability Chart
+
+**Access:** Leader or Org Admin
 
 **CRUD:**
-- **Create:** Leader buat metric baru, assign ke user/seat, set goal & frekuensi
-- **Read:** Semua user lihat scorecard team aktif, leader lihat semua
-- **Update:** Member/tutor input actual mingguan, leader edit metric
-- **Delete:** Leader hapus/archive metric
+- View chart (tree hierarchy: parent seats → child seats)
+- Create seat: title, responsibilities (array), user_id (existing or new), parent_id
+- Create new user via seat: name, email, role → random 24-char password + reset email link sent
+- Update seat: title, parent_id, user_id, responsibilities
+- Delete seat (does NOT delete user account)
+- Generate from teams: auto-create seats for all teams + leaders + members
+
+**IDOR protection:** All seat operations check `seat.team_id === active_team_id`. Removed `resolveRouteBinding` override that bypassed TeamScope.
 
 ---
 
-## MODULE 6 — ISSUES / IDS
+## Module 9 — People Analyzer
 
-**Deskripsi:** Issue tracking dengan proses Identify, Discuss, Solve. Scope: per team.
+**Access:** Leader or Org Admin
+
+**Features:**
+- Evaluate team members + external candidates
+- GWC Assessment: Get it (Y/N), Want it (Y/N), Capacity (Y/N)
+- Core Values: pulled from VTO, score each (+, +/-, -)
+- Auto-compute Seat Fit: Right Person Right Seat, Wrong Person Right Seat, Right Person Wrong Seat, Wrong Person Wrong Seat
+- Set Bare Minimum Standard (min_plus, max_plus_minus, max_minus, gwc minimum)
+- Evaluations scoped org-wide (leader can see all evaluations in org, not just active team)
+- Seat selection org-wide (cross-division candidates, seat dropdown shows team name)
+- Evaluation team_id follows seat's team_id (not session team_id)
+
+---
+
+## Module 10 — Leadership Assessment
+
+**Access:** Leader (create cycles, assign, view results, rubrik admin), all members (take assessment)
+
+**Cycle CRUD:**
+- Create: name, periode_start, periode_end
+- Update: name, periode (cannot update if closed)
+- Close: set status = closed (no new submissions, results still viewable)
+- Delete: only if no submissions
+
+**Assignment:**
+- Assign assessee + leadership type to cycle
+- Validation: assessee must be team member, leadership_type_id valid
+
+**Assessment:**
+- Take assessment: rate each item on rubric scale 1-5
+- All items must be answered before submit
+- Submit is final (updateOrCreate, idempotent)
+- Cannot assess self
+- Cannot submit items outside assignment scope (validated)
+
+**Results:**
+- Average score per type + breakdown per item
+- Viewable by leader or after cycle closed
+- Anonymous (assessor identity not in results)
+
+**Rubrik Admin (Leader/Org Admin):**
+- Create/edit/delete leadership types, items, rubric levels
+- Per-org scoped (organization_id on all rubrik tables via HasOrganization trait)
+- All routes gated by `requireLeader()`
+
+---
+
+## Module 11 — Events
+
+**Access:** Leader (create/edit/delete), all members (view + mark attendance)
+
+**Event types:** Training, Townhall, L10, Quarterly, Annual, Custom
 
 **CRUD:**
-- **Create:** Semua user buat issue, assign priority, tag ke team aktif
-- **Read:** Semua user lihat issue list team aktif
-- **Update:** Leader/member update status, tambah discussion, mark solved
-- **Delete:** Leader hapus issue (soft delete)
+- Create: name, type (enum validated), custom_type (if custom), event_date, description, agenda, assigned_roles, assigned_user_ids
+- Update: leader only (is_modified flag set for generated events)
+- Delete: leader only
+- Bulk create: multiple events at once (type enum validated)
+
+**Attendance:**
+- Self mark: member marks own attendance
+- Override: leader overrides any member's attendance
+
+**Auto-generation:**
+- L10/Quarterly/Annual events auto-generated from Scorecard settings
+- Regeneration via `RegenerateTeamEvents` queue job (async, no write-on-GET)
+- Generated events that are edited (is_modified=true) are not overwritten
+
+**Cross-team view:** Events from other teams in same org visible read-only in calendar.
 
 ---
 
-## MODULE 7 — TRACTION / ROCKS
+## Module 12 — Leaderboard
 
-**Deskripsi:** 90-day priorities per user. Tiap Rock punya milestone, due date, status. Scope: per team.
+**Access:** All members (view), Leader (configure + input points)
 
-**CRUD:**
-- **Create:** Leader buat Rock, assign ke user, set due date & milestone
-- **Read:** Semua user lihat Rocks team aktif, user lihat Rocks sendiri
-- **Update:** User update progress/milestone, leader update status
-- **Delete:** Leader hapus Rock (soft delete)
+**Views:**
+- All Management: all non-tutor members across org, sorted by total points
+- Per Team: leaderboard for specific team
+- All Tutors: all tutor members across org
 
----
+**Parameters (Leader/Org Admin):**
+- Scheme: tutor / management
+- Input types:
+  - Per Unit: raw_value × weight = points
+  - Tiered: raw_value → bracket → points
+  - Normalized: (raw_value / 100) × max_points = points
+  - Auto: pulled from Rocks/Scorecard/Events/Leadership Assessment modules
+- Org-wide queries (parameters shared across teams in same org)
 
-## MODULE 8 — TRACTION / TO-DO
+**Entries (Leader/Org Admin):**
+- Input points for ANY org member (not just active team — fix HR complaint #5)
+- Entry team_id uses parameter's team_id (not session team_id — fix HR complaint #4)
+- Recalculate: recompute all entries for a quarter using latest parameter config
 
-**Deskripsi:** Weekly action items, biasanya muncul dari L10 Meeting. Scope: per team.
-
-**CRUD:**
-- **Create:** Semua user buat to-do, assign ke user, set due date
-- **Read:** Semua user lihat to-do team aktif
-- **Update:** User update status (done/not done)
-- **Delete:** User hapus to-do sendiri, leader hapus semua
-
----
-
-## MODULE 9 — TRACTION / L10 MEETING
-
-**Deskripsi:** Weekly meeting structure (90 menit): Segue, Scorecard review, Rock review, Headlines, To-Do review, IDS, Conclude. Scope: per team. ada tanggal meeting dan jam meeting juga.
-
-**CRUD:**
-- **Create:** Leader buat meeting, set jadwal, assign peserta
-- **Read:** Semua peserta lihat agenda & history meeting
-- **Update:** Leader/fasilitator update tiap section saat meeting berlangsung, tambah issues/to-do dari meeting
-- **Delete:** Leader hapus meeting (soft delete)
+**Performance:** O(sources) queries (was O(N×M)). Batch helpers: batchRocksRates, batchScorecardRates, batchEventsRates, batchLeadershipRates.
 
 ---
 
-## MODULE 10 — LEADERSHIP ASSESSMENT (360°)
+## SECURITY
 
-**Deskripsi:** Penilaian kepemimpinan berbasis 6 leadership types. Assessor = semua anggota team aktif. Tidak ada self-assessment. Cycle dibuat manual oleh leader kapan saja. Scope: per team.
-
-**6 Leadership Types:**
-1. Leading Self
-2. Leading Others
-3. Leading Leaders
-4. Leading Function
-5. Leading Business
-6. Leading Enterprise
-
-Tiap type punya competency items dengan rubric 1–5 + deskripsi per level.
-
-**CRUD:**
-- **Create:**
-  - Leader buat cycle baru (nama cycle, periode)
-  - Leader assign assessee (siapa yang dinilai) + tipe leadership yang dinilai
-  - Sistem otomatis assign semua anggota team sebagai assessor (kecuali assessee itu sendiri)
-- **Read:**
-  - Assessor lihat form penilaian (anonim ke assessee)
-  - Leader lihat progress submission per assessor
-  - Assessee lihat hasil setelah cycle ditutup leader
-  - Leader lihat semua hasil
-- **Update:**
-  - Assessor edit response selama cycle belum ditutup
-  - Leader tutup cycle (lock semua response)
-  - Leader edit nama/periode cycle sebelum ditutup
-- **Delete:**
-  - Leader hapus cycle (soft delete, hanya sebelum ada submission)
+- Per-org admin via `organization_user` pivot (no global `is_org_admin` column)
+- Security headers: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- CORS: explicit allowlist via `CORS_ALLOWED_ORIGINS` env (no wildcard)
+- Rate limiting: register (5/min), login (10/min per email, not IP), forgot/reset (5/min)
+- Session encryption (SESSION_ENCRYPT=true)
+- Audit logging: spatie/activitylog v5 (password reset, user delete, admin toggle, seat delete, rubrik delete)
+- Session invalidation on authz changes
+- IDOR protection via team_id checks on all entity operations
+- XSS sanitization: server-side (strip tags + attributes + javascript:) + client-side (DOMParser + attribute removal)
+- Multi-tenancy: TenantContext + OrganizationScope + TeamScope (fail-closed in production)
+- EnsureTeamRole middleware on all module route groups
+- spatie/laravel-permission uninstalled (dead dependency, replaced by team_members.role enum + per-org pivot)
 
 ---
 
-## MODULE 11 — EVENT (Training & Townhall)
+## INFRASTRUCTURE
 
-**Deskripsi:** Leader/HR input event (training atau townhall). Member/tutor self-report kehadiran. Poin otomatis masuk leaderboard. Scope: per team.
-
-**CRUD:**
-- **Create:** Leader/HR buat event (nama, tipe: training/townhall, tanggal, deskripsi), assign ke role tertentu atau specific users
-- **Read:** Semua user lihat list upcoming & past events di team aktif, leader lihat siapa yang sudah mark attended
-- **Update:** Leader edit detail event sebelum tanggal event, user mark attended (sekali, tidak bisa unmark sendiri), leader bisa override attendance user
-- **Delete:** Leader hapus event (soft delete)
-
----
-
-## MODULE 12 — LEADERBOARD
-
-**Deskripsi:** Sistem performance scoring berbasis poin per kuartal. Scope: per team. Dua skema berjalan paralel:
-- Skema **Tutor** — untuk anggota dengan role `tutor`
-- Skema **Manajemen** — untuk semua role lain (`leader`, `member`)
-
-Semua besaran poin (nilai, threshold, penalti) disimpan di database sebagai config — tidak ada yang di-hardcode. HR bisa ubah kapan saja via UI tanpa coding.
+- CI/CD: GitHub Actions (PHP 8.3/8.4 + Node 20/22)
+- Health check: /up probes DB + cache + queue
+- Backup: custom `backup:run` command (mysqldump/sqlite3, 14-day retention, nightly)
+- Error reporting: email alerting via Monolog (ERROR_REPORTING_EMAIL)
+- Audit log cleanup: 90-day retention (nightly)
+- Dependabot: weekly composer + npm + GitHub Actions updates
 
 ---
 
-### Konsep Inti
+## TESTING
 
-**Parameter** = satu item penilaian (misal: "Training Divisi", "Townhall", "Rocks"). Tiap parameter punya:
-- `scheme` — `tutor` atau `management`
-- `name` — nama tampilan
-- `input_type` — cara kalkulasi poin: `per_unit`, `tiered`, `normalized`, atau `auto`
-- `config` — JSON berisi nilai-nilai relevan per input_type (lihat tabel di bawah)
-- `sort_order` — urutan tampil
-
-**Entry** = satu baris input poin per user per parameter per kuartal. Menyimpan:
-- `raw_value` — angka mentah yang HR input (jumlah sesi, skor TOEFL, persentase, dll)
-- `points` — hasil kalkulasi, dihitung dan disimpan saat entry dibuat, tidak dihitung ulang saat render
-- `quarter` + `year` — periode entry
-
-**Skor kuartal** = SUM(points) semua entry user di kuartal tersebut.
-
-**Prinsip integritas historis:** Perubahan config parameter tidak menyentuh entry lama. Entry lama hanya berubah jika HR trigger Recalculate secara eksplisit per kuartal.
-
----
-
-### input_type dan bentuk config-nya
-
-per_unit: weight positif = additive, negatif = penalti. Contoh: { "weight": 100 } atau { "weight": -10 }
-
-tiered: sistem cari bracket dari atas, ambil yang pertama cocok. Contoh: { "tiers": [{"min":550,"points":150},{"min":500,"points":100},{"min":0,"points":0}] }
-
-normalized: raw_value berupa persentase 0-100. Contoh: { "max_points": 100 }
-
-auto: tarik data dari modul lain sebagai persentase, lalu konversi via tiers atau max_points. Contoh: { "source": "rocks", "tiers": [...] } atau { "source": "leadership", "max_points": 200 }. Source yang valid: rocks, scorecard, events, leadership.
-
----
-
-### Parameter Default — Skema Tutor
-
-| Nama | Input Type | Config |
-|---|---|---|
-| Training | per_unit | {"weight": 100} |
-| Townhall | per_unit | {"weight": 200} |
-| Try Out | tiered | {"tiers": [{"min":550,"points":150},{"min":500,"points":100},{"min":400,"points":70},{"min":0,"points":0}]} |
-| Retention Murid | per_unit | {"weight": 200} |
-| Tag Sosmed JS | per_unit | {"weight": 5} |
-| Komen Sosmed JS | per_unit | {"weight": 2} |
-| Indikator Tambahan 1 | per_unit | {"weight": 0} |
-| Indikator Tambahan 2 | per_unit | {"weight": 0} |
-| Indikator Tambahan 3 | per_unit | {"weight": 0} |
-| Keterlambatan | per_unit | {"weight": -10} |
-| Reschedule / Replace | per_unit | {"weight": -50} |
-
----
-
-### Parameter Default — Skema Manajemen
-
-| Nama | Input Type | Config |
-|---|---|---|
-| Training Divisi | normalized | {"max_points": 100} |
-| Training All Division | per_unit | {"weight": 100} |
-| Townhall | per_unit | {"weight": 200} |
-| Tryout Bahasa | tiered | {"tiers": [{"min":550,"points":150},{"min":450,"points":100},{"min":350,"points":70},{"min":0,"points":0}]} |
-| Post-test Training Divisi | per_unit | {"weight": 150} |
-| Post-test Training All Division | per_unit | {"weight": 150} |
-| Scorecard | auto | {"source":"scorecard","tiers":[{"min":100,"points":500},{"min":80,"points":400},{"min":60,"points":300},{"min":0,"points":150}]} |
-| Rocks / OKR | auto | {"source":"rocks","tiers":[{"min":100,"points":500},{"min":80,"points":400},{"min":60,"points":300},{"min":0,"points":150}]} |
-| Leadership Pipeline | auto | {"source":"leadership","max_points":200} |
-| Kontribusi Ide | per_unit | {"weight": 50} |
-
----
-
-### 12A — Konfigurasi Parameter (oleh Leader atau Org Admin via UI)
-
-**CRUD:**
-- **Create:** HR tambah parameter baru via form di halaman Leaderboard → Konfigurasi. Pilih skema, nama, input_type, lalu isi config via form dinamis
-- **Read:** HR lihat semua parameter aktif per skema beserta config-nya
-- **Update:** HR edit nama, input_type, dan config kapan saja. Perubahan hanya berlaku untuk entry baru; entry lama tidak terpengaruh kecuali HR trigger Recalculate eksplisit
-- **Delete:** HR hapus parameter (soft delete). Entry lama tetap ada di DB tapi tidak terhitung lagi
-
----
-
-### 12B — Input Poin per Kuartal (oleh Leader atau Org Admin)
-
-Leader atau Org Admin memilih quarter (Q1–Q4) dan tahun, lalu input raw_value per parameter per user. Sistem kalkulasi poin saat simpan.
-
-**CRUD:**
-- **Create:** Buka modal Input Poin, pilih quarter, tahun, user, parameter, isi raw_value
-- **Read:** Tabel ranking filter by quarter & year
-- **Update:** Tidak tersedia dari UI — HR delete entry lama lalu input ulang, atau trigger Recalculate
-- **Delete:** Soft delete per entry
-
----
-
-### 12C — Dashboard & Ranking
-
-**Semua user:**
-- Toggle view tiga opsi: **All Management** (semua non-tutor seluruh org), **Per Team** (pilih team spesifik), **All Tutors** (semua tutor seluruh org)
-- Di mode Per Team, muncul sub-filter berupa pill selector nama-nama team dalam org — klik untuk ganti team yang ditampilkan
-- Di mode All Management dan All Tutors, tabel menampilkan kolom Team agar terlihat asal team tiap anggota
-- Di mode Per Team, dua tabel terpisah: Leaderboard Tutor dan Leaderboard Manajemen untuk team yang dipilih
-- Filter by quarter + tahun
-- Klik Detail di baris anggota untuk melihat breakdown poin per parameter
-
-**Leader atau Org Admin:**
-- Tombol Input Poin dan Konfigurasi Parameter
-- Tombol Recalculate — hitung ulang semua entry kuartal tertentu dengan config parameter terbaru
-- Ada confirmation dialog sebelum eksekusi — tidak bisa dibatalkan
-
----
-
-### 12D — Penukaran Poin
-
-**CRUD:**
-- **Create (HR):** Buat katalog reward (nama, deskripsi, poin dibutuhkan, stok). User/tutor ajukan penukaran poin
-- **Read:** HR lihat semua pengajuan, user lihat history penukaran diri sendiri
-- **Update:** HR approve/reject pengajuan. Jika approved, poin terpotong otomatis dari saldo kuartal terakhir
-- **Delete:** HR hapus reward dari katalog (soft delete)
-
----
-
-## KETERHUBUNGAN ANTAR MODUL
-
-```
-Scorecard merah berulang     → otomatis muncul di Issues
-Rocks off-track              → flag di L10 Meeting
-L10 Meeting                  → generate To-Do baru
-Issues solved                → bisa di-link ke Rock
-Leadership Assessment score  → auto-pull ke Leaderboard (source: leadership)
-Rocks completion rate        → auto-pull ke Leaderboard (source: rocks)
-Scorecard green rate         → auto-pull ke Leaderboard (source: scorecard)
-Event attendance             → auto-pull ke Leaderboard (source: events)
-```
-
----
-
-## INTEGRATION ROADMAP (Future)
-
-- Retention murid → API dari ERP eksternal → otomatis jadi auto parameter di Leaderboard
-- Parameter lain dari ERP → tinggal tambah config di DB, tidak perlu coding
+- ~91 test methods across 20 test files
+- Security regression tests (behavioral, not string-matching)
+- Module tests for all 8 core modules (CRUD + authz + IDOR)
+- CI enforces 20% coverage minimum
