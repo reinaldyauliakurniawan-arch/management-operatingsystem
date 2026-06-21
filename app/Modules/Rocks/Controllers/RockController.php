@@ -58,7 +58,7 @@ class RockController extends Controller
     public function updateStatus(Request $request, Rock $rock, UpdateRockStatus $updateRockStatus)
     {
         // FIX: hanya leader yang boleh update status rock (PRD: "leader update status")
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
         if ($role !== 'leader') {
@@ -100,7 +100,7 @@ class RockController extends Controller
     public function storeMilestone(Request $request, Rock $rock)
     {
         // FIX: hanya owner rock atau leader yang boleh tambah milestone
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
         if ($role !== 'leader' && $rock->owner_id !== $request->user()->id) {
@@ -120,7 +120,7 @@ class RockController extends Controller
     public function toggleMilestone(\App\Modules\Rocks\Models\RockMilestone $milestone)
     {
         // FIX: cek ownership via relasi rock, bukan implicit binding langsung ke milestone
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
         $rock   = $milestone->rock;
 
@@ -139,7 +139,7 @@ class RockController extends Controller
 
     public function destroyMilestone(\App\Modules\Rocks\Models\RockMilestone $milestone)
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role   = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
         // FIX: cek team ownership sebelum cek role
@@ -157,7 +157,7 @@ class RockController extends Controller
 
     public function destroy(Rock $rock)
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
         $role = request()->user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
         if ($role !== 'leader') {

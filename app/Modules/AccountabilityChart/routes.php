@@ -13,8 +13,6 @@ Route::get("/accountability-chart", [
 Route::prefix("api/accountability-chart")->group(function () {
     Route::get("/seats", [AccountabilityChartController::class, "apiSeats"])->name("accountability-chart.api.seats");
     Route::get("/users", [AccountabilityChartController::class, "apiUsers"])->name("accountability-chart.api.users");
-    // ponytail: generate-from-teams must be before /{seat} param routes to avoid
-    // Laravel matching 'generate-from-teams' as a {seat} ID.
     Route::post("/generate-from-teams", [AccountabilityChartController::class, "generateFromTeams"])->name("accountability-chart.generate");
     Route::post("/", [AccountabilityChartController::class, "store"])->name("accountability-chart.store");
     Route::patch("/{seat}", [AccountabilityChartController::class, "update"])->name("accountability-chart.update");
