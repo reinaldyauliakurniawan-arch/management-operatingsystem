@@ -41,8 +41,7 @@ class Seat extends Model
         return $this->hasMany(Seat::class, 'parent_id');
     }
 
-    public function resolveRouteBinding($value, $field = null)
-    {
-        return $this->withoutGlobalScopes()->where($field ?? $this->getRouteKeyName(), $value)->firstOrFail();
-    }
+    // ponytail: deleted the resolveRouteBinding override — it bypassed
+    // TeamScope and enabled cross-team IDOR. Default binding now applies
+    // the global scope, which is what we want.
 }

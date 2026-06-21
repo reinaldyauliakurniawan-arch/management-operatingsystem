@@ -57,7 +57,7 @@ class IDSController extends Controller
         $user   = request()->user();
         $role   = $user->roleIn($teamId);
 
-        if (!in_array($role, ['leader', 'member']) && !$user->isAdminOfActiveOrg()) {
+        if (!in_array($role, ['leader', 'member']) && !$user->is_org_admin) {
             abort(403, 'Tutor tidak bisa mengedit issue.');
         }
 
@@ -82,7 +82,7 @@ class IDSController extends Controller
         $user   = request()->user();
         $role   = $user->roleIn($teamId);
 
-        if (!in_array($role, ['leader', 'member']) && !$user->isAdminOfActiveOrg()) {
+        if (!in_array($role, ['leader', 'member']) && !$user->is_org_admin) {
             abort(403, 'Tutor tidak bisa meresolve issue.');
         }
 
@@ -97,7 +97,7 @@ class IDSController extends Controller
         $user   = request()->user();
         $role   = $user->roleIn($teamId);
 
-        if ($role !== 'leader' && !$user->isAdminOfActiveOrg()) {
+        if ($role !== 'leader' && !$user->is_org_admin) {
             abort(403, 'Hanya leader yang bisa menghapus issue.');
         }
 

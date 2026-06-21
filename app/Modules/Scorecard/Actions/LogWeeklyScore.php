@@ -4,27 +4,39 @@ namespace App\Modules\Scorecard\Actions;
 
 use App\Modules\IDS\Models\Issue;
 use App\Modules\Scorecard\Models\WeeklyScore;
+use Illuminate\Support\Facades\DB;
 
 class LogWeeklyScore
 {
     public function execute(array $data): WeeklyScore
     {
-        $score = WeeklyScore::updateOrCreate(
-            [
-                'metric_id'       => $data['metric_id'],
-                'week_start_date' => $data['week_start_date'],
-            ],
-            [
-                'actual_value' => $data['actual_value'],
-                'created_by'   => $data['created_by'] ?? auth()->id(),
-                'updated_by'   => auth()->id(),
-            ]
-        );
+        // ponytail: transaction + lockForUpdate on the metric row prevents the
+        // TOCTOU race in createIssueIfRepeatedRed (two concurrent requests could
+        // each pass the `exists()` check and both create the same issue).
+        return DB::transaction(function () use ($data) {
+            $score = WeeklyScore::updateOrCreate(
+                [
+                    'metric_id'       => $data['metric_id'],
+                    'week_start_date' => $data['week_start_date'],
+                ],
+                [
+                    'actual_value' => $data['actual_value'],
+                    'created_by'   => $data['created_by'] ?? auth()->id(),
+                    'updated_by'   => auth()->id(),
+                ]
+            );
 
-        $score->load('metric');
-        $this->createIssueIfRepeatedRed($score);
+            $score->load('metric');
 
-        return $score;
+            // Lock the metric so concurrent score logs serialize.
+            if ($score->metric) {
+                DB::table('metrics')->where('id', $score->metric_id)->lockForUpdate()->get();
+            }
+
+            $this->createIssueIfRepeatedRed($score);
+
+            return $score;
+        });
     }
 
     private function createIssueIfRepeatedRed(WeeklyScore $score): void

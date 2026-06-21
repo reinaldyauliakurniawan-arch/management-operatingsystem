@@ -22,7 +22,7 @@ class PeopleAnalyzerController extends Controller
         $teamId = TenantContext::teamId();
         $user   = Auth::user();
         $role   = $user->roleIn($teamId);
-        if ($role !== 'leader' && !$user->isAdminOfActiveOrg()) {
+        if ($role !== 'leader' && !$user->is_org_admin) {
             abort(403, 'Hanya leader.');
         }
     }
@@ -35,7 +35,7 @@ class PeopleAnalyzerController extends Controller
         $userId   = Auth::id();
         $user     = Auth::user();
         $role     = $user->roleIn($teamId);
-        $isLeader = $role === 'leader' || $user->isAdminOfActiveOrg();
+        $isLeader = $role === 'leader' || $user->is_org_admin;
 
         // ponytail: scope evaluasi ke seluruh organisasi (bukan cuma team aktif).
         // Sebelumnya leader hanya bisa lihat evaluasi di team aktif — HR mengeluh

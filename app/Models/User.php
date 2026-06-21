@@ -62,18 +62,6 @@ class User extends Authenticatable
     }
 
     /**
-     * ponytail: per-org membership pivot. A user can be admin of some orgs
-     * and a regular member of others — replacing the global is_org_admin
-     * flag that gave admin rights across ALL orgs the user touched.
-     */
-    public function organizations()
-    {
-        return $this->belongsToMany(Organization::class, 'organization_user')
-            ->withPivot('is_admin')
-            ->withTimestamps();
-    }
-
-    /**
      * ponytail: scoped user lookup — replaces the User::all() leak pattern.
      * Always filters by team membership so we never leak users from other tenants.
      */
@@ -87,59 +75,5 @@ class User extends Authenticatable
     public function roleIn(int $teamId): ?string
     {
         return $this->teamMemberships()->where('team_id', $teamId)->value('role');
-    }
-
-    /**
-     * ponytail: per-org admin check via pivot table. Replaces the global
-     * is_org_admin flag for authorization decisions. The legacy column is
-     * kept as a cache (true if user is admin of ANY org) for backwards
-     * compatibility with code we haven't migrated yet.
-     */
-    public function isAdminOf(?int $organizationId): bool
-    {
-        if (!$organizationId) {
-            return false;
-        }
-        return $this->organizations()
-            ->wherePivot('organization_id', $organizationId)
-            ->wherePivot('is_admin', true)
-            ->exists();
-    }
-
-    /**
-     * ponytail: convenience wrapper for the most common pattern — check
-     * admin status for the active organization (from session).
-     */
-    public function isAdminOfActiveOrg(): bool
-    {
-        return $this->isAdminOf(\App\Services\TenantContext::organizationId());
-    }
-
-    /**
-     * Promote this user to admin of the given org. Updates the pivot row,
-     * also flips the legacy is_org_admin cache to true.
-     */
-    public function promoteToOrgAdmin(int $organizationId): void
-    {
-        \DB::table('organization_user')->updateOrInsert(
-            ['organization_id' => $organizationId, 'user_id' => $this->id],
-            ['is_admin' => true, 'updated_at' => now(), 'created_at' => now()],
-        );
-        if (!$this->is_org_admin) {
-            $this->is_org_admin = true;
-            $this->save();
-        }
-    }
-
-    /**
-     * Demote this user from admin of the given org. Does NOT touch the
-     * legacy is_org_admin cache (it's recomputed lazily elsewhere if needed).
-     */
-    public function demoteFromOrgAdmin(int $organizationId): void
-    {
-        \DB::table('organization_user')
-            ->where('organization_id', $organizationId)
-            ->where('user_id', $this->id)
-            ->update(['is_admin' => false, 'updated_at' => now()]);
     }
 }

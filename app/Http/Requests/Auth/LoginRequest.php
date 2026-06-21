@@ -81,6 +81,9 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        // ponytail: throttle per-email only (no IP). The previous email|ip key
+        // locked out legitimate users behind NAT (one office, one IP) when a
+        // single user fat-fingered their password 5 times.
+        return Str::transliterate(Str::lower($this->string('email')));
     }
 }

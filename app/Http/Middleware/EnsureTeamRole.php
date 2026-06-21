@@ -10,10 +10,9 @@ class EnsureTeamRole
 {
     public function handle(Request $request, Closure $next, string ...$roles): mixed
     {
-        // ponytail: org admins of the active org bypass role checks.
-        // Uses the per-org pivot (was global is_org_admin — closed C2).
+        // ponytail: also let org admins through — they have cross-team scope.
         $user = $request->user();
-        if ($user?->isAdminOfActiveOrg()) {
+        if ($user?->is_org_admin) {
             return $next($request);
         }
 

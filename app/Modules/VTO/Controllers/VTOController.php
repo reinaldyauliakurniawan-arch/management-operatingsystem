@@ -39,7 +39,7 @@ class VTOController extends Controller
 
         return Inertia::render('VTO/Index', [
             'vto'     => VTOResource::make($vto)->resolve(),
-            'canEdit' => auth()->user()->isAdminOfActiveOrg()
+            'canEdit' => auth()->user()->is_org_admin
                          || auth()->user()->roleIn($teamId) === 'leader',
         ]);
     }

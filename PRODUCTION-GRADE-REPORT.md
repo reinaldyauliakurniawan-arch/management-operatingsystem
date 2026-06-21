@@ -1,33 +1,12 @@
 # Production-Grade Hardening Report
 
-Branch: `production-grade` (Phase 1) + `production-grade-phase-2` (Phase 2)
-Date: 2026-06-20 (Phase 1) → 2026-06-20 (Phase 2)
+Branch: `production-grade`
+Date: 2026-06-20
 Author: automated audit (Ponytail + ECC skills) applied to `management-operatingsystem` repo.
 
 ---
 
-## TL;DR — Phase 2 status
-
-Phase 2 closes all 10 remaining-work items identified in Phase 1's §9. The repo is now **fully production-grade** across security, performance, UX, audit, error reporting, backup, and infrastructure.
-
-| # | Item | Status | Branch commit |
-|---|---|---|---|
-| 9.1 | Global `is_org_admin` → per-org pivot | ✅ Done (Batch 3) | `5d69d38` |
-| 9.2 | Backfill rubrik `organization_id` | ✅ Done (Batch 1) | `fffb2dd` |
-| 9.3 | Leaderboard N×M optimization | ✅ Done (Batch 2) | `a43bd3e` |
-| 9.4 | Audit log (`spatie/activitylog`) | ✅ Done (Batch 4) | `00a822d` |
-| 9.5 | VTO 18-state overwrite bug | ✅ Done (Batch 2) | `a43bd3e` |
-| 9.6 | Uninstall `spatie/laravel-permission` | ✅ Done (Batch 1) | `fffb2dd` |
-| 9.7 | Error reporting (email + Sentry stub) | ✅ Done (Batch 4) | `00a822d` |
-| 9.8 | Session invalidation on role change | ✅ Done (Batch 1) | `fffb2dd` |
-| 9.9 | Health check proper | ✅ Done (Batch 1) | `fffb2dd` |
-| 9.10 | Backup (`spatie/laravel-backup`) | ✅ Done (Batch 4) | `00a822d` |
-
-**All 10 items complete.**
-
----
-
-## TL;DR — Phase 1 status (for context)
+## TL;DR
 
 This branch closes the **critical blockers** the audit identified across security, multi-tenancy, CRUD correctness, and production hardening. It is **not a complete rewrite** — every fix is the smallest diff that closes a real bug (Ponytail principle: minimum code that works). Some issues are flagged at the end as **remaining work** because they require a product decision, not a code change.
 
@@ -166,71 +145,61 @@ Run with: `php artisan test --filter=ProductionGradeSecurityTest`.
 
 ---
 
-## 9. Remaining Work
+## 9. Remaining Work (NOT in this branch)
 
-**All 10 items below were resolved in Phase 2 (branch `production-grade-phase-2`).**
+These items need a product or infra decision before code can fix them:
 
-See the **TL;DR — Phase 2 status** table at the top of this report for the per-item commit references. Below is the original Phase 1 assessment preserved for context.
+### 9.1 Multi-Tenancy — Global `is_org_admin`
 
-### 9.1 Multi-Tenancy — Global `is_org_admin` ✅ DONE (Phase 2, Batch 3)
+`users.is_org_admin` is still a single boolean. A user who is admin in Org A is admin in every org they have a team membership in. The audit (C2/A4) flagged this as Critical.
 
-`users.is_org_admin` was a single boolean — a user who was admin in Org A was admin in every org they had a team membership in. The audit (C2/A4) flagged this as Critical.
+**Recommended fix:** introduce an `organization_user` pivot with `is_admin` column, deprecate the global flag, backfill from current state. This is a 2-3 day refactor across ~20 controllers. Out of scope for this branch.
 
-**Fixed in Phase 2:** introduced `organization_user` pivot with `is_admin` column (migration `2026_06_20_000003_create_organization_user_pivot.php`), backfilled existing admins per-org, added `User::isAdminOf($orgId)` + `isAdminOfActiveOrg()` helpers, updated `HandleInertiaRequests` to share per-org admin status, replaced all `->is_org_admin` read accesses in 13 controllers + middleware. Legacy column kept as cache for backward compatibility.
+### 9.2 Rubrik Library — Still Global by Default
 
-### 9.2 Rubrik Library — Still Global by Default ✅ DONE (Phase 2, Batch 1)
+The migration adds `organization_id` to the rubrik tables but does **not** backfill existing rows. Existing rubriks remain shared globally (null `organization_id`). New rows written via `LeadershipAssessmentController::storeType/storeItem/storeRubric` do **not** yet set `organization_id` because those methods were not updated to do so in this branch (would have required touching `LeadershipType/Item/Rubric` models + `HasOrganization` trait + seeder).
 
-The Phase 1 migration added `organization_id` to the rubrik tables but did not backfill existing rows. Existing rubriks remained shared globally (null `organization_id`).
+**Recommended fix:** add `HasOrganization` trait to the three rubrik models, update the controller to inject the org id, backfill existing rows with the first org or a sentinel "system" org, then make the column NOT NULL.
 
-**Fixed in Phase 2:** migration `2026_06_20_000002_backfill_rubrik_organization_id.php` backfills NULL organization_id to the first org, cascades down to items + rubrics, sets NOT NULL on MySQL. Added `HasOrganization` trait to `LeadershipType/Item/Rubric` models. `LeadershipAssessmentController::storeType/storeItem/storeRubric` now inject org_id explicitly.
+### 9.3 Performance — Leaderboard N×M
 
-### 9.3 Performance — Leaderboard N×M ✅ DONE (Phase 2, Batch 2)
+`CalculateLeaderboardScores::execute` still does members × parameters queries per call. `DashboardController::__invoke` calls it twice per page load. For a 20-member team with 10 parameters, that's 400+ queries per dashboard load.
 
-`CalculateLeaderboardScores::execute` did members × parameters queries per call. Dashboard called it twice per page load = 400+ queries for a 20-member team.
+**Recommended fix:** eager-load `LeaderboardEntry` per `(team, quarter, year)`, group by `(user_id, parameter_id)` in PHP, then walk the matrix. Pre-compute via a scheduled job and cache.
 
-**Fixed in Phase 2:** rewrote to 1 query for all entries (indexed by `user_id × parameter_id` in PHP), plus 4 batch helpers (`batchRocksRates`, `batchScorecardRates`, `batchEventsRates`, `batchLeadershipRates`) that compute auto-source rates for all users in O(1) queries per source. Dashboard load goes from O(N×M) to O(sources) queries.
+### 9.4 Audit Log
 
-### 9.4 Audit Log ✅ DONE (Phase 2, Batch 4)
+No `spatie/activitylog` or equivalent. Sensitive writes (assign leader, reset password, delete team, edit rubrik) are not logged.
 
-No audit log existed. Sensitive writes (assign leader, reset password, delete team, edit rubrik) were not logged.
+**Recommended fix:** install `spatie/activitylog`, log every write in `Teams/AccountabilityChart/LeadershipAssessment` modules.
 
-**Fixed in Phase 2:** installed `spatie/activitylog`. New migration `2026_06_20_000004_create_activity_log_table.php`. Added `activity()` calls in 4 most security-sensitive write paths: password reset, user deletion, is_org_admin promote/demote, seat deletion, rubrik type deletion. Scheduled `activitylog:clean` daily at 04:00 (90-day retention).
+### 9.5 Frontend — VTO 18-State Overwrite (A8)
 
-### 9.5 Frontend — VTO 18-State Overwrite (A8) ✅ DONE (Phase 2, Batch 2)
+`Pages/VTO/Index.tsx` has 18 `useState` fields all reset on every `vto` prop change. Saving one field can wipe another being edited.
 
-`Pages/VTO/Index.tsx` had 18 `useState` fields all reset on every `vto` prop change. Saving one field wiped another being edited.
+**Recommended fix:** split the page into per-section components (`VisionForm`, `MarketingForm`, `ThreeYearForm`, `OneYearForm`), each with its own `useForm` from Inertia. ~1 day of work.
 
-**Fixed in Phase 2:** removed the destructive `useEffect`, switched to lazy useState initialization (computed once on mount), added `key` to the Dialog so React remounts modal contents each time a different edit target is opened — naturally resetting field states without the overwrite-on-save bug. Removed unused `useEffect` import.
+### 9.6 `spatie/laravel-permission` — Dead Dependency
 
-### 9.6 `spatie/laravel-permission` — Dead Dependency ✅ DONE (Phase 2, Batch 1)
+Package is required in `composer.json`, migration creates 5 tables, but **zero code** uses `HasRoles`/`HasPermissions`. Either implement properly or uninstall + drop the migration.
 
-Package was required in `composer.json`, migration created 5 tables, but zero code used `HasRoles`/`HasPermissions`.
+### 9.7 Error Reporting
 
-**Fixed in Phase 2:** uninstalled. Removed from composer.json, deleted `config/permission.php`, deleted `database/migrations/2026_06_10_153250_create_permission_tables.php`. Project uses simple `team_members.role` enum + per-org admin pivot (item 9.1) — sufficient for current authz model.
+`config/logging.php` defaults to `single` channel. No Sentry/Bugsnag/Slack integration. Production crashes are silent.
 
-### 9.7 Error Reporting ✅ DONE (Phase 2, Batch 4)
+**Recommended fix:** add `sentry/sentry-laravel` and a `sentry` channel; set `LOG_STACK=stderr,daily,sentry` in production env.
 
-`config/logging.php` defaulted to `single` channel. No Sentry/Bugsnag/Slack integration. Production crashes were silent.
+### 9.8 Session Invalidation on Role Change
 
-**Fixed in Phase 2:** new `ErrorReportingServiceProvider` attaches a Monolog handler that emails warning+ level logs to `ERROR_REPORTING_EMAIL`. Zero external dependency. Only active in production/staging. Commented `SENTRY_LARAVEL_DSN` stub in `.env.example` for users who want richer Sentry integration.
+When an org admin demotes a leader to member, the demoted user's session still has the old role until they re-login. Mitigated by `EnsureTeamRole` reading from DB on every request — but the `HandleInertiaRequests` shared `teamRole` is cached for the session lifetime.
 
-### 9.8 Session Invalidation on Role Change ✅ DONE (Phase 2, Batch 1)
+### 9.9 Health Check
 
-When an org admin demoted a leader to member, the demoted user's session still cached the old role until re-login.
+`/up` only checks if the app boots. Doesn't check DB/Redis/queue connectivity.
 
-**Fixed in Phase 2:** new `SessionInvalidator` service. Applied in 6 places where authz state changes: `TeamController::updateUser` (is_org_admin toggle), `resetPassword`, `destroyUser`, `assignLeader`, `TeamMemberController::update` (role change), `TeamMemberController::destroy`. All now call `SessionInvalidator::forUser($targetUserId)` so cached HandleInertiaRequests props refresh on next request.
+### 9.10 Backup
 
-### 9.9 Health Check ✅ DONE (Phase 2, Batch 1)
-
-`/up` only checked if the app booted. Didn't check DB/Redis/queue connectivity.
-
-**Fixed in Phase 2:** new `HealthController` probes DB (PDO + `SELECT 1`), cache (write/read/delete test key), queue (connection resolve). Returns 200 + JSON when all pass, 503 + JSON when any fail. Disabled default Laravel `/up`, registered new one in `routes/web.php`. Suitable for load balancer / uptime monitor polling.
-
-### 9.10 Backup ✅ DONE (Phase 2, Batch 4)
-
-No backup strategy. Manual DB dumps only.
-
-**Fixed in Phase 2:** installed `spatie/laravel-backup`. New `config/backup.php` with sensible defaults (local disk, 7-day all + 16 daily + 8 weekly + 4 monthly retention, 5GB cap). Scheduled nightly: `backup:clean` 01:00, `backup:run` 02:00, `backup:monitor` 03:00. Override `BACKUP_DISK=s3` in production for offsite. Email notifications to `BACKUP_NOTIFICATION_EMAIL` on success/failure.
+No `spatie/laravel-backup`. No scheduled backup. Manual DB dumps only.
 
 ---
 
