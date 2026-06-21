@@ -11,8 +11,6 @@
         "laravel/framework": "^13.8",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
-        "spatie/laravel-activitylog": "^4.10",
-        "spatie/laravel-backup": "^9.2",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {
@@ -28,6 +26,7 @@
         "phpunit/phpunit": "^12.5.12"
     },
     "autoload": {
+        "files": ["app/Helpers/activity_polyfill.php"],
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
