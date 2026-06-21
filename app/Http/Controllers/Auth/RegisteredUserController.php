@@ -37,6 +37,6 @@ class RegisteredUserController extends Controller
 
         $registerUser->execute($validated);
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect(route('organization.create'));
     }
 }
