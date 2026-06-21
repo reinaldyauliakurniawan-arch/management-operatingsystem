@@ -33,7 +33,6 @@ class DatabaseSeeder extends Seeder
             "name" => "Alice",
             "email" => "alice@acme.com",
             "password" => Hash::make("password"),
-            "is_org_admin" => true,
         ]);
 
         $bob = User::create([

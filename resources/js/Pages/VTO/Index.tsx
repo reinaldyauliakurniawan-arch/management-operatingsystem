@@ -247,7 +247,7 @@ type EditTarget =
 
 export default function VTOIndex({ vto }: { vto: VTO | null }) {
     const { auth } = usePage().props as any;
-    const isOrgAdmin = auth.user?.is_org_admin;
+    const isOrgAdmin = auth.isOrgAdmin;
     const isLeader = auth.teamRole === "leader";
     const canEdit = isOrgAdmin || isLeader;
 

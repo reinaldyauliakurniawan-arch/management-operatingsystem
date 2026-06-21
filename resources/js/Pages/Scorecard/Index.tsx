@@ -106,7 +106,7 @@ export default function ScorecardIndex({
 }) {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
-    const isOrgAdmin = auth.user?.is_org_admin;
+    const isOrgAdmin = auth.isOrgAdmin;
     const canManageSettings = isLeader || isOrgAdmin;
     const userId = auth.user.id;
     const [createOpen, setCreateOpen] = useState(false);

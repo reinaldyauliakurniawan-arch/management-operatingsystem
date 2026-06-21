@@ -39,7 +39,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     }
 });
 
-Route::middleware(['web', 'auth', \App\Http\Middleware\EnsureHasOrganization::class])->group(function () {
+Route::middleware(['web', 'auth', \App\Http\Middleware\EnsureHasOrganization::class, 'team.role:leader,member,tutor'])->group(function () {
 
     if (file_exists(base_path('app/Modules/Teams/routes.php'))) {
         require base_path('app/Modules/Teams/routes.php');

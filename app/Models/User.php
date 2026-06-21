@@ -23,7 +23,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'is_org_admin',
     ];
 
     /**
@@ -46,7 +45,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
-            'is_org_admin'      => 'boolean',
         ];
     }
 
@@ -125,10 +123,7 @@ class User extends Authenticatable
             ['organization_id' => $organizationId, 'user_id' => $this->id],
             ['is_admin' => true, 'updated_at' => now(), 'created_at' => now()],
         );
-        if (!$this->is_org_admin) {
-            $this->is_org_admin = true;
-            $this->save();
-        }
+        // is_org_admin column dropped — pivot is sole source of truth.
     }
 
     /**

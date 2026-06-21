@@ -39,8 +39,14 @@ class TeamController extends Controller
             ->pluck('id');
 
         return User::whereHas('teamMemberships', fn($q) => $q->whereIn('team_id', $teamIds))
+            ->leftJoin('organization_user', function ($join) use ($orgId) {
+                $join->on('users.id', '=', 'organization_user.user_id')
+                    ->where('organization_user.organization_id', $orgId);
+            })
+            ->select('users.id', 'users.name', 'users.email', 'users.created_at',
+                \DB::raw('COALESCE(organization_user.is_admin, 0) as is_org_admin'))
             ->orderBy('name')
-            ->get($columns);
+            ->get();
     }
 
     public function index()
@@ -199,7 +205,6 @@ class TeamController extends Controller
                 'password'     => Hash::make($validated['password']),
                 // ponytail: legacy column kept as cache; actual admin grant
                 // happens via promoteToOrgAdmin() below for the active org.
-                'is_org_admin' => $validated['is_org_admin'] ?? false,
             ]);
 
             // ponytail: if caller wants admin, grant it via per-org pivot.

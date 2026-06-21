@@ -98,7 +98,7 @@ export default function TeamsIndex({
     defaultTab?: "teams" | "users";
 }) {
     const { auth } = usePage().props as any;
-    const isOrgAdmin = auth.user?.is_org_admin;
+    const isOrgAdmin = auth.isOrgAdmin;
     const activeTeamId = auth.activeTeamId;
     const currentUserId = auth.user?.id;
 

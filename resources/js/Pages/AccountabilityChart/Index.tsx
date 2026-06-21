@@ -435,7 +435,7 @@ function FlowCanvas({
 export default function AccountabilityChartIndex() {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
-    const isOrgAdmin = auth.user?.is_org_admin;
+    const isOrgAdmin = auth.isOrgAdmin;
     const isEditable = isLeader || isOrgAdmin;
 
     const [seats, setSeats] = useState<Seat[]>([]);
