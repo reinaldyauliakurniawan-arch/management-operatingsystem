@@ -74,6 +74,36 @@ class ToDoController extends Controller
         return back();
     }
 
+
+    /**
+     * Update a ToDo's title, owner, or due date.
+     */
+    public function update(Request $request, ToDo $todo)
+    {
+        $teamId = TenantContext::teamId();
+        abort_unless($todo->team_id === $teamId, 403, 'To-Do bukan milik team aktif.');
+        $user = $request->user();
+        $role = $user->roleIn($teamId);
+
+        if ($role !== 'leader' && !$user->isAdminOfActiveOrg() && $todo->owner_id !== $user->id) {
+            abort(403, 'Kamu hanya bisa mengedit to-do milikmu sendiri.');
+        }
+
+        $validated = $request->validate([
+            'title'      => 'sometimes|string|max:255',
+            'owner_id'   => ['sometimes', \Illuminate\Validation\Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'due_date'   => 'sometimes|date',
+        ]);
+
+        if ($role !== 'leader' && !$user->isAdminOfActiveOrg()) {
+            unset($validated['owner_id']);
+        }
+
+        $todo->update([...$validated, 'updated_by' => $user->id]);
+
+        return back()->with('message', 'To-Do diperbarui.');
+    }
+
     public function carryForward(CarryForwardToDos $carryForward)
     {
         $teamId = TenantContext::teamId();
