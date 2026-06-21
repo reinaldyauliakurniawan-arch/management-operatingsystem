@@ -50,7 +50,14 @@ class HandleInertiaRequests extends Middleware
                         ->first();
                     return $membership?->role;
                 })() : null,
-                'isOrgAdmin' => $request->user()?->is_org_admin ?? false,
+                // ponytail: per-org admin check via organization_user pivot,
+                // replacing the global is_org_admin flag. A user who is admin
+                // of Org A but only a member of Org B will see isOrgAdmin=true
+                // in Org A and false in Org B — closing the C2 cross-tenant
+                // admin escalation hole from the audit.
+                'isOrgAdmin' => $request->user()
+                    ? $request->user()->isAdminOf(session('active_organization_id'))
+                    : false,
             ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),

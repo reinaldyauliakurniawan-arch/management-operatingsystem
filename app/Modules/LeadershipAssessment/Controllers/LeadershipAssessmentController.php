@@ -149,6 +149,9 @@ class LeadershipAssessmentController extends Controller
             ->get()
             ->map(fn ($cycle) => $this->formatCycle($cycle, $teamId));
 
+        // ponytail: LeadershipType now uses HasOrganization trait, so the
+        // global scope automatically filters to the active org. No more
+        // cross-tenant rubrik leakage.
         $leadershipTypes = LeadershipType::with('items.rubrics')->get();
         $users           = User::inTeam($teamId);
 
@@ -431,6 +434,10 @@ class LeadershipAssessmentController extends Controller
     {
         $this->requireLeader();
         $validated = $request->validate(['name' => 'required|string|max:255']);
+        // ponytail: HasOrganization trait will inject org_id from session,
+        // but we pass it explicitly to make the org scoping visible at the
+        // call site (defense-in-depth).
+        $validated['organization_id'] = TenantContext::organizationId();
         LeadershipType::create($validated);
         return back()->with('message', 'Tipe ditambahkan.');
     }
@@ -447,6 +454,13 @@ class LeadershipAssessmentController extends Controller
     {
         $this->requireLeader();
         $type->delete();
+
+        activity('rubrik-admin')
+            ->causedBy(Auth::user())
+            ->performedOn($type)
+            ->withProperties(['type_name' => $typeName])
+            ->log('Deleted leadership type');
+
         return back()->with('message', 'Tipe dihapus.');
     }
 
@@ -454,6 +468,9 @@ class LeadershipAssessmentController extends Controller
     {
         $this->requireLeader();
         $validated = $request->validate(['title' => 'required|string|max:255']);
+        // ponytail: denormalize organization_id from parent type so we can
+        // query items by org without joining.
+        $validated['organization_id'] = $type->organization_id;
         $type->items()->create($validated);
         return back()->with('message', 'Item ditambahkan.');
     }
@@ -480,9 +497,11 @@ class LeadershipAssessmentController extends Controller
             'level'       => 'required|integer|between:1,5',
             'description' => 'required|string',
         ]);
+        // ponytail: denormalize organization_id from parent item.
+        $validated['organization_id'] = $item->organization_id;
         LeadershipRubric::updateOrCreate(
             ['leadership_item_id' => $item->id, 'level' => $validated['level']],
-            ['description' => $validated['description']]
+            ['description' => $validated['description'], 'organization_id' => $validated['organization_id']]
         );
         return back()->with('message', 'Rubrik disimpan.');
     }

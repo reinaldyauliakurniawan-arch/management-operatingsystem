@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,12 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
+
+// ponytail: override the default Laravel /up (which only checks app boot)
+// with a real health check that probes DB + cache + queue. Load balancers
+// and uptime monitors should hit this endpoint — a 503 means an upstream
+// dependency is down, not just the process.
+Route::get('/up', HealthController::class)->name('health');
 
 Route::get('/dashboard', \App\Http\Controllers\DashboardController::class)
     ->middleware(['auth', 'verified', \App\Http\Middleware\EnsureHasOrganization::class])

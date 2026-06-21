@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Head, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
@@ -255,46 +255,16 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
     const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
     const [processing, setProcessing] = useState(false);
 
-    // Field states for edit modal
+    // Field states for edit modal — initialized lazily from vto prop ONCE.
+    // ponytail: removed the previous useEffect that reset ALL 18 fields
+    // whenever `vto` prop changed. That effect was the root cause of a data-
+    // loss bug: saving one field returned the new vto from the server, which
+    // triggered the effect, which overwrote any other field the user was
+    // still editing. Lazy init from props + Dialog key (see modal render)
+    // gives us a clean reset on open without the overwrite-on-save bug.
     const [coreValues, setCoreValues] = useState<string[]>(
         vto?.core_values ?? [],
     );
-
-    useEffect(() => {
-        if (!vto) return;
-        setCoreValues(vto.core_values ?? []);
-        setCoreFocusPurpose(vto.core_focus_purpose ?? "");
-        setCoreFocusNiche(vto.core_focus_niche ?? "");
-        setTenYearTarget(vto.ten_year_target ?? "");
-        setTargetMarket(vto.target_market ?? "");
-        setThreeUniques(vto.three_uniques ?? "");
-        setProvenProcess(vto.proven_process ?? "");
-        setGuarantee(vto.guarantee ?? "");
-        setThreeYearDate(vto.three_year_date ?? "");
-        setThreeYearRevenue(vto.three_year_revenue ?? "");
-        setThreeYearProfit(vto.three_year_profit ?? "");
-        setThreeYearMeasurables(
-            vto.three_year_measurables
-                ? String(vto.three_year_measurables)
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                : [],
-        );
-        setThreeYearLook(vto.three_year_look ?? []);
-        setOneYearDate(vto.one_year_date ?? "");
-        setOneYearRevenue(vto.one_year_revenue ?? "");
-        setOneYearProfit(vto.one_year_profit ?? "");
-        setOneYearMeasurables(
-            vto.one_year_measurables
-                ? String(vto.one_year_measurables)
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                : [],
-        );
-        setOneYearGoals(vto.one_year_goals ?? []);
-    }, [vto]);
     const [coreFocusPurpose, setCoreFocusPurpose] = useState(
         vto?.core_focus_purpose ?? "",
     );
@@ -840,7 +810,13 @@ export default function VTOIndex({ vto }: { vto: VTO | null }) {
             )}
 
             {/* ════ EDIT MODAL ════ */}
+            {/* ponytail: key by editTarget so React remounts the Dialog content
+                each time a different edit target is opened. This naturally
+                resets all the field states below to the fresh vto prop values,
+                without needing the destructive useEffect that wiped fields
+                mid-edit when other fields were saved. */}
             <Dialog
+                key={editTarget ? `${editTarget.type}-${editTarget.index ?? 0}` : "closed"}
                 open={!!editTarget}
                 onOpenChange={(open) => !open && setEditTarget(null)}
             >

@@ -50,7 +50,7 @@ class VTOController extends Controller
         $user   = $request->user();
         $role   = $user->roleIn($teamId);
 
-        if (!$user->is_org_admin && $role !== 'leader') {
+        if (!$user->isAdminOfActiveOrg() && $role !== 'leader') {
             abort(403, 'Hanya org admin atau leader yang bisa mengubah VTO.');
         }
 

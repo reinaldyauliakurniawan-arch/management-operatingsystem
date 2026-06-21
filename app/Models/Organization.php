@@ -18,6 +18,26 @@ class Organization extends Model
         return $this->hasManyThrough(User::class, Team::class);
     }
 
+    /**
+     * ponytail: direct membership pivot (org_user). Use this for admin
+     * checks and "who belongs to this org" queries — faster than the
+     * hasManyThrough via teams.
+     */
+    public function members()
+    {
+        return $this->belongsToMany(User::class, 'organization_user')
+            ->withPivot('is_admin')
+            ->withTimestamps();
+    }
+
+    public function admins()
+    {
+        return $this->belongsToMany(User::class, 'organization_user')
+            ->wherePivot('is_admin', true)
+            ->withPivot('is_admin')
+            ->withTimestamps();
+    }
+
     public function parent()
     {
         return $this->belongsTo(Organization::class, 'parent_org_id');
