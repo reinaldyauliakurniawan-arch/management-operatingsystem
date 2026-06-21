@@ -10,6 +10,13 @@ use App\Modules\Teams\Controllers\TeamController;
 Route::post('/teams/switch', [TeamSwitchController::class, 'store'])->name('teams.switch');
 Route::get('/team/pick', [TeamSwitchController::class, 'pick'])->name('team.pick');
 
+// ponytail: member routes must be before {team} param routes to avoid
+// Laravel matching 'members' as a {team} ID.
+Route::get('/teams/members', [TeamMemberController::class, 'index'])->name('teams.members.index');
+Route::post('/teams/members', [TeamMemberController::class, 'store'])->name('teams.members.store');
+Route::patch('/teams/members/{member}', [TeamMemberController::class, 'update'])->name('teams.members.update');
+Route::delete('/teams/members/{member}', [TeamMemberController::class, 'destroy'])->name('teams.members.destroy');
+
 // Team CRUD (org admin only)
 Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
 Route::post('/teams', [TeamController::class, 'store'])->name('teams.store');
@@ -23,9 +30,3 @@ Route::post('/users', [\App\Modules\Teams\Controllers\TeamController::class, 'st
 Route::patch('/users/{user}', [\App\Modules\Teams\Controllers\TeamController::class, 'updateUser'])->name('users.update');
 Route::patch('/users/{user}/reset-password', [\App\Modules\Teams\Controllers\TeamController::class, 'resetPassword'])->name('users.resetPassword');
 Route::delete('/users/{user}', [\App\Modules\Teams\Controllers\TeamController::class, 'destroyUser'])->name('users.destroy');
-
-// Member management
-Route::get('/teams/members', [TeamMemberController::class, 'index'])->name('teams.members.index');
-Route::post('/teams/members', [TeamMemberController::class, 'store'])->name('teams.members.store');
-Route::patch('/teams/members/{member}', [TeamMemberController::class, 'update'])->name('teams.members.update');
-Route::delete('/teams/members/{member}', [TeamMemberController::class, 'destroy'])->name('teams.members.destroy');
