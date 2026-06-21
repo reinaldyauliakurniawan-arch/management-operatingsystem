@@ -257,7 +257,7 @@ class LeaderboardController extends Controller
     private function requireLeader(): void
     {
         $user = Auth::user();
-        if ($user->is_org_admin) return;
+        if ($user->isAdminOfActiveOrg()) return;
 
         $teamId = TenantContext::teamId();
         $role   = $user->roleIn($teamId);

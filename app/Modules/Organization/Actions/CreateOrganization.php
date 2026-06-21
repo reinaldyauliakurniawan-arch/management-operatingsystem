@@ -37,7 +37,9 @@ class CreateOrganization
                 'is_integrator' => true,
             ]);
 
-            Auth::user()->update(['is_org_admin' => true]);
+            // ponytail: creator becomes admin of THIS org via the pivot
+            // (was global is_org_admin=true — closed C2 cross-tenant escalation).
+            Auth::user()->promoteToOrgAdmin($organization->id);
 
             session([
                 'active_team_id'         => $team->id,

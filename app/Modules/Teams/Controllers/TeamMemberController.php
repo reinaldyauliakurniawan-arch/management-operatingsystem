@@ -26,7 +26,7 @@ class TeamMemberController extends Controller
 
         // ponytail: enforce membership check — prevent IDOR across teams.
         $user = $request->user();
-        $isMember = $user->is_org_admin
+        $isMember = $user->isAdminOfActiveOrg()
             || TeamMember::where('team_id', $teamId)->where('user_id', $user->id)->exists();
         abort_unless($isMember, 403, 'Anda bukan anggota team ini.');
 
@@ -57,7 +57,7 @@ class TeamMemberController extends Controller
         $user   = Auth::user();
         $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if (!$user->is_org_admin && $role !== 'leader') {
+        if (!$user->isAdminOfActiveOrg() && $role !== 'leader') {
             abort(403, 'Hanya org admin atau leader yang bisa menambah anggota.');
         }
 
@@ -85,7 +85,7 @@ class TeamMemberController extends Controller
         $user   = Auth::user();
         $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if (!$user->is_org_admin && $role !== 'leader') {
+        if (!$user->isAdminOfActiveOrg() && $role !== 'leader') {
             abort(403);
         }
 
@@ -98,6 +98,10 @@ class TeamMemberController extends Controller
 
         $member->update($validated);
 
+        // ponytail: role changed (e.g. leader demoted to member) — invalidate
+        // target user's session so cached HandleInertiaRequests::teamRole refreshes.
+        \App\Services\SessionInvalidator::forUser($member->user_id);
+
         return back()->with('message', 'Role diperbarui.');
     }
 
@@ -107,7 +111,7 @@ class TeamMemberController extends Controller
         $user   = Auth::user();
         $role   = $user->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if (!$user->is_org_admin && $role !== 'leader') {
+        if (!$user->isAdminOfActiveOrg() && $role !== 'leader') {
             abort(403, 'Hanya org admin atau leader yang bisa mengeluarkan anggota.');
         }
 
@@ -115,6 +119,9 @@ class TeamMemberController extends Controller
         abort_if($member->user_id === Auth::id(), 422, 'Tidak bisa mengeluarkan diri sendiri.');
 
         $member->delete();
+
+        // ponytail: removed from team → session cache of userTeams is stale.
+        \App\Services\SessionInvalidator::forUser($member->user_id);
 
         return back()->with('message', 'Anggota dikeluarkan dari team.');
     }
