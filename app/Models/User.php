@@ -60,4 +60,20 @@ class User extends Authenticatable
         return $this->belongsToMany(Team::class, 'team_members')
             ->withPivot('role', 'is_integrator');
     }
+
+    /**
+     * ponytail: scoped user lookup — replaces the User::all() leak pattern.
+     * Always filters by team membership so we never leak users from other tenants.
+     */
+    public static function inTeam(int $teamId, array $columns = ['id', 'name']): \Illuminate\Database\Eloquent\Collection
+    {
+        return static::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))
+            ->orderBy('name')
+            ->get($columns);
+    }
+
+    public function roleIn(int $teamId): ?string
+    {
+        return $this->teamMemberships()->where('team_id', $teamId)->value('role');
+    }
 }

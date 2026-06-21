@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -9,13 +10,19 @@ class EnsureTeamRole
 {
     public function handle(Request $request, Closure $next, string ...$roles): mixed
     {
-        $teamId = session('active_team_id');
+        // ponytail: also let org admins through — they have cross-team scope.
+        $user = $request->user();
+        if ($user?->is_org_admin) {
+            return $next($request);
+        }
+
+        $teamId = TenantContext::teamId();
 
         if (!$teamId) {
             abort(403, 'Tidak ada active team.');
         }
 
-        $role = $request->user()?->teamMemberships()
+        $role = $user?->teamMemberships()
             ->where('team_id', $teamId)
             ->value('role');
 

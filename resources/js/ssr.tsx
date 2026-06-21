@@ -1,11 +1,13 @@
-import { createInertiaApp } from "@inertiajs/react";
-import createServer from "@inertiajs/react/server";
-import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
-import ReactDOMServer from "react-dom/server";
+import { createInertiaApp } from '@inertiajs/react';
+import createServer from '@inertiajs/react/server';
+import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import ReactDOMServer from 'react-dom/server';
 
-import { route } from "../../vendor/tightenco/ziggy";
+// ponytail: use the ziggy-js alias declared in tsconfig.json instead of a
+// two-levels-up relative path that breaks if this file ever moves.
+import { route } from 'ziggy-js';
 
-const appName = import.meta.env.VITE_APP_NAME || "Laravel";
+const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createServer((page) =>
     createInertiaApp({
@@ -15,7 +17,7 @@ createServer((page) =>
         resolve: (name) =>
             resolvePageComponent(
                 `./Pages/${name}.tsx`,
-                import.meta.glob("./Pages/**/*.tsx"),
+                import.meta.glob('./Pages/**/*.tsx'),
             ),
         setup: ({ App, props }) => {
             /* eslint-disable */

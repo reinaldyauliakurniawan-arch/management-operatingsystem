@@ -9,18 +9,20 @@ use App\Modules\Rocks\Models\Rock;
 use App\Modules\Rocks\Requests\CreateRockRequest;
 use App\Modules\Rocks\Resources\RockResource;
 use App\Models\User;
+use App\Services\TenantContext;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class RockController extends Controller
 {
     public function index()
     {
-        $teamId = session('active_team_id');
+        $teamId = TenantContext::teamId();
+        abort_if(!$teamId, 403, 'Tidak ada active team.');
+
         $rocks = Rock::with(['owner', 'milestones'])->where('team_id', $teamId)->latest()->get();
-        $users = $teamId
-            ? User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))->get(['id', 'name'])
-            : User::all(['id', 'name']);
+        $users = User::inTeam($teamId);
 
         return Inertia::render('Rocks/Index', [
             'rocks' => RockResource::collection($rocks),
@@ -30,14 +32,22 @@ class RockController extends Controller
 
     public function store(CreateRockRequest $request, CreateRock $createRock)
     {
-        $teamId = session('active_team_id');
-        $role = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $teamId = TenantContext::teamId();
+        $role   = $request->user()->roleIn($teamId);
 
-        if ($role !== 'leader') {
+        if ($role !== 'leader' && !$request->user()->is_org_admin) {
             abort(403, 'Hanya leader yang bisa membuat Rock.');
         }
 
-        $createRock->execute(array_merge($request->validated(), [
+        $validated = $request->validated();
+        // ponytail: scope owner_id to active team — prevent cross-tenant assignment.
+        if (!empty($validated['owner_id'])) {
+            $exists = User::whereHas('teamMemberships', fn($q) => $q->where('team_id', $teamId))
+                ->where('id', $validated['owner_id'])->exists();
+            abort_unless($exists, 422, 'Owner bukan anggota team aktif.');
+        }
+
+        $createRock->execute(array_merge($validated, [
             'team_id'    => $teamId,
             'created_by' => $request->user()->id,
         ]));
@@ -55,7 +65,7 @@ class RockController extends Controller
             abort(403, 'Hanya leader yang bisa mengubah status Rock.');
         }
 
-        $request->validate(['status' => 'required|string']);
+        $request->validate(['status' => 'required|in:on_track,off_track,done']);
         $updateRockStatus->execute($rock, $request->status);
 
         return back()->with('message', 'Rock status updated');
@@ -63,13 +73,14 @@ class RockController extends Controller
 
     public function update(Request $request, Rock $rock)
     {
-        $teamId = session('active_team_id');
-        $role   = $request->user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $teamId = TenantContext::teamId();
+        abort_unless($rock->team_id === $teamId, 403, 'Rock bukan milik team aktif.');
+        $role   = $request->user()->roleIn($teamId);
 
         $validated = $request->validate([
             'title'       => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'owner_id'    => 'sometimes|exists:users,id',
+            'owner_id'    => ['sometimes', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
             'due_date'    => 'nullable|date',
         ]);
 

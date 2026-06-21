@@ -1,12 +1,13 @@
 {
     "compilerOptions": {
-        "allowJs": true,
+        "allowJs": false,
         "module": "ESNext",
         "moduleResolution": "bundler",
         "jsx": "react-jsx",
         "strict": true,
         "isolatedModules": true,
         "target": "ESNext",
+        "lib": ["DOM", "DOM.Iterable", "ESNext"],
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,

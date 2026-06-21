@@ -65,7 +65,7 @@ const navGroups = [
                 external: false,
             },
             {
-                label: "90D Priorities",
+                label: "Rocks",
                 href: "/rocks",
                 routeName: "rocks.index",
                 icon: Mountain,
