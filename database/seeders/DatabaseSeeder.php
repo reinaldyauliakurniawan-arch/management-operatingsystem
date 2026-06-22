@@ -89,6 +89,35 @@ class DatabaseSeeder extends Seeder
             "role" => "member",
         ]);
 
+        // ponytail: create organization_user pivot rows.
+        // Alice is org admin, Bob + Carol are regular members.
+        // Without these rows, isAdminOfActiveOrg() returns false and
+        // ALL leader/admin-gated operations (delete seat, generate chart,
+        // create rock, etc.) silently fail with 403.
+        \DB::table("organization_user")->insert([
+            [
+                "organization_id" => $org->id,
+                "user_id" => $alice->id,
+                "is_admin" => true,
+                "created_at" => now(),
+                "updated_at" => now(),
+            ],
+            [
+                "organization_id" => $org->id,
+                "user_id" => $bob->id,
+                "is_admin" => false,
+                "created_at" => now(),
+                "updated_at" => now(),
+            ],
+            [
+                "organization_id" => $org->id,
+                "user_id" => $carol->id,
+                "is_admin" => false,
+                "created_at" => now(),
+                "updated_at" => now(),
+            ],
+        ]);
+
         // 5. Seed Data for Leadership Team
         // Set context for seeding
         session(["active_team_id" => $leadershipTeam->id]);
