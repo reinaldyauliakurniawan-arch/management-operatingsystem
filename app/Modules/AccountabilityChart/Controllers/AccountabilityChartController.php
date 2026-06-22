@@ -86,7 +86,8 @@ class AccountabilityChartController extends Controller
         CreateUserAndAddToTeam $createUser,
     ) {
         $this->requireLeader();
-        $teamId = TenantContext::teamId();
+        $teamId  = TenantContext::teamId();
+        $teamIds = Team::withoutGlobalScopes()->where('organization_id', TenantContext::organizationId())->pluck('id');
 
         if ($request->boolean('create_new_user')) {
             $validated = $request->validate([
@@ -94,7 +95,7 @@ class AccountabilityChartController extends Controller
                 'new_user_email'   => 'required|email|unique:users,email',
                 'new_user_role'    => 'required|in:leader,member,tutor',
                 'title'            => 'required|string|max:255',
-                'parent_id'        => ['nullable', Rule::exists('seats', 'id')->where(fn($q) => $q->where('team_id', $teamId))],
+                'parent_id'        => ['nullable', Rule::exists('seats', 'id')->where(fn($q) => $q->whereIn('team_id', $teamIds))],
                 'responsibilities' => 'nullable|array',
             ]);
 
@@ -116,7 +117,7 @@ class AccountabilityChartController extends Controller
 
         $validated = $request->validate([
             'title'            => 'required|string|max:255',
-            'parent_id'        => ['nullable', Rule::exists('seats', 'id')->where(fn($q) => $q->where('team_id', $teamId))],
+            'parent_id'        => ['nullable', Rule::exists('seats', 'id')->where(fn($q) => $q->whereIn('team_id', $teamIds))],
             'user_id'          => 'nullable|exists:users,id',
             'responsibilities' => 'nullable|array',
         ]);
