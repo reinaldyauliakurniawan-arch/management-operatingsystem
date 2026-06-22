@@ -45,35 +45,28 @@ return new class extends Migration {
             });
         }
 
-        // Backfill: for every user with is_org_admin=true, create pivot rows
-        // for every org they have a team membership in.
-        $adminUsers = DB::table('users')->where('is_org_admin', true)->get(['id']);
-        foreach ($adminUsers as $u) {
-            $orgIds = DB::table('team_members')
-                ->join('teams', 'team_members.team_id', '=', 'teams.id')
-                ->where('team_members.user_id', $u->id)
-                ->pluck('teams.organization_id')
-                ->unique();
-
-            foreach ($orgIds as $orgId) {
-                DB::table('organization_user')->updateOrInsert(
-                    ['organization_id' => $orgId, 'user_id' => $u->id],
-                    ['is_admin' => true, 'created_at' => now(), 'updated_at' => now()],
-                );
-            }
-        }
-
-        // ponytail: also backfill non-admin memberships so the pivot doubles as
-        // a denormalized "user belongs to org" index. Optional but cheap.
+        // ponytail: is_org_admin column was dropped — we can't query it here.
+        // Instead: create org_user pivot rows for ALL users based on team memberships.
+        // Admin status is set separately via promoteToOrgAdmin() (e.g. by CreateOrganization action).
         $allMembers = DB::table('team_members')
             ->join('teams', 'team_members.team_id', '=', 'teams.id')
             ->select('team_members.user_id', 'teams.organization_id')
             ->distinct()
             ->get();
         foreach ($allMembers as $m) {
+            // Leaders become admins of their org during migration
+            $isLeader = DB::table('team_members')
+                ->where('user_id', $m->user_id)
+                ->where('team_id', function($q) use ($m) {
+                    $q->select('id')->from('teams')
+                      ->where('organization_id', $m->organization_id);
+                })
+                ->where('role', 'leader')
+                ->exists();
+
             DB::table('organization_user')->updateOrInsert(
                 ['organization_id' => $m->organization_id, 'user_id' => $m->user_id],
-                ['is_admin' => false, 'created_at' => now(), 'updated_at' => now()],
+                ['is_admin' => $isLeader, 'created_at' => now(), 'updated_at' => now()],
             );
         }
     }
