@@ -590,12 +590,17 @@ export default function AccountabilityChartIndex() {
         }
     };
 
+    const [deleteProcessing, setDeleteProcessing] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+
     const destroy = async (id: number) => {
+        setDeleteProcessing(true);
+        setDeleteError(null);
         try {
             await axios.delete(`/api/accountability-chart/${id}`);
+            // Close dialog IMMEDIATELY after successful delete
             setDeleteId(null);
-            // ponytail: optimistic update — remove seat from local state immediately
-            // so UI updates without waiting for fetchSeats (which may get cached response).
+            // Optimistic update — remove seat from local state
             setSeats(prev => {
                 const removeSeat = (list: Seat[]): Seat[] =>
                     list.filter(s => s.id !== id).map(s => ({
@@ -604,12 +609,14 @@ export default function AccountabilityChartIndex() {
                     }));
                 return removeSeat(prev);
             });
-            // Also re-fetch to sync with server (with cache-buster).
+            // Re-fetch to sync with server
             await fetchSeats();
-        } catch (e) {
+        } catch (e: any) {
+            const msg = e.response?.data?.message || e.message || "Gagal menghapus seat";
+            setDeleteError(msg);
             console.error("Delete failed", e);
-            // If delete failed, re-fetch to restore correct state.
-            await fetchSeats();
+        } finally {
+            setDeleteProcessing(false);
         }
     };
 
@@ -787,11 +794,29 @@ export default function AccountabilityChartIndex() {
 
             <ConfirmDialog
                 open={deleteId !== null}
-                onOpenChange={(open) => !open && setDeleteId(null)}
+                onOpenChange={(open) => {
+                    if (!open && !deleteProcessing) {
+                        setDeleteId(null);
+                        setDeleteError(null);
+                    }
+                }}
                 title="Hapus Seat"
                 description="Seat ini akan dihapus. Anggota yang terhubung tidak ikut terhapus."
                 onConfirm={() => deleteId && destroy(deleteId)}
+                processing={deleteProcessing}
+                confirmLabel={deleteProcessing ? "Menghapus..." : "Hapus"}
             />
+            {deleteError && (
+                <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-error-container px-lg py-md text-error-text shadow-lg">
+                    {deleteError}
+                    <button
+                        onClick={() => setDeleteError(null)}
+                        className="ml-sm text-error hover:underline"
+                    >
+                        Tutup
+                    </button>
+                </div>
+            )}
         </AuthenticatedLayout>
     );
 }
