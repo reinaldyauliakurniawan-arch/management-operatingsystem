@@ -126,20 +126,29 @@ class AccountabilityChartController extends Controller
         return response()->json(['message' => 'Seat added']);
     }
 
-    public function update(Request $request, Seat $seat)
+    public function update(Request $request, int $seat)
     {
         $this->requireLeader();
-        $teamId = TenantContext::teamId();
-        abort_unless($seat->team_id === $teamId, 403, 'Seat bukan milik team aktif.');
+
+        $seatModel = Seat::withoutGlobalScopes()->findOrFail($seat);
+        $orgId = TenantContext::organizationId();
+        $orgTeamIds = Team::withoutGlobalScopes()
+            ->where('organization_id', $orgId)
+            ->pluck('id');
+        abort_unless(
+            $orgTeamIds->contains($seatModel->team_id),
+            403,
+            'Seat bukan milik organisasi aktif.'
+        );
 
         $validated = $request->validate([
             'title'            => 'sometimes|string|max:255',
-            'parent_id'        => ['nullable', Rule::exists('seats', 'id')->where(fn($q) => $q->where('team_id', $teamId))],
+            'parent_id'        => ['nullable', Rule::exists('seats', 'id')->whereIn('team_id', $orgTeamIds)],
             'user_id'          => 'nullable|exists:users,id',
             'responsibilities' => 'nullable|array',
         ]);
 
-        $seat->update($validated);
+        $seatModel->update($validated);
 
         return response()->json(['message' => 'Seat updated']);
     }
@@ -196,22 +205,35 @@ class AccountabilityChartController extends Controller
         return response()->json(['message' => 'Chart berhasil di-generate dari data tim.']);
     }
 
-    public function destroy(Seat $seat)
+    public function destroy(int $seat)
     {
         $this->requireLeader();
-        $teamId = TenantContext::teamId();
-        abort_unless($seat->team_id === $teamId, 403, 'Seat bukan milik team aktif.');
 
-        // ponytail: audit log seat deletion (title captured before delete).
-        $seatTitle = $seat->title;
-        $seatUserId = $seat->user_id;
-        $seat->delete();
+        // ponytail: fetch seat WITHOUT global scopes — the big-picture view
+        // shows seats from all teams in the org, but TeamScope on route
+        // model binding would filter by active_team_id only and 404.
+        $seatModel = Seat::withoutGlobalScopes()->findOrFail($seat);
+
+        // Verify the seat belongs to a team in the active org.
+        $orgId = TenantContext::organizationId();
+        $orgTeamIds = Team::withoutGlobalScopes()
+            ->where('organization_id', $orgId)
+            ->pluck('id');
+        abort_unless(
+            $orgTeamIds->contains($seatModel->team_id),
+            403,
+            'Seat bukan milik organisasi aktif.'
+        );
+
+        $seatTitle = $seatModel->title;
+        $seatUserId = $seatModel->user_id;
+        $seatModel->delete();
 
         activity('org-chart')
             ->causedBy(Auth::user())
-            ->performedOn($seat)
+            ->performedOn($seatModel)
             ->withProperties([
-                'team_id' => $teamId,
+                'team_id' => $seatModel->team_id,
                 'seat_title' => $seatTitle,
                 'seat_user_id' => $seatUserId,
             ])
