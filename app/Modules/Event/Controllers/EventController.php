@@ -200,6 +200,12 @@ class EventController extends Controller
         $isLeader = $role === 'leader' || Auth::user()->isAdminOfActiveOrg();
         $team     = Team::withoutGlobalScopes()->find($teamId);
 
+        // org-wide context — dipakai untuk members dropdown & attendance org-wide
+        $orgId      = $team?->organization_id;
+        $orgTeamIds = $orgId
+            ? Team::withoutGlobalScopes()->where('organization_id', $orgId)->pluck('id')
+            : collect([$teamId]);
+
         // ponytail: removed the write-on-GET auto-regenerate loop. It was a
         // race condition (multiple users hitting /events would each fire a
         // delete+insert) plus write amplification across all org teams. Event
@@ -248,7 +254,13 @@ class EventController extends Controller
                 ];
             });
 
-        $users = $isLeader ? User::inTeam($teamId) : collect();
+        // ponytail: users org-wide supaya leader bisa override attendance
+        // member dari tim lain — sinkron dengan cara Leaderboard hitung event rate.
+        $users = $isLeader
+            ? User::whereHas('teamMemberships', fn($q) => $q->whereIn('team_id', $orgTeamIds))
+                ->orderBy('name')
+                ->get(['id', 'name'])
+            : collect();
 
         // Event L10/Quarterly/Annual dari tim lain di organisasi yang sama,
         // ditampilkan read-only di kalender supaya org_admin/leader bisa lihat
@@ -398,7 +410,12 @@ class EventController extends Controller
         $teamId = TenantContext::teamId();
         $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
 
-        if ($event->team_id !== $teamId) abort(403);
+        // ponytail: izinkan self-attendance untuk event lintas tim di org yang sama.
+        $currentTeam = Team::withoutGlobalScopes()->findOrFail($teamId);
+        $orgTeamIds  = Team::withoutGlobalScopes()
+            ->where('organization_id', $currentTeam->organization_id)
+            ->pluck('id');
+        abort_unless($orgTeamIds->contains($event->team_id), 403, 'Event bukan milik organisasi aktif.');
 
         $assignedRoles = $event->assigned_roles ?? [];
         if (!empty($assignedRoles) && ($role === null || !in_array($role, $assignedRoles, true))) {
@@ -416,18 +433,32 @@ class EventController extends Controller
     public function overrideAttendance(Request $request, Event $event)
     {
         $teamId = TenantContext::teamId();
-        $role   = Auth::user()->teamMemberships()->where('team_id', $teamId)->value('role');
+        $user   = Auth::user();
+        $role   = $user->roleIn($teamId);
 
-        if ($role !== 'leader') abort(403);
+        if ($role !== 'leader' && !$user->isAdminOfActiveOrg()) abort(403);
+
+        // ponytail: event dari tim lain di org yang sama boleh di-override.
+        // Sebelumnya guard tolak cross-team → angka Leaderboard (org-wide) tidak
+        // match tampilan Events. Fix ini menyamakan scope keduanya.
+        $currentTeam = Team::withoutGlobalScopes()->findOrFail($teamId);
+        $orgTeamIds  = Team::withoutGlobalScopes()
+            ->where('organization_id', $currentTeam->organization_id)
+            ->pluck('id');
+        abort_unless($orgTeamIds->contains($event->team_id), 403, 'Event bukan milik organisasi aktif.');
 
         $request->validate([
             'user_id'  => 'required|exists:users,id',
-            'attended' => 'required|boolean',
+            'attended' => 'nullable|boolean',
         ]);
+
+        // ponytail: frontend kirim {} tanpa 'attended' — default true karena
+        // tombol Override hanya muncul kalau belum hadir (!a.attended).
+        $attended = $request->has('attended') ? (bool) $request->attended : true;
 
         EventAttendance::updateOrCreate(
             ['event_id' => $event->id, 'user_id' => $request->user_id],
-            ['attended' => $request->attended, 'marked_at' => now(), 'marked_by' => Auth::id()]
+            ['attended' => $attended, 'marked_at' => now(), 'marked_by' => Auth::id()]
         );
 
         return back()->with('message', 'Kehadiran di-override.');
