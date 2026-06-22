@@ -475,7 +475,7 @@ export default function AccountabilityChartIndex() {
 
     const fetchSeats = useCallback(async () => {
         try {
-            const res = await axios.get("/api/accountability-chart/seats");
+            const res = await axios.get(`/api/accountability-chart/seats?_t=${Date.now()}`);
             setSeats(res.data.seats);
         } catch (err) {
             console.error("Failed to fetch seats", err);
@@ -484,7 +484,7 @@ export default function AccountabilityChartIndex() {
 
     const fetchUsers = useCallback(async () => {
         try {
-            const res = await axios.get("/api/accountability-chart/users");
+            const res = await axios.get(`/api/accountability-chart/users?_t=${Date.now()}`);
             setUsers(res.data.users);
         } catch (e) {
             console.error("Failed to fetch users", e);
@@ -594,9 +594,22 @@ export default function AccountabilityChartIndex() {
         try {
             await axios.delete(`/api/accountability-chart/${id}`);
             setDeleteId(null);
+            // ponytail: optimistic update — remove seat from local state immediately
+            // so UI updates without waiting for fetchSeats (which may get cached response).
+            setSeats(prev => {
+                const removeSeat = (list: Seat[]): Seat[] =>
+                    list.filter(s => s.id !== id).map(s => ({
+                        ...s,
+                        children: s.children ? removeSeat(s.children) : s.children,
+                    }));
+                return removeSeat(prev);
+            });
+            // Also re-fetch to sync with server (with cache-buster).
             await fetchSeats();
         } catch (e) {
             console.error("Delete failed", e);
+            // If delete failed, re-fetch to restore correct state.
+            await fetchSeats();
         }
     };
 
