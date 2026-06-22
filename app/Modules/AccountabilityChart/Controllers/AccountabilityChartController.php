@@ -130,20 +130,14 @@ class AccountabilityChartController extends Controller
     {
         $this->requireLeader();
 
-        $seatModel = Seat::withoutGlobalScopes()->findOrFail($seat);
-        $orgId = TenantContext::organizationId();
-        $orgTeamIds = Team::withoutGlobalScopes()
-            ->where('organization_id', $orgId)
-            ->pluck('id');
-        abort_unless(
-            $orgTeamIds->contains($seatModel->team_id),
-            403,
-            'Seat bukan milik organisasi aktif.'
-        );
+        $seatModel = Seat::withoutGlobalScopes()->find($seat);
+        if (!$seatModel) {
+            return response()->json(['message' => 'Seat not found'], 404);
+        }
 
         $validated = $request->validate([
             'title'            => 'sometimes|string|max:255',
-            'parent_id'        => ['nullable', Rule::exists('seats', 'id')->whereIn('team_id', $orgTeamIds)],
+            'parent_id'        => 'nullable|exists:seats,id',
             'user_id'          => 'nullable|exists:users,id',
             'responsibilities' => 'nullable|array',
         ]);
@@ -209,35 +203,27 @@ class AccountabilityChartController extends Controller
     {
         $this->requireLeader();
 
-        // ponytail: fetch seat WITHOUT global scopes — the big-picture view
-        // shows seats from all teams in the org, but TeamScope on route
-        // model binding would filter by active_team_id only and 404.
-        $seatModel = Seat::withoutGlobalScopes()->findOrFail($seat);
+        $seatModel = Seat::withoutGlobalScopes()->find($seat);
+        if (!$seatModel) {
+            return response()->json(['message' => 'Seat not found'], 404);
+        }
 
-        // Verify the seat belongs to a team in the active org.
-        $orgId = TenantContext::organizationId();
-        $orgTeamIds = Team::withoutGlobalScopes()
-            ->where('organization_id', $orgId)
-            ->pluck('id');
-        abort_unless(
-            $orgTeamIds->contains($seatModel->team_id),
-            403,
-            'Seat bukan milik organisasi aktif.'
-        );
-
-        $seatTitle = $seatModel->title;
-        $seatUserId = $seatModel->user_id;
         $seatModel->delete();
 
-        activity('org-chart')
-            ->causedBy(Auth::user())
-            ->performedOn($seatModel)
-            ->withProperties([
-                'team_id' => $seatModel->team_id,
-                'seat_title' => $seatTitle,
-                'seat_user_id' => $seatUserId,
-            ])
-            ->log('Seat deleted from accountability chart');
+        // ponytail: audit log wrapped in try-catch — never break delete
+        // if activity_log table missing or spatie not installed.
+        try {
+            activity('org-chart')
+                ->causedBy(Auth::user())
+                ->withProperties([
+                    'seat_id' => $seat,
+                    'team_id' => $seatModel->team_id,
+                    'seat_title' => $seatModel->title,
+                ])
+                ->log('Seat deleted from accountability chart');
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return response()->json(['message' => 'Seat deleted']);
     }
