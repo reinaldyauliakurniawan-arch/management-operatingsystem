@@ -170,7 +170,7 @@ export default function RocksIndex({
             />
 
             {/* Stats */}
-            <div className="mb-xl grid grid-cols-2 md:grid-cols-4 gap-lg">
+            <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                     {
                         label: "Total",
@@ -198,11 +198,11 @@ export default function RocksIndex({
                 ].map((stat) => (
                     <Card key={stat.label}>
                         <CardContent>
-                            <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
+                            <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-text-muted">
                                 {stat.label}
                             </p>
                             <p
-                                className={`text-[var(--font-2xl)] font-semibold tracking-tight leading-none ${stat.valueClass}`}
+                                className={`text-3xl font-semibold tracking-tight leading-none tabular-nums ${stat.valueClass}`}
                             >
                                 {stat.value}
                             </p>
@@ -249,11 +249,11 @@ export default function RocksIndex({
                                         onClick={() => setDetailRock(rock)}
                                         className="cursor-pointer text-left"
                                     >
-                                        <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                        <p className="text-[13px] font-medium text-text-primary">
                                             {rock.title}
                                         </p>
                                         {rock.description && (
-                                            <p className="mt-0.5 text-[var(--font-base)] text-text-muted">
+                                            <p className="mt-0.5 text-[13px] text-text-muted">
                                                 {rock.description.slice(0, 60)}
                                                 {rock.description.length > 60
                                                     ? "…"
