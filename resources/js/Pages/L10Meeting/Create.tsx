@@ -93,7 +93,7 @@ export default function L10Create({
                                 <Label>Peserta</Label>
                                 <div className="flex flex-col gap-xs rounded-lg border border-border bg-surface-raised p-md">
                                     {members.length === 0 ? (
-                                        <p className="text-[var(--font-base)] text-text-muted">
+                                        <p className="text-[13px] text-text-muted">
                                             Belum ada anggota tim.
                                         </p>
                                     ) : (
