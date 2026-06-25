@@ -167,7 +167,7 @@ export default function Authenticated({
                     width: mobileOpen ? undefined : sidebarOpen ? 240 : 56,
                 }}
             >
-                <div className="border-b border-border p-md">
+                <div className="border-b border-border px-4 py-3">
                     {sidebarOpen ? (
                         <div>
                             <p className="mb-0.5 text-[var(--font-sm)] font-medium uppercase tracking-[0.06em] text-text-muted">
@@ -200,11 +200,11 @@ export default function Authenticated({
                     )}
                 </div>
 
-                <nav className="flex-1 overflow-y-auto min-h-0 px-sm py-md">
+                <nav className="flex-1 overflow-y-auto min-h-0 px-2 py-3">
                     {navGroups.map((group) => (
                         <div key={group.label} className="mb-sm">
                             {sidebarOpen && (
-                                <p className="px-sm mb-xs mt-md text-[var(--font-sm)] font-medium uppercase tracking-[0.06em] text-text-muted">
+                                <p className="px-2.5 mb-1 mt-4 text-[var(--font-sm)] font-medium uppercase tracking-[0.06em] text-text-muted">
                                     {group.label}
                                 </p>
                             )}
@@ -217,10 +217,10 @@ export default function Authenticated({
                                         typeof route === "function" &&
                                         route().current(item.routeName);
 
-                                    const cls = `flex items-center gap-sm rounded-sm text-[var(--font-base)] no-underline whitespace-nowrap overflow-hidden transition-[background,color] duration-100 border-l-2 ${
+                                    const cls = `flex items-center gap-2.5 rounded-md text-[13px] no-underline whitespace-nowrap overflow-hidden transition-[background,color] duration-100 ${
                                         isActive
-                                            ? "pl-[6px] pr-sm py-[6px] font-medium text-white bg-primary border-primary"
-                                            : "px-sm py-[6px] font-normal text-text-secondary bg-transparent border-transparent hover:bg-surface-overlay hover:text-text-primary"
+                                            ? "px-2.5 py-1.5 font-medium bg-primary-subtle text-primary"
+                                            : "px-2.5 py-1.5 font-normal text-text-secondary bg-transparent hover:bg-surface-overlay hover:text-text-primary"
                                     } ${!sidebarOpen ? "justify-center" : ""}`;
 
                                     return (
@@ -237,7 +237,7 @@ export default function Authenticated({
                                                     }
                                                     className={cls}
                                                 >
-                                                    <item.icon className="h-4 w-4 shrink-0" />
+                                                    <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : "text-text-muted"}`} />
                                                     {sidebarOpen && (
                                                         <span>
                                                             {item.label}
@@ -254,7 +254,7 @@ export default function Authenticated({
                                                     }
                                                     className={cls}
                                                 >
-                                                    <item.icon className="h-4 w-4 shrink-0" />
+                                                    <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : "text-text-muted"}`} />
                                                     {sidebarOpen && (
                                                         <span>
                                                             {item.label}
@@ -270,7 +270,7 @@ export default function Authenticated({
                     ))}
                 </nav>
 
-                <div className="border-t border-border p-md">
+                <div className="border-t border-border px-4 py-3">
                     {sidebarOpen ? (
                         <div className="flex items-center justify-between gap-sm">
                             <div className="min-w-0">
@@ -311,7 +311,7 @@ export default function Authenticated({
             </aside>
 
             <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-                <header className="h-12 shrink-0 min-w-0 flex items-center gap-md px-xl bg-surface border-b border-border shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                <header className="h-14 shrink-0 min-w-0 flex items-center gap-md px-6 bg-surface border-b border-border">
                     <button
                         onClick={() => setMobileOpen(!mobileOpen)}
                         className="flex md:hidden items-center p-xs bg-transparent border-none cursor-pointer text-text-muted hover:text-text-primary"
@@ -378,13 +378,13 @@ export default function Authenticated({
                             />
                         </svg>
                     </button>
-                    <span className="text-[var(--font-base)] text-text-muted">
+                    <span className="text-[13px] font-medium text-text-secondary">
                         {activeTeam?.name}
                     </span>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-xl w-full">
-                    <div className="max-w-[1280px] mx-auto">
+                <main className="flex-1 overflow-y-auto px-6 py-8 w-full">
+                    <div className="max-w-7xl mx-auto">
                         {header}
                         {children}
                     </div>
