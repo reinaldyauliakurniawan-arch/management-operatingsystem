@@ -268,7 +268,7 @@ export default function ScorecardIndex({
                     {metricList.map((metric) => (
                         <TableRow key={metric.id}>
                             <TableCell className="sticky left-0 z-10 bg-surface">
-                                <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                <p className="text-[13px] font-medium text-text-primary">
                                     {metric.title}
                                 </p>
                                 <p className="mt-0.5 text-[var(--font-sm)] text-text-muted capitalize">
@@ -490,7 +490,7 @@ export default function ScorecardIndex({
                                         !!settingsForm.errors.q1_start_date
                                     }
                                 />
-                                <p className="text-[var(--font-base)] text-text-muted">
+                                <p className="text-[13px] text-text-muted">
                                     Tanggal mulai Q1. Q2/Q3/Q4 dihitung otomatis
                                     per 13 minggu.
                                 </p>
@@ -517,7 +517,7 @@ export default function ScorecardIndex({
                                         </option>
                                     ))}
                                 </Select>
-                                <p className="text-[var(--font-base)] text-text-muted">
+                                <p className="text-[13px] text-text-muted">
                                     Header kolom tabel akan menyesuaikan hari
                                     ini.
                                 </p>
