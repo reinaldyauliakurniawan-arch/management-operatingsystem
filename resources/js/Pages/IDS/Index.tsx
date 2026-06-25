@@ -162,11 +162,11 @@ export default function IDSIndex({
                 ].map((stat) => (
                     <Card key={stat.label}>
                         <CardContent>
-                            <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
+                            <p className="mb-sm text-xs font-medium uppercase tracking-wider text-text-muted">
                                 {stat.label}
                             </p>
                             <p
-                                className={`text-[var(--font-2xl)] font-semibold tracking-tight leading-none ${stat.valueClass}`}
+                                className={`text-3xl font-semibold tracking-tight leading-none tabular-nums ${stat.valueClass}`}
                             >
                                 {stat.value}
                             </p>
@@ -221,12 +221,12 @@ export default function IDSIndex({
                                     </span>
                                 </TableCell>
                                 <TableCell>
-                                    <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                    <p className="text-[13px] font-medium text-text-primary">
                                         {issue.title}
                                     </p>
                                     {issue.description && (
                                         <p
-                                            className="mt-0.5 text-[var(--font-base)] text-text-muted cursor-help"
+                                            className="mt-0.5 text-[13px] text-text-muted cursor-help"
                                             title={issue.description}
                                         >
                                             {issue.description.slice(0, 80)}
