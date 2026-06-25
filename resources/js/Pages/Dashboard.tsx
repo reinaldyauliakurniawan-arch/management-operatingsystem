@@ -87,11 +87,11 @@ function StatCard({
     const inner = (
         <Card>
             <CardContent>
-                <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
+                <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-text-muted">
                     {label}
                 </p>
                 <p
-                    className={`text-[var(--font-lg)] font-semibold leading-none tracking-tight ${valueColor}`}
+                    className={`text-2xl font-semibold leading-none tracking-tight tabular-nums ${valueColor}`}
                 >
                     {value}
                 </p>
@@ -114,7 +114,7 @@ function StatCard({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
     return (
-        <p className="mb-md text-[length:var(--font-md)] font-semibold text-primary">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-text-muted">
             {children}
         </p>
     );
@@ -146,7 +146,7 @@ export default function Dashboard({
             {isLeader && (
                 <>
                     <SectionLabel>Rocks Tim</SectionLabel>
-                    <div className="mb-2xl grid grid-cols-2 md:grid-cols-4 gap-lg">
+                    <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
                         <StatCard
                             label="Total Rocks"
                             value={stats.rocks_total}
@@ -177,7 +177,7 @@ export default function Dashboard({
                     </div>
 
                     <SectionLabel>Weekly Pulse</SectionLabel>
-                    <div className="mb-2xl grid grid-cols-1 sm:grid-cols-3 gap-lg">
+                    <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <StatCard
                             label="Scorecard Merah"
                             value={stats.scorecard_red}
@@ -210,16 +210,16 @@ export default function Dashboard({
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Upcoming meeting */}
                         <Card>
                             <CardContent>
-                                <p className="mb-lg text-[length:var(--font-md)] font-semibold text-primary">
+                                <p className="mb-4 text-xs font-medium uppercase tracking-wider text-text-muted">
                                     L10 Terdekat
                                 </p>
                                 {upcomingMeeting ? (
                                     <div>
-                                        <p className="text-[var(--font-md)] font-semibold tracking-tight text-text-primary">
+                                        <p className="text-base font-semibold tracking-tight text-text-primary">
                                             {upcomingMeeting.title ??
                                                 "L10 Meeting"}
                                         </p>
@@ -245,7 +245,7 @@ export default function Dashboard({
                         {/* Top leaderboard per role */}
                         <Card>
                             <CardContent>
-                                <p className="mb-lg text-[length:var(--font-md)] font-semibold text-primary">
+                                <p className="mb-4 text-xs font-medium uppercase tracking-wider text-text-muted">
                                     Top Leaderboard
                                 </p>
                                 {Object.keys(leaderboardTop3ByRole).length ===
@@ -292,7 +292,7 @@ export default function Dashboard({
                         {/* Upcoming events */}
                         <Card>
                             <CardContent>
-                                <p className="mb-lg text-[length:var(--font-md)] font-semibold text-primary">
+                                <p className="mb-4 text-xs font-medium uppercase tracking-wider text-text-muted">
                                     Events (7 hari)
                                 </p>
                                 {upcomingEvents.length === 0 ? (
@@ -365,7 +365,7 @@ export default function Dashboard({
                             </Card>
                         </>
                     )}
-                    <div className="mb-xl grid grid-cols-1 sm:grid-cols-3 gap-lg">
+                    <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <StatCard
                             label="Rocks Saya (On Track)"
                             value={stats.rocks_on_track}
@@ -404,7 +404,7 @@ export default function Dashboard({
             {/* TUTOR VIEW */}
             {isTutor && (
                 <>
-                    <div className="mb-xl grid grid-cols-1 sm:grid-cols-2 gap-lg">
+                    <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <StatCard
                             label="To-Do Hari Ini"
                             value={stats.todos_due_today}
@@ -468,15 +468,15 @@ function MemberBottomSection({
     } | null;
 }) {
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card>
                 <CardContent>
-                    <p className="mb-lg text-[length:var(--font-md)] font-semibold text-primary">
+                    <p className="mb-4 text-xs font-medium uppercase tracking-wider text-text-muted">
                         Skor Leaderboard
                     </p>
                     {selfLeaderboard ? (
                         <>
-                            <p className="text-[var(--font-lg)] font-semibold leading-none tracking-tight text-primary">
+                            <p className="text-2xl font-semibold leading-none tracking-tight tabular-nums text-primary">
                                 {selfLeaderboard.score}%
                             </p>
                             <p className="mt-sm text-[var(--font-base)] text-text-secondary">
@@ -534,10 +534,10 @@ function MemberBottomSection({
             {upcomingMeeting && (
                 <Card className="col-span-2">
                     <CardContent>
-                        <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
+                        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-text-muted">
                             L10 Terdekat
                         </p>
-                        <p className="text-[var(--font-md)] font-semibold tracking-tight text-text-primary">
+                        <p className="text-base font-semibold tracking-tight text-text-primary">
                             {upcomingMeeting.title ?? "L10 Meeting"}
                         </p>
                         <p className="mt-xs text-[var(--font-base)] text-text-secondary">
