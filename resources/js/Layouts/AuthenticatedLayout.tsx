@@ -150,7 +150,7 @@ export default function Authenticated({
     };
 
     return (
-        <div className="relative flex h-screen overflow-hidden bg-surface-subtle">
+        <div className="relative flex h-screen overflow-hidden bg-surface">
             {mobileOpen && (
                 <div
                     className="fixed inset-0 z-30 bg-black/40 md:hidden"
@@ -158,9 +158,9 @@ export default function Authenticated({
                 />
             )}
             <aside
-                className={`flex flex-col overflow-x-hidden shrink-0 h-screen bg-surface-subtle border-r border-border transition-all duration-200 ease-in-out z-40 ${
+                className={`flex flex-col overflow-x-hidden shrink-0 h-screen bg-[#064e3b] border-r border-black/20 transition-all duration-200 ease-in-out z-40 ${
                     mobileOpen
-                        ? "fixed inset-y-0 left-0 w-60 shadow-[var(--shadow-lg)]"
+                        ? "fixed inset-y-0 left-0 w-60 shadow-xl"
                         : "hidden md:sticky md:top-0 md:flex"
                 }`}
                 style={{
@@ -170,14 +170,14 @@ export default function Authenticated({
                 <div className="border-b border-border px-4 py-3">
                     {sidebarOpen ? (
                         <div>
-                            <p className="mb-0.5 text-[var(--font-sm)] font-medium uppercase tracking-[0.06em] text-text-muted">
+                            <p className="mb-0.5 text-[var(--font-sm)] font-medium uppercase tracking-[0.06em] text-white/50">
                                 Active Team
                             </p>
                             {userTeams.length > 1 ? (
                                 <select
                                     value={activeTeamId ?? ""}
                                     onChange={(e) => switchTeam(e.target.value)}
-                                    className="w-full bg-surface-raised border border-border rounded-lg px-sm py-xs text-[var(--font-base)] text-text-primary outline-none appearance-none"
+                                    className="w-full bg-white/10 border border-white/15 rounded-lg px-2 py-1 text-[13px] text-white outline-none appearance-none"
                                 >
                                     {userTeams.map((t: any) => (
                                         <option key={t.id} value={t.id}>
@@ -186,14 +186,14 @@ export default function Authenticated({
                                     ))}
                                 </select>
                             ) : (
-                                <p className="text-[var(--font-base)] font-medium text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
+                                <p className="text-[13px] font-medium text-white overflow-hidden text-ellipsis whitespace-nowrap">
                                     {activeTeam?.name ?? "—"}
                                 </p>
                             )}
                         </div>
                     ) : (
                         <div className="flex justify-center">
-                            <span className="text-[var(--font-base)] font-semibold text-primary">
+                            <span className="text-[13px] font-semibold text-white">
                                 {activeTeam?.name?.[0]?.toUpperCase() ?? "J"}
                             </span>
                         </div>
@@ -204,7 +204,7 @@ export default function Authenticated({
                     {navGroups.map((group) => (
                         <div key={group.label} className="mb-sm">
                             {sidebarOpen && (
-                                <p className="px-2.5 mb-1 mt-4 text-[var(--font-sm)] font-medium uppercase tracking-[0.06em] text-text-muted">
+                                <p className="px-2.5 mb-1 mt-4 text-[var(--font-sm)] font-medium uppercase tracking-[0.06em] text-white/50">
                                     {group.label}
                                 </p>
                             )}
@@ -219,8 +219,8 @@ export default function Authenticated({
 
                                     const cls = `flex items-center gap-2.5 rounded-md text-[13px] no-underline whitespace-nowrap overflow-hidden transition-[background,color] duration-100 ${
                                         isActive
-                                            ? "px-2.5 py-1.5 font-medium bg-primary-subtle text-primary"
-                                            : "px-2.5 py-1.5 font-normal text-text-secondary bg-transparent hover:bg-surface-overlay hover:text-text-primary"
+                                            ? "px-2.5 py-1.5 font-medium text-white bg-white/10 border-l-[3px] border-[#059669]"
+                                            : "px-2.5 py-1.5 font-normal text-white/60 bg-transparent hover:bg-white/5 hover:text-white border-l-[3px] border-transparent"
                                     } ${!sidebarOpen ? "justify-center" : ""}`;
 
                                     return (
@@ -237,7 +237,7 @@ export default function Authenticated({
                                                     }
                                                     className={cls}
                                                 >
-                                                    <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : "text-text-muted"}`} />
+                                                    <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-white" : "text-white/50"}`} />
                                                     {sidebarOpen && (
                                                         <span>
                                                             {item.label}
@@ -254,7 +254,7 @@ export default function Authenticated({
                                                     }
                                                     className={cls}
                                                 >
-                                                    <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : "text-text-muted"}`} />
+                                                    <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-white" : "text-white/50"}`} />
                                                     {sidebarOpen && (
                                                         <span>
                                                             {item.label}
@@ -274,17 +274,17 @@ export default function Authenticated({
                     {sidebarOpen ? (
                         <div className="flex items-center justify-between gap-sm">
                             <div className="min-w-0">
-                                <p className="text-[var(--font-base)] font-medium text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">
+                                <p className="text-[13px] font-medium text-white overflow-hidden text-ellipsis whitespace-nowrap">
                                     {user.name}
                                 </p>
-                                <p className="text-[var(--font-sm)] text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
+                                <p className="text-[var(--font-sm)] text-white/50 overflow-hidden text-ellipsis whitespace-nowrap">
                                     {user.email}
                                 </p>
                             </div>
                             <div className="flex gap-sm">
                                 <Link
                                     href={route("profile.edit")}
-                                    className="text-[var(--font-sm)] text-text-muted bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-text-primary"
+                                    className="text-[var(--font-sm)] text-white/50 bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-white"
                                 >
                                     Profil
                                 </Link>
@@ -292,7 +292,7 @@ export default function Authenticated({
                                     href={route("logout")}
                                     method="post"
                                     as="button"
-                                    className="text-[var(--font-sm)] text-text-muted bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-error-text"
+                                    className="text-[var(--font-sm)] text-white/50 bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors duration-150 hover:text-red-400"
                                 >
                                     Logout
                                 </Link>
@@ -300,8 +300,8 @@ export default function Authenticated({
                         </div>
                     ) : (
                         <div className="flex justify-center">
-                            <div className="size-7 rounded-full bg-primary-subtle flex items-center justify-center">
-                                <span className="text-[var(--font-sm)] font-semibold text-primary">
+                            <div className="size-7 rounded-full bg-[#059669] flex items-center justify-center">
+                                <span className="text-[var(--font-sm)] font-semibold text-white">
                                     {user.name?.[0]?.toUpperCase()}
                                 </span>
                             </div>
@@ -311,7 +311,7 @@ export default function Authenticated({
             </aside>
 
             <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-                <header className="h-14 shrink-0 min-w-0 flex items-center gap-md px-6 bg-surface border-b border-border">
+                <header className="h-16 shrink-0 min-w-0 flex items-center gap-md px-6 bg-surface-raised border-b border-border shadow-sm">
                     <button
                         onClick={() => setMobileOpen(!mobileOpen)}
                         className="flex md:hidden items-center p-xs bg-transparent border-none cursor-pointer text-text-muted hover:text-text-primary"
