@@ -102,7 +102,7 @@ export default function L10Index({
             )}
 
             {/* Stats */}
-            <div className="mb-xl grid grid-cols-1 sm:grid-cols-3 gap-lg">
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                     {
                         label: "Terjadwal",
@@ -122,7 +122,7 @@ export default function L10Index({
                 ].map((s) => (
                     <Card key={s.label}>
                         <CardContent>
-                            <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
+                            <p className="mb-sm text-xs font-medium uppercase tracking-wider text-text-muted">
                                 {s.label}
                             </p>
                             <p
@@ -169,7 +169,7 @@ export default function L10Index({
                         {meetingList.map((m) => (
                             <TableRow key={m.id}>
                                 <TableCell>
-                                    <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                    <p className="text-[13px] font-medium text-text-primary">
                                         {m.title ?? "L10 Meeting"}
                                     </p>
                                 </TableCell>
