@@ -6,15 +6,15 @@ export default function Welcome({ auth }: PageProps) {
     return (
         <>
             <Head title="Just Speak English — Management OS" />
-            <div className="flex min-h-screen flex-col items-center justify-center bg-surface-subtle">
+            <div className="flex min-h-screen flex-col items-center justify-center" style={{ background: "linear-gradient(135deg, #00a982 0%, #007a60 50%, #006b5a 100%)" }} ">
                 <div className="text-center">
-                    <p className="text-[var(--font-base)] font-medium uppercase tracking-widest text-text-muted">
+                    <p className="text-[var(--font-base)] font-medium uppercase tracking-widest text-white/50">
                         Just Speak English Course
                     </p>
-                    <h1 className="mt-xs text-[var(--font-xl)] font-semibold tracking-tight text-text-primary">
+                    <h1 className="mt-xs text-[var(--font-xl)] font-semibold tracking-tight text-white">
                         Management OS
                     </h1>
-                    <p className="mt-sm text-[var(--font-base)] text-text-secondary">
+                    <p className="mt-sm text-[var(--font-base)] text-white/70">
                         Sistem operasional manajemen tim internal.
                     </p>
 

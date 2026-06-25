@@ -59,7 +59,7 @@ function DialogContent({
             <DialogPrimitive.Popup
                 data-slot="dialog-content"
                 className={cn(
-                    "fixed top-1/2 left-1/2 z-50 flex flex-col w-full max-w-[calc(100%-2rem)] max-h-[calc(100svh-2rem)] -translate-x-1/2 -translate-y-1/2 gap-0 rounded-lg bg-surface p-0 text-sm text-text-primary shadow-lg duration-150 outline-none data-open:animate-[dialog-in_150ms_ease-out] data-closed:animate-[dialog-out_150ms_ease-out]",
+                    "fixed top-1/2 left-1/2 z-50 flex flex-col w-full max-w-[calc(100%-2rem)] max-h-[calc(100svh-2rem)] -translate-x-1/2 -translate-y-1/2 gap-0 rounded-2xl bg-white p-0 text-sm text-text-primary shadow-xl duration-150 outline-none data-open:animate-[dialog-in_150ms_ease-out] data-closed:animate-[dialog-out_150ms_ease-out]",
                     dialogSizeClasses[size],
                     className,
                 )}
@@ -91,7 +91,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
         <div
             data-slot="dialog-header"
             className={cn(
-                "flex flex-col gap-1 border-b border-border p-xl",
+                "flex flex-col gap-1 border-b border-[#e5e7eb] p-xl",
                 className,
             )}
             {...props}
@@ -121,7 +121,7 @@ function DialogFooter({
         <div
             data-slot="dialog-footer"
             className={cn(
-                "flex flex-col-reverse gap-2 border-t border-border p-xl sm:flex-row sm:justify-end",
+                "flex flex-col-reverse gap-2 border-t border-[#e5e7eb] p-xl sm:flex-row sm:justify-end",
                 className,
             )}
             {...props}

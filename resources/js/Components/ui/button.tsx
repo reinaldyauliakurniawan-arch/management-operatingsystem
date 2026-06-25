@@ -9,16 +9,16 @@ const buttonVariants = cva(
         variants: {
             variant: {
                 default:
-                    "rounded-full bg-primary text-text-inverse hover:bg-primary-hover hover:scale-[0.97]",
+                    "rounded-full bg-[#065f46] text-text-inverse hover:bg-[#065f46]-hover hover:scale-[0.97]",
                 outline:
-                    "rounded-sm border-border bg-surface hover:bg-surface-overlay hover:text-text-primary",
+                    "rounded-sm border-border bg-surface hover:bg-surface-overlay hover:text-text-[#065f46]",
                 secondary:
-                    "rounded-sm border-border bg-surface-raised text-text-primary hover:bg-surface-overlay",
-                ghost: "rounded-sm text-text-secondary hover:bg-surface-overlay hover:text-text-primary",
+                    "rounded-sm border-border bg-surface-raised text-text-[#065f46] hover:bg-surface-overlay",
+                ghost: "rounded-sm text-text-secondary hover:bg-surface-overlay hover:text-text-[#065f46]",
                 destructive:
-                    "rounded-sm bg-error-subtle text-error-text hover:bg-error-subtle/70",
-                danger: "rounded-sm bg-error-subtle text-error-text hover:bg-error-subtle/80",
-                link: "text-primary underline-offset-4 hover:underline",
+                    "rounded-sm bg-[#c81e1e]-subtle text-[#c81e1e] hover:bg-[#c81e1e]-subtle/70",
+                danger: "rounded-sm bg-[#c81e1e]-subtle text-[#c81e1e] hover:bg-[#c81e1e]-subtle/80",
+                link: "text-[#065f46] underline-offset-4 hover:underline",
             },
             size: {
                 default:

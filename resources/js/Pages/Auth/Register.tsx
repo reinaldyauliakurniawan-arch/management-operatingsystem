@@ -37,7 +37,7 @@ export default function Register() {
                         aria-invalid={!!errors.name}
                     />
                     {errors.name && (
-                        <p className="text-[var(--font-base)] text-error-text">
+                        <p className="text-[var(--font-base)] text-red-300">
                             {errors.name}
                         </p>
                     )}
@@ -55,7 +55,7 @@ export default function Register() {
                         aria-invalid={!!errors.email}
                     />
                     {errors.email && (
-                        <p className="text-[var(--font-base)] text-error-text">
+                        <p className="text-[var(--font-base)] text-red-300">
                             {errors.email}
                         </p>
                     )}
@@ -73,7 +73,7 @@ export default function Register() {
                         aria-invalid={!!errors.password}
                     />
                     {errors.password && (
-                        <p className="text-[var(--font-base)] text-error-text">
+                        <p className="text-[var(--font-base)] text-red-300">
                             {errors.password}
                         </p>
                     )}
@@ -95,7 +95,7 @@ export default function Register() {
                         aria-invalid={!!errors.password_confirmation}
                     />
                     {errors.password_confirmation && (
-                        <p className="text-[var(--font-base)] text-error-text">
+                        <p className="text-[var(--font-base)] text-red-300">
                             {errors.password_confirmation}
                         </p>
                     )}
@@ -105,11 +105,11 @@ export default function Register() {
                     {processing ? "Mendaftar…" : "Daftar"}
                 </Button>
 
-                <p className="text-center text-[var(--font-base)] text-text-muted">
+                <p className="text-center text-[var(--font-base)] text-white/50">
                     Sudah punya akun?{" "}
                     <Link
                         href={route("login")}
-                        className="text-primary-text hover:underline"
+                        className="text-white-text hover:underline"
                     >
                         Masuk
                     </Link>
