@@ -374,7 +374,7 @@ export default function TeamsIndex({
                                                         {typeLabel[team.type]}
                                                     </Badge>
                                                 </div>
-                                                <p className="text-[var(--font-base)] text-text-muted mt-0.5">
+                                                <p className="text-[13px] text-text-muted mt-0.5">
                                                     {team.member_count} anggota
                                                     {team.leaders.length > 0 &&
                                                         ` · Leader: ${team.leaders.map((l) => l.name).join(", ")}`}
@@ -425,7 +425,7 @@ export default function TeamsIndex({
                                     {expandedTeam === team.id && (
                                         <div className="border-t border-border">
                                             {loadingTeam === team.id ? (
-                                                <p className="px-6 py-4 text-[var(--font-base)] text-text-muted">
+                                                <p className="px-6 py-4 text-[13px] text-text-muted">
                                                     Memuat anggota...
                                                 </p>
                                             ) : (
@@ -456,7 +456,7 @@ export default function TeamsIndex({
                                                                         colSpan={
                                                                             4
                                                                         }
-                                                                        className="text-center text-[var(--font-base)] text-text-muted py-6"
+                                                                        className="text-center text-[13px] text-text-muted py-6"
                                                                     >
                                                                         Belum
                                                                         ada
