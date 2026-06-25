@@ -121,7 +121,7 @@ export default function ToDoIndex({
             />
 
             {/* Stats */}
-            <div className="mb-xl grid grid-cols-1 sm:grid-cols-3 gap-lg">
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                     {
                         label: "Pending",
@@ -144,11 +144,11 @@ export default function ToDoIndex({
                 ].map((stat) => (
                     <Card key={stat.label}>
                         <CardContent>
-                            <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
+                            <p className="mb-sm text-xs font-medium uppercase tracking-wider text-text-muted">
                                 {stat.label}
                             </p>
                             <p
-                                className={`text-[var(--font-2xl)] font-semibold tracking-tight leading-none ${stat.valueClass}`}
+                                className={`text-3xl font-semibold tracking-tight leading-none tabular-nums ${stat.valueClass}`}
                             >
                                 {stat.value}
                             </p>
@@ -200,7 +200,7 @@ export default function ToDoIndex({
                                 </TableCell>
                                 <TableCell>
                                     <span
-                                        className={`text-[var(--font-base)] font-medium text-text-primary ${todo.is_completed ? "line-through" : ""}`}
+                                        className={`text-[13px] font-medium text-text-primary ${todo.is_completed ? "line-through" : ""}`}
                                     >
                                         {todo.title}
                                     </span>
