@@ -231,7 +231,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                 {meeting.attendees.map((a) => (
                     <span
                         key={a.id}
-                        className="rounded-xs bg-surface-raised px-sm py-xs text-[var(--font-base)] text-text-secondary"
+                        className="rounded-xs bg-surface-raised px-sm py-xs text-[13px] text-text-secondary"
                     >
                         {a.name}
                     </span>
@@ -246,7 +246,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                             <p className="mb-xs text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                 Segue (5 menit)
                             </p>
-                            <p className="text-[var(--font-base)] text-text-secondary">
+                            <p className="text-[13px] text-text-secondary">
                                 Share kabar baik personal atau profesional
                                 singkat.
                             </p>
@@ -294,7 +294,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                             Scorecard Review
                         </p>
                         {meeting.metrics.length === 0 ? (
-                            <p className="text-[var(--font-base)] text-text-muted">
+                            <p className="text-[13px] text-text-muted">
                                 Tidak ada metric di scorecard.
                             </p>
                         ) : (
@@ -305,18 +305,18 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                         className="flex items-center justify-between py-md"
                                     >
                                         <div>
-                                            <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                            <p className="text-[13px] font-medium text-text-primary">
                                                 {m.name}
                                             </p>
-                                            <p className="text-[var(--font-base)] text-text-muted">
+                                            <p className="text-[13px] text-text-muted">
                                                 {m.owner}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-lg">
-                                            <span className="text-[var(--font-base)] text-text-secondary">
+                                            <span className="text-[13px] text-text-secondary">
                                                 Goal: {m.goal ?? "—"}
                                             </span>
-                                            <span className="text-[var(--font-base)] text-text-secondary">
+                                            <span className="text-[13px] text-text-secondary">
                                                 Actual: {m.actual ?? "—"}
                                             </span>
                                             <StatusBadge status={m.status} />
@@ -337,7 +337,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                             Rock Review
                         </p>
                         {meeting.rocks.length === 0 ? (
-                            <p className="text-[var(--font-base)] text-text-muted">
+                            <p className="text-[13px] text-text-muted">
                                 Tidak ada rocks aktif.
                             </p>
                         ) : (
@@ -348,10 +348,10 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                         className="flex items-center justify-between py-md"
                                     >
                                         <div>
-                                            <p className="text-[var(--font-base)] font-medium text-text-primary">
+                                            <p className="text-[13px] font-medium text-text-primary">
                                                 {r.title}
                                             </p>
-                                            <p className="text-[var(--font-base)] text-text-muted">
+                                            <p className="text-[13px] text-text-muted">
                                                 {r.owner}
                                             </p>
                                         </div>
@@ -372,7 +372,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                             <p className="mb-xs text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                 Headlines (5 menit)
                             </p>
-                            <p className="text-[var(--font-base)] text-text-secondary">
+                            <p className="text-[13px] text-text-secondary">
                                 Customer dan employee headlines — update singkat
                                 good news / bad news.
                             </p>
@@ -421,7 +421,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                 To-Do Review (Carry-Forward)
                             </p>
                             {meeting.todos.length === 0 ? (
-                                <p className="text-[var(--font-base)] text-text-muted">
+                                <p className="text-[13px] text-text-muted">
                                     Tidak ada to-do aktif.
                                 </p>
                             ) : (
@@ -453,7 +453,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                                     >
                                                         {t.title}
                                                     </p>
-                                                    <p className="text-[var(--font-base)] text-text-muted">
+                                                    <p className="text-[13px] text-text-muted">
                                                         {t.assignee} ·{" "}
                                                         {t.due_date ?? "—"}
                                                     </p>
@@ -469,7 +469,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                     {!isReadOnly && (
                         <Card>
                             <CardContent>
-                                <p className="mb-md text-[var(--font-base)] font-medium text-text-primary">
+                                <p className="mb-md text-[13px] font-medium text-text-primary">
                                     Tambah To-Do dari Meeting
                                 </p>
                                 <form
@@ -556,7 +556,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                 Issues Open (dari IDS)
                             </p>
                             {meeting.issues.length === 0 ? (
-                                <p className="text-[var(--font-base)] text-text-muted">
+                                <p className="text-[13px] text-text-muted">
                                     Tidak ada open issue saat ini.
                                 </p>
                             ) : (
@@ -597,10 +597,10 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                     {!isReadOnly && (
                         <Card>
                             <CardContent>
-                                <p className="mb-xs text-[var(--font-base)] font-medium text-text-primary">
+                                <p className="mb-xs text-[13px] font-medium text-text-primary">
                                     Identify Issue Baru
                                 </p>
-                                <p className="mb-md text-[var(--font-base)] text-text-muted">
+                                <p className="mb-md text-[13px] text-text-muted">
                                     Issue yang ditambah di sini langsung
                                     tersimpan ke halaman IDS.
                                 </p>
@@ -737,7 +737,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                             <p className="mb-xs text-[var(--font-base)] font-medium uppercase tracking-wider text-text-muted">
                                 Conclude
                             </p>
-                            <p className="text-[var(--font-base)] text-text-secondary">
+                            <p className="text-[13px] text-text-secondary">
                                 Cascading messages, recap to-do baru, rating
                                 meeting.
                             </p>
@@ -803,7 +803,7 @@ export default function L10Workspace({ meeting }: { meeting: Meeting }) {
                                     </p>
                                 )}
                                 {meeting.rating && (
-                                    <p className="text-[var(--font-base)] text-text-secondary">
+                                    <p className="text-[13px] text-text-secondary">
                                         Rating:{" "}
                                         <span className="font-semibold text-primary-text">
                                             {meeting.rating}/10
