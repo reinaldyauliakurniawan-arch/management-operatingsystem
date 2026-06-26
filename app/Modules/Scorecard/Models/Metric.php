@@ -13,6 +13,8 @@ class Metric extends Model
 
     protected $fillable = [
         "team_id",
+        "quarter",
+        "year",
         "title",
         "owner_id",
         "goal_value",

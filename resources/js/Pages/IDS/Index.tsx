@@ -179,18 +179,26 @@ export default function IDSIndex({
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            {[
-                                { key: "priority", label: "Skala" },
-                                { key: "issue", label: "Issue" },
-                                { key: "root_cause", label: "Akar Masalah" },
-                                { key: "solution", label: "Solusi" },
-                                { key: "todos", label: "To-Dos" },
-                                { key: "owner", label: "Owner" },
-                                { key: "status", label: "Status" },
-                                { key: "actions", label: "" },
-                            ].map((h) => (
-                                <TableHead key={h.key}>{h.label}</TableHead>
-                            ))}
+                            <TableHead className="w-12">Skala</TableHead>
+                            <TableHead className="min-w-[200px]">
+                                Issue
+                            </TableHead>
+                            <TableHead className="min-w-[140px]">
+                                Akar Masalah
+                            </TableHead>
+                            <TableHead className="min-w-[140px]">
+                                Solusi
+                            </TableHead>
+                            <TableHead className="w-16 text-center">
+                                To-Dos
+                            </TableHead>
+                            <TableHead className="min-w-[100px]">
+                                Owner
+                            </TableHead>
+                            <TableHead className="min-w-[80px]">
+                                Status
+                            </TableHead>
+                            <TableHead className="w-[180px]" />
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -220,50 +228,45 @@ export default function IDSIndex({
                                         {issue.priority}
                                     </span>
                                 </TableCell>
-                                <TableCell>
-                                    <p className="text-[13px] font-medium text-text-primary">
+                                <TableCell className="min-w-[200px] max-w-[280px]">
+                                    <p className="text-[13px] font-medium text-text-primary break-words">
                                         {issue.title}
                                     </p>
                                     {issue.description && (
                                         <p
-                                            className="mt-0.5 text-[13px] text-text-muted cursor-help"
+                                            className="mt-0.5 text-[13px] text-text-muted line-clamp-2 cursor-help"
                                             title={issue.description}
                                         >
-                                            {issue.description.slice(0, 80)}
-                                            {issue.description.length > 80
-                                                ? "…"
-                                                : ""}
+                                            {issue.description}
                                         </p>
                                     )}
                                 </TableCell>
-                                <TableCell className="text-text-secondary max-w-[160px]">
+                                <TableCell className="min-w-[140px] max-w-[200px] text-text-secondary">
                                     {issue.root_cause ? (
                                         <span
-                                            className="cursor-help"
+                                            className="line-clamp-2 cursor-help"
                                             title={issue.root_cause}
                                         >
-                                            {issue.root_cause.slice(0, 60)}
-                                            {issue.root_cause.length > 60
-                                                ? "…"
-                                                : ""}
+                                            {issue.root_cause}
                                         </span>
                                     ) : (
-                                        "—"
+                                        <span className="text-text-muted">
+                                            —
+                                        </span>
                                     )}
                                 </TableCell>
-                                <TableCell className="text-text-secondary max-w-[160px]">
+                                <TableCell className="min-w-[140px] max-w-[200px] text-text-secondary">
                                     {issue.solution ? (
                                         <span
-                                            className="cursor-help"
+                                            className="line-clamp-2 cursor-help"
                                             title={issue.solution}
                                         >
-                                            {issue.solution.slice(0, 60)}
-                                            {issue.solution.length > 60
-                                                ? "…"
-                                                : ""}
+                                            {issue.solution}
                                         </span>
                                     ) : (
-                                        "—"
+                                        <span className="text-text-muted">
+                                            —
+                                        </span>
                                     )}
                                 </TableCell>
                                 <TableCell className="text-text-secondary text-center">

@@ -101,7 +101,7 @@ export default function ScorecardIndex({
     metrics: { data: Metric[] };
     users: User[];
     weeks: string[];
-    filters: { quarter: number };
+    filters: { quarter: number; year: number };
     scorecardSettings: { q1_start_date: string; scorecard_day: number };
 }) {
     const { auth } = usePage().props as any;
@@ -125,10 +125,10 @@ export default function ScorecardIndex({
         });
     };
 
-    const goToPeriod = (quarter: number) => {
+    const goToPeriod = (quarter: number, year: number) => {
         router.get(
             route("scorecard.index"),
-            { quarter },
+            { quarter, year },
             { preserveState: true },
         );
     };
@@ -139,10 +139,18 @@ export default function ScorecardIndex({
         goal_value: "",
         comparison_operator: ">=",
         frequency: "weekly",
+        quarter: "Q" + filters.quarter,
+        year: String(filters.year),
     });
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
+        // Pastikan quarter & year selalu sesuai period yang sedang dilihat
+        setData((prev) => ({
+            ...prev,
+            quarter: "Q" + filters.quarter,
+            year: String(filters.year),
+        }));
         post(route("scorecard.store"), {
             onSuccess: () => {
                 setCreateOpen(false);
@@ -193,9 +201,32 @@ export default function ScorecardIndex({
                 action={
                     <div className="flex items-center gap-sm">
                         <Select
+                            value={String(filters.year)}
+                            onChange={(e) =>
+                                goToPeriod(
+                                    filters.quarter,
+                                    parseInt(e.target.value),
+                                )
+                            }
+                            className="h-9 w-auto"
+                        >
+                            {[
+                                filters.year - 1,
+                                filters.year,
+                                filters.year + 1,
+                            ].map((y) => (
+                                <option key={y} value={y}>
+                                    {y}
+                                </option>
+                            ))}
+                        </Select>
+                        <Select
                             value={String(filters.quarter)}
                             onChange={(e) =>
-                                goToPeriod(parseInt(e.target.value))
+                                goToPeriod(
+                                    parseInt(e.target.value),
+                                    filters.year,
+                                )
                             }
                             className="h-9 w-auto"
                         >

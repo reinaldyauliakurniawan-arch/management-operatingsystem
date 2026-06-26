@@ -11,6 +11,8 @@ class MetricResource extends JsonResource
     {
         return [
             'id'                  => $this->id,
+            'quarter'             => $this->quarter,
+            'year'                => $this->year,
             'title'               => $this->title,
             'owner'               => [
                 'id'   => $this->owner->id,

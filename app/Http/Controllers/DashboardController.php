@@ -148,10 +148,16 @@ class DashboardController extends Controller
             $todosQuery->where("owner_id", $userId);
         }
 
+        $now           = now();
+        $activeQuarter = 'Q' . (int) ceil($now->month / 3);
+        $activeYear    = $now->year;
+
         $metrics = \App\Modules\Scorecard\Models\Metric::where(
             "team_id",
             $teamId,
         )
+            ->where('quarter', $activeQuarter)
+            ->where('year', $activeYear)
             ->with(["latestScore"])
             ->get();
 

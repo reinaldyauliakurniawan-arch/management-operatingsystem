@@ -29,28 +29,31 @@ class ScorecardController extends Controller
             ? Carbon::parse($team->q1_start_date)
             : Carbon::create(Carbon::now()->year, 1, 1); // fallback Jan 1
 
-        $now     = Carbon::now();
-        $quarter = (int) $request->query('quarter', 1);
+        $now  = Carbon::now();
+        $year = (int) $request->query('year', $now->year);
 
-        // Hitung awal tiap quarter berdasarkan q1_start_date (per 13 minggu)
-        $quarterStart = $q1StartDate->copy()->addWeeks(($quarter - 1) * 13);
-        $quarterEnd   = $quarterStart->copy()->addWeeks(13)->subDay();
-
-        // Auto-detect quarter aktif jika tidak ada query
-        if (!$request->has('quarter')) {
-            for ($q = 4; $q >= 1; $q--) {
-                $qs = $q1StartDate->copy()->addWeeks(($q - 1) * 13);
-                $qe = $qs->copy()->addWeeks(13)->subDay();
-                if ($now->between($qs, $qe)) {
-                    $quarter      = $q;
-                    $quarterStart = $qs;
-                    $quarterEnd   = $qe;
-                    break;
-                }
+        // Auto-detect quarter aktif berdasarkan q1_start_date (per 13 minggu)
+        $detectedQuarter = 1;
+        for ($q = 4; $q >= 1; $q--) {
+            $qs = $q1StartDate->copy()->addWeeks(($q - 1) * 13);
+            $qe = $qs->copy()->addWeeks(13)->subDay();
+            if ($now->between($qs, $qe)) {
+                $detectedQuarter = $q;
+                break;
             }
         }
 
-        $quarter = max(1, min(4, $quarter));
+        $quarterNum = (int) $request->query('quarter', $detectedQuarter);
+        $quarterNum = max(1, min(4, $quarterNum));
+        $quarterKey = 'Q' . $quarterNum;
+
+        // Hitung tanggal awal/akhir quarter berdasarkan q1_start_date
+        $quarterStart = $q1StartDate->copy()->addWeeks(($quarterNum - 1) * 13);
+        $quarterEnd   = $quarterStart->copy()->addWeeks(13)->subDay();
+
+        // Carry-forward: jika quarter ini belum ada metric sama sekali,
+        // copy dari quarter sebelumnya (tanpa weekly scores).
+        $this->maybeCarryForwardMetrics($teamId, $quarterKey, $year, $request->user());
 
         $metrics = Metric::with([
             'owner',
@@ -60,12 +63,16 @@ class ScorecardController extends Controller
                     $quarterEnd->toDateString(),
                 ])
                 ->orderBy('week_start_date', 'desc'),
-        ])->where('team_id', $teamId)->latest()->get();
+        ])
+            ->where('team_id', $teamId)
+            ->where('quarter', $quarterKey)
+            ->where('year', $year)
+            ->latest()
+            ->get();
 
         // Generate minggu berdasarkan scorecard_day
         $weeks  = [];
         $cursor = $quarterStart->copy()->startOfWeek(Carbon::MONDAY);
-        // Geser ke hari evaluasi yang dipilih
         $cursor->addDays($scorecardDay === 0 ? 6 : $scorecardDay - 1);
         if ($cursor->lt($quarterStart)) $cursor->addWeek();
 
@@ -75,15 +82,72 @@ class ScorecardController extends Controller
         }
 
         return Inertia::render('Scorecard/Index', [
-            'metrics'         => MetricResource::collection($metrics),
-            'users'           => $users,
-            'weeks'           => $weeks,
-            'filters'         => ['quarter' => $quarter],
+            'metrics'           => MetricResource::collection($metrics),
+            'users'             => $users,
+            'weeks'             => $weeks,
+            'filters'           => [
+                'quarter' => $quarterNum,
+                'year'    => $year,
+            ],
             'scorecardSettings' => [
                 'q1_start_date' => $q1StartDate->format('Y-m-d'),
                 'scorecard_day' => $scorecardDay,
             ],
         ]);
+    }
+
+    /**
+     * Carry-forward: jika $quarterKey/$year belum punya metric di $teamId,
+     * copy metric dari quarter sebelumnya (tanpa scores).
+     * Dipanggil on-demand saat user pertama kali buka quarter baru.
+     */
+    private function maybeCarryForwardMetrics(int $teamId, string $quarterKey, int $year, $user): void
+    {
+        $exists = Metric::where('team_id', $teamId)
+            ->where('quarter', $quarterKey)
+            ->where('year', $year)
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        // Cari quarter sebelumnya (bisa lintas tahun)
+        $qNum = (int) str_replace('Q', '', $quarterKey);
+        if ($qNum > 1) {
+            $prevQ    = 'Q' . ($qNum - 1);
+            $prevYear = $year;
+        } else {
+            $prevQ    = 'Q4';
+            $prevYear = $year - 1;
+        }
+
+        $sourceMetrics = Metric::where('team_id', $teamId)
+            ->where('quarter', $prevQ)
+            ->where('year', $prevYear)
+            ->get();
+
+        if ($sourceMetrics->isEmpty()) {
+            return;
+        }
+
+        $now    = now();
+        $userId = $user?->id;
+
+        foreach ($sourceMetrics as $src) {
+            Metric::create([
+                'team_id'             => $src->team_id,
+                'quarter'             => $quarterKey,
+                'year'                => $year,
+                'title'               => $src->title,
+                'owner_id'            => $src->owner_id,
+                'goal_value'          => $src->goal_value,
+                'comparison_operator' => $src->comparison_operator,
+                'frequency'           => $src->frequency,
+                'created_by'          => $userId,
+                'updated_by'          => $userId,
+            ]);
+        }
     }
 
     public function store(Request $request, CreateMetric $createMetric)
@@ -102,6 +166,8 @@ class ScorecardController extends Controller
             'goal_value'          => 'required|numeric',
             'comparison_operator' => 'required|in:>=,<=,==',
             'frequency'           => 'nullable|in:weekly,monthly',
+            'quarter'             => 'required|in:Q1,Q2,Q3,Q4',
+            'year'                => 'required|integer|min:2020|max:2099',
         ]);
 
         $validated['team_id'] = $teamId;
@@ -136,6 +202,8 @@ class ScorecardController extends Controller
     public function destroy(Metric $metric)
     {
         $teamId = TenantContext::teamId();
+        // Tenant guard: cukup team_id — quarter/year tidak perlu dicek di sini
+        // karena soft delete hanya menyentuh row quarter aktif yang dikirim dari UI.
         abort_unless($metric->team_id === $teamId, 403, 'Metric bukan milik team aktif.');
         $user   = request()->user();
         $role   = $user->roleIn($teamId);
