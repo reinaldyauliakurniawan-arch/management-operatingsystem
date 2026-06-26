@@ -6,7 +6,7 @@ export default function Welcome({ auth }: PageProps) {
     return (
         <>
             <Head title="Just Speak English — Management OS" />
-            <div className="flex min-h-screen flex-col items-center justify-center" style={{ background: "linear-gradient(135deg, #00a982 0%, #007a60 50%, #006b5a 100%)" }} ">
+            <div className="flex min-h-screen flex-col items-center justify-center" style={{ background: "linear-gradient(135deg, #00a982 0%, #007a60 50%, #006b5a 100%)" }}>
                 <div className="text-center">
                     <p className="text-[var(--font-base)] font-medium uppercase tracking-widest text-white/50">
                         Just Speak English Course
