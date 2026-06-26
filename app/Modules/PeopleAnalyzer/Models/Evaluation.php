@@ -18,6 +18,7 @@ class Evaluation extends Model
         'is_candidate',
         'candidate_name',
         'seat_id',
+        'manual_seat_title',
         'gwc_get',
         'gwc_want',
         'gwc_capacity',

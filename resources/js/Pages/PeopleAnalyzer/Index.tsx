@@ -226,7 +226,12 @@ function EvalFormBody({
                 <Label>Posisi yang Dinilai (opsional)</Label>
                 <Select
                     value={evalFormData.seat_id}
-                    onChange={(e) => setEvalFormData("seat_id", e.target.value)}
+                    onChange={(e) => {
+                        setEvalFormData("seat_id", e.target.value);
+                        if (e.target.value) {
+                            setEvalFormData("manual_seat_title", "");
+                        }
+                    }}
                 >
                     <option value="">— Tidak spesifik —</option>
                     {seats.map((s) => (
@@ -236,6 +241,14 @@ function EvalFormBody({
                         </option>
                     ))}
                 </Select>
+                <Input
+                    value={evalFormData.manual_seat_title}
+                    onChange={(e) =>
+                        setEvalFormData("manual_seat_title", e.target.value)
+                    }
+                    disabled={!!evalFormData.seat_id}
+                    placeholder="Atau tulis posisi manual (jika belum ada di daftar)"
+                />
                 <p className="text-[var(--font-sm)] text-text-muted">
                     Untuk kandidat: posisi yang dilamar. Untuk anggota: posisi
                     yang sedang dijabat.
@@ -422,6 +435,7 @@ export default function PeopleAnalyzerIndex({
         is_candidate: false,
         candidate_name: "",
         seat_id: "",
+        manual_seat_title: "",
         period: "",
         gwc_get: true,
         gwc_want: true,
@@ -454,6 +468,7 @@ export default function PeopleAnalyzerIndex({
             is_candidate: ev.is_candidate,
             candidate_name: ev.candidate_name ?? "",
             seat_id: "",
+            manual_seat_title: ev.manual_seat_title ?? "",
             period: ev.period ?? "",
             gwc_get: ev.gwc_get,
             gwc_want: ev.gwc_want,

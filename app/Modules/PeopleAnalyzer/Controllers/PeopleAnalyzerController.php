@@ -58,7 +58,7 @@ class PeopleAnalyzerController extends Controller
         $evals = $evalsQuery->latest()->get()->map(function ($e) use ($standard) {
             $e->seat_fit_computed = $e->computeSeatFit($standard);
             $e->core_values_scores = $e->core_values_scores ?? [];
-            $e->seat_title = $e->seat?->title;
+            $e->seat_title = $e->seat?->title ?? $e->manual_seat_title;
             $e->team_name  = $e->team?->name;
             $e->display_name = $e->is_candidate
                 ? ($e->candidate_name ?? 'Kandidat')
@@ -124,6 +124,7 @@ class PeopleAnalyzerController extends Controller
             'candidate_name'     => 'nullable|string|max:255',
             // ponytail: seat_id divalidasi sebagai seat di org aktif (bukan cuma team aktif).
             'seat_id'            => ['nullable', Rule::exists('seats', 'id')->whereIn('team_id', $orgTeamIds)],
+            'manual_seat_title'  => 'nullable|string|max:255',
             'gwc_get'            => 'required|boolean',
             'gwc_want'           => 'required|boolean',
             'gwc_capacity'       => 'required|boolean',
@@ -186,6 +187,7 @@ class PeopleAnalyzerController extends Controller
             'gwc_capacity'       => 'sometimes|boolean',
             'core_values_scores' => 'sometimes|array',
             'seat_id'            => ['nullable', Rule::exists('seats', 'id')->whereIn('team_id', $orgTeamIds)],
+            'manual_seat_title'  => 'nullable|string|max:255',
             'period'             => 'nullable|string|max:50',
             'notes'              => 'nullable|string',
         ]);
