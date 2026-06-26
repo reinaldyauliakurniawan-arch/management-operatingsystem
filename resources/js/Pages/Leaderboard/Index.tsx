@@ -710,7 +710,10 @@ export default function LeaderboardIndex({
                             <button
                                 key={q}
                                 type="button"
-                                onClick={() => setQuarter(q)}
+                                onClick={() => {
+                                    setQuarter(q);
+                                    applyFilter({ quarter: q });
+                                }}
                                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                                     quarter === q
                                         ? "bg-surface shadow-sm border border-border text-primary font-semibold"

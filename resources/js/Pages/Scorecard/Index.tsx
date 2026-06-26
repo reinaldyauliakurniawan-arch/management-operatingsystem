@@ -223,115 +223,128 @@ export default function ScorecardIndex({
             />
 
             <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="sticky left-0 z-10 min-w-[180px] bg-surface-subtle whitespace-nowrap">
-                            Metric
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap">
-                            Owner
-                        </TableHead>
-                        <TableHead className="whitespace-nowrap">
-                            Goal
-                        </TableHead>
-                        {quarterWeeks.map((w) => (
-                            <TableHead
-                                key={w}
-                                className="min-w-[90px] whitespace-nowrap text-center"
-                            >
-                                {formatWeek(w)}
-                            </TableHead>
-                        ))}
-                        {isLeader && <TableHead className="w-[60px]" />}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {metricList.length === 0 && (
+                <Table>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell
-                                colSpan={
-                                    3 + quarterWeeks.length + (isLeader ? 1 : 0)
-                                }
-                            >
-                                <EmptyState
-                                    title="Belum ada metric"
-                                    description={
-                                        isLeader
-                                            ? "Tambah metric pertama untuk team ini."
-                                            : "Belum ada metric yang ditambahkan untuk team ini."
-                                    }
-                                />
-                            </TableCell>
-                        </TableRow>
-                    )}
-                    {metricList.map((metric) => (
-                        <TableRow key={metric.id}>
-                            <TableCell className="sticky left-0 z-10 bg-surface">
-                                <p className="text-[13px] font-medium text-text-primary">
-                                    {metric.title}
-                                </p>
-                                <p className="mt-0.5 text-[var(--font-sm)] text-text-muted capitalize">
-                                    {metric.frequency}
-                                </p>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-text-secondary">
-                                {metric.owner.name}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-text-secondary">
-                                {metric.comparison_operator} {metric.goal_value}
-                            </TableCell>
-                            {quarterWeeks.map((w) => {
-                                const score = metric.scores.find(
-                                    (s) => s.week_start_date === w,
-                                );
-                                const canInput = canInputMetric(metric);
-                                return (
-                                    <TableCell key={w} className="text-center">
-                                        {canInput ? (
-                                            <ScoreInput
-                                                defaultValue={
-                                                    score?.actual_value ?? ""
-                                                }
-                                                status={score?.status}
-                                                onCommit={(val) =>
-                                                    logScore(metric.id, w, val)
-                                                }
-                                            />
-                                        ) : score ? (
-                                            <span
-                                                className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-sm text-text-primary ${statusCellClass(score.status)}`}
-                                            >
-                                                <StatusDot
-                                                    status={score.status}
-                                                />{" "}
-                                                {score.actual_value}
-                                            </span>
-                                        ) : (
-                                            <span className="text-border-strong">
-                                                —
-                                            </span>
-                                        )}
-                                    </TableCell>
-                                );
-                            })}
-                            {isLeader && (
-                                <TableCell>
-                                    <Button
-                                        variant="danger"
-                                        size="sm"
-                                        onClick={() =>
-                                            setDeleteMetricId(metric.id)
-                                        }
-                                    >
-                                        Hapus
-                                    </Button>
-                                </TableCell>
+                            <TableHead className="sticky left-0 z-10 min-w-[180px] bg-surface-subtle whitespace-nowrap">
+                                Metric
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap">
+                                Owner
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap">
+                                Goal
+                            </TableHead>
+                            {quarterWeeks.map((w) => (
+                                <TableHead
+                                    key={w}
+                                    className="min-w-[90px] whitespace-nowrap text-center"
+                                >
+                                    {formatWeek(w)}
+                                </TableHead>
+                            ))}
+                            {(isLeader || isOrgAdmin) && (
+                                <TableHead className="w-[60px]" />
                             )}
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {metricList.length === 0 && (
+                            <TableRow>
+                                <TableCell
+                                    colSpan={
+                                        3 +
+                                        quarterWeeks.length +
+                                        (isLeader || isOrgAdmin ? 1 : 0)
+                                    }
+                                >
+                                    <EmptyState
+                                        title="Belum ada metric"
+                                        description={
+                                            isLeader
+                                                ? "Tambah metric pertama untuk team ini."
+                                                : "Belum ada metric yang ditambahkan untuk team ini."
+                                        }
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {metricList.map((metric) => (
+                            <TableRow key={metric.id}>
+                                <TableCell className="sticky left-0 z-10 bg-surface">
+                                    <p className="text-[13px] font-medium text-text-primary">
+                                        {metric.title}
+                                    </p>
+                                    <p className="mt-0.5 text-[var(--font-sm)] text-text-muted capitalize">
+                                        {metric.frequency}
+                                    </p>
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap text-text-secondary">
+                                    {metric.owner.name}
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap text-text-secondary">
+                                    {metric.comparison_operator}{" "}
+                                    {metric.goal_value}
+                                </TableCell>
+                                {quarterWeeks.map((w) => {
+                                    const score = metric.scores.find(
+                                        (s) => s.week_start_date === w,
+                                    );
+                                    const canInput = canInputMetric(metric);
+                                    return (
+                                        <TableCell
+                                            key={w}
+                                            className="text-center"
+                                        >
+                                            {canInput ? (
+                                                <ScoreInput
+                                                    defaultValue={
+                                                        score?.actual_value ??
+                                                        ""
+                                                    }
+                                                    status={score?.status}
+                                                    onCommit={(val) =>
+                                                        logScore(
+                                                            metric.id,
+                                                            w,
+                                                            val,
+                                                        )
+                                                    }
+                                                />
+                                            ) : score ? (
+                                                <span
+                                                    className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-sm text-text-primary ${statusCellClass(score.status)}`}
+                                                >
+                                                    <StatusDot
+                                                        status={score.status}
+                                                    />{" "}
+                                                    {score.actual_value}
+                                                </span>
+                                            ) : (
+                                                <span className="text-border-strong">
+                                                    —
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                    );
+                                })}
+                                {(isLeader || isOrgAdmin) && (
+                                    <TableCell>
+                                        <Button
+                                            variant="danger"
+                                            size="sm"
+                                            onClick={() =>
+                                                setDeleteMetricId(metric.id)
+                                            }
+                                        >
+                                            Hapus
+                                        </Button>
+                                    </TableCell>
+                                )}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </div>
 
             {/* Create Modal */}

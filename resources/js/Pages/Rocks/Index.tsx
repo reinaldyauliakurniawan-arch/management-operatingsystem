@@ -508,6 +508,11 @@ export default function RocksIndex({
                                             >
                                                 <Checkbox
                                                     checked={m.is_done}
+                                                    disabled={
+                                                        !isLeader &&
+                                                        detailRock.owner.id !==
+                                                            auth.user.id
+                                                    }
                                                     onCheckedChange={() =>
                                                         toggleMilestone(m.id)
                                                     }
@@ -539,7 +544,9 @@ export default function RocksIndex({
                                             </div>
                                         ))}
                                     </div>
-                                    {isLeader && (
+                                    {(isLeader ||
+                                        detailRock.owner.id ===
+                                            auth.user.id) && (
                                         <div className="mt-md flex gap-sm">
                                             <Input
                                                 value={milestoneTitle}

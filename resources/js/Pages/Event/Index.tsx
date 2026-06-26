@@ -338,8 +338,8 @@ export default function EventIndex({
 
     const overrideAttendance = (eventId: number, userId: number) =>
         router.post(
-            route("events.override", { event: eventId, user: userId }),
-            {},
+            route("events.override", eventId),
+            { user_id: userId },
             { preserveScroll: true },
         );
 
