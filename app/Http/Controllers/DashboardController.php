@@ -87,6 +87,7 @@ class DashboardController extends Controller
                 if ($roleEntries->isNotEmpty()) {
                     $leaderboardTop3ByRole[$roleKey] = $roleEntries
                         ->take(3)
+                        ->map(fn($e) => [...$e, "score" => $e["total"]])
                         ->values()
                         ->all();
                 }

@@ -18,7 +18,7 @@ A Laravel 13 + Inertia 2 + React 19 + TypeScript + Tailwind 4 web application im
 
 ```bash
 # Clone
-git clone https://github.com/reinaldyauliakurniakan-arch/management-operatingsystem.git
+git clone https://github.com/reinaldyauliakurniawan-arch/management-operatingsystem.git
 cd management-operatingsystem
 
 # Backend
@@ -225,7 +225,7 @@ One VTO per organization — all leaders in the same org see the same VTO.
 | Existing tests | MultiTenancy, Organization, VTO, L10Meeting, LeadershipAssessment, ScorecardIntegration | ~20 |
 | Auth tests | Breeze default (Registration, Login, PasswordReset, EmailVerification, Profile) | ~15 |
 
-Total: ~91 test methods across 20 test files.
+Total: ~74 test methods across 25 test files.
 
 ---
 
@@ -258,7 +258,7 @@ app/
 └── Helpers/               # activity_polyfill.php (defensive)
 
 database/
-├── migrations/            # 24 migrations (including production-grade indexes + constraints)
+├── migrations/            # 26 migrations (including production-grade indexes + constraints)
 ├── seeders/               # DatabaseSeeder, LeadershipDataSeeder, LeaderboardParameterSeeder
 └── factories/             # UserFactory
 
