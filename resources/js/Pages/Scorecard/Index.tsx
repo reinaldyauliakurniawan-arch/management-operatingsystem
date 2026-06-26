@@ -204,7 +204,7 @@ export default function ScorecardIndex({
                             <option value={3}>Q3</option>
                             <option value={4}>Q4</option>
                         </Select>
-                        {isLeader && (
+                        {(isLeader || isOrgAdmin) && (
                             <Button onClick={() => setCreateOpen(true)}>
                                 + Tambah Metric
                             </Button>

@@ -47,7 +47,7 @@ interface Event {
     description: string | null;
     agenda: AgendaItem[];
     attendees: Attendee[];
-    has_attended: boolean;
+    my_attended: boolean;
     is_generated: boolean;
 }
 
@@ -282,13 +282,14 @@ export default function EventIndex({
     events,
     otherTeamEvents,
     users,
+    isLeader,
 }: {
     events: Event[];
     otherTeamEvents: OtherTeamEvent[];
     users: { id: number; name: string }[];
+    isLeader: boolean;
 }) {
     const { auth } = usePage().props as any;
-    const isLeader = auth.teamRole === "leader";
 
     const [view, setView] = useState<"calendar" | "list">("calendar");
     const [createOpen, setCreateOpen] = useState(false);
@@ -595,7 +596,7 @@ export default function EventIndex({
                                     </span>
 
                                     <div className="flex items-center gap-sm shrink-0">
-                                        {!isPast && !ev.has_attended && (
+                                        {!isPast && !ev.my_attended && (
                                             <Button
                                                 size="sm"
                                                 className="bg-primary-subtle text-primary-text hover:bg-primary-subtle/70"
@@ -606,7 +607,7 @@ export default function EventIndex({
                                                 Hadir
                                             </Button>
                                         )}
-                                        {ev.has_attended && (
+                                        {ev.my_attended && (
                                             <Badge variant="success">
                                                 Hadir ✓
                                             </Badge>
