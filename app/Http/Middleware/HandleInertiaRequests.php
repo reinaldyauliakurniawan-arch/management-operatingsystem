@@ -34,7 +34,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
-                'userTeams' => $request->user() ? $request->user()->teams()->get()->map(function($team) {
+                'userTeams' => $request->user() ? $request->user()->teams()->withoutGlobalScopes()->get()->map(function($team) {
                     return [
                         'id' => $team->id,
                         'name' => $team->name,

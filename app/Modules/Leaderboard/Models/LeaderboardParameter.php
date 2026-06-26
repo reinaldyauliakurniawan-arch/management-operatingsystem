@@ -39,6 +39,7 @@ class LeaderboardParameter extends Model
             "per_unit" => $this->calcPerUnit($rawValue, $config),
             "tiered" => $this->calcTiered($rawValue, $config),
             "normalized" => $this->calcNormalized($rawValue, $config),
+            "auto" => 0, // auto dihitung oleh CalculateLeaderboardScores, bukan di sini
             default => 0,
         };
     }

@@ -55,7 +55,7 @@ class DashboardController extends Controller
                 : null;
 
         $upcomingEvents = $teamId
-            ? \App\Modules\Event\Models\Event::where("team_id", $teamId)
+            ? \App\Modules\Event\Models\Event::withoutGlobalScopes()->where("team_id", $teamId)
                 ->where("event_date", ">=", now()->toDateString())
                 ->where("event_date", "<=", now()->addDays(7)->toDateString())
                 ->orderBy("event_date")

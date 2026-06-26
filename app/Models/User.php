@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Modules\Teams\Models\TeamMember;
 use App\Modules\Teams\Models\Team;
+use App\Models\Organization;
 
 class User extends Authenticatable
 {

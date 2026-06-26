@@ -62,7 +62,7 @@ class CalculateLeaderboardScores
         // ponytail: precompute auto-source rates once per user, keyed by source.
         $autoSources = $params->where('input_type', 'auto')
             ->pluck('config')
-            ->map(fn($c) => $c['source'] ?? null)
+            ->map(fn($c) => is_array($c) ? ($c['source'] ?? null) : null)
             ->filter()
             ->unique()
             ->values();
@@ -119,7 +119,7 @@ class CalculateLeaderboardScores
 
         $autoSources = $params->where('input_type', 'auto')
             ->pluck('config')
-            ->map(fn($c) => $c['source'] ?? null)
+            ->map(fn($c) => is_array($c) ? ($c['source'] ?? null) : null)
             ->filter()
             ->unique()
             ->values();
@@ -220,7 +220,7 @@ class CalculateLeaderboardScores
      */
     private function lookupAutoPoints(LeaderboardParameter $param, int $userId, array $autoRatesByUser): float
     {
-        $config = $param->config ?? [];
+        $config = is_array($param->config) ? $param->config : [];
         $source = $config['source'] ?? '';
         $pct = $autoRatesByUser[$source][$userId] ?? 0;
 

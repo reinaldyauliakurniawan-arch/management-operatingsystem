@@ -41,6 +41,7 @@ interface Evaluation {
     display_name: string;
     period: string | null;
     seat_title: string | null;
+    manual_seat_title: string | null;
     gwc_get: boolean;
     gwc_want: boolean;
     gwc_capacity: boolean;
