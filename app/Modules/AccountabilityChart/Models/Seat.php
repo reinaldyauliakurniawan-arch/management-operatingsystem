@@ -31,6 +31,11 @@ class Seat extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function team()
+    {
+        return $this->belongsTo(\App\Modules\Teams\Models\Team::class);
+    }
+
     public function parent()
     {
         return $this->belongsTo(Seat::class, 'parent_id');

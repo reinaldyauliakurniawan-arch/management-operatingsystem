@@ -52,6 +52,11 @@ class Evaluation extends Model
         return $this->belongsTo(\App\Modules\AccountabilityChart\Models\Seat::class, 'seat_id');
     }
 
+    public function team()
+    {
+        return $this->belongsTo(\App\Modules\Teams\Models\Team::class);
+    }
+
     /**
      * Compute seat_fit based on GWC + core values vs standard.
      * standard = instance of PeopleAnalyzerStandard
