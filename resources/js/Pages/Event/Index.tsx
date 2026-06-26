@@ -432,11 +432,11 @@ export default function EventIndex({
                     ].map((s) => (
                         <Card key={s.label}>
                             <CardContent>
-                                <p className="mb-sm text-[length:var(--font-md)] font-semibold text-primary">
+                                <p className="mb-sm text-xs font-medium uppercase tracking-wider text-text-muted">
                                     {s.label}
                                 </p>
                                 <p
-                                    className={`text-[var(--font-2xl)] font-semibold leading-none tracking-tight ${s.cls}`}
+                                    className={`text-3xl font-semibold leading-none tracking-tight tabular-nums ${s.cls}`}
                                 >
                                     {s.value}
                                 </p>

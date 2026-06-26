@@ -21,5 +21,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        \App\Modules\Teams\Models\TeamMember::observe(
+            \App\Modules\Teams\Observers\TeamMemberObserver::class,
+        );
     }
 }
