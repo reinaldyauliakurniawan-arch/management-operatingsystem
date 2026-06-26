@@ -112,9 +112,19 @@ class CalculateLeaderboardScores
 
         $userIds = $members->pluck('user_id')->all();
 
-        // ponytail: 1 query for all entries — same optimization as executeAcrossTeams.
+        // ponytail: entries di-query org-wide (semua team_id dalam org yang sama),
+        // bukan hanya selectedTeamId. Ini karena storeEntry() menyimpan entry dengan
+        // team_id = parameter->team_id (bisa team 1), bukan team dari member.
+        // Query by selectedTeamId saja menyebabkan semua poin nol di per_team view.
+        $orgTeamIds = \App\Modules\Teams\Models\Team::withoutGlobalScopes()
+            ->where('organization_id', function ($q) use ($teamId) {
+                $q->select('organization_id')->from('teams')->where('id', $teamId);
+            })
+            ->pluck('id')
+            ->all();
+
         $entriesByUserParam = $this->loadEntriesIndex(
-            [$teamId], $userIds, $params->pluck('id')->all(), $quarter, $year,
+            $orgTeamIds, $userIds, $params->pluck('id')->all(), $quarter, $year,
         );
 
         $autoSources = $params->where('input_type', 'auto')
