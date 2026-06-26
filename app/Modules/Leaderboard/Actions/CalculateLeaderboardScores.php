@@ -105,23 +105,23 @@ class CalculateLeaderboardScores
     public function execute(int $teamId, string $quarter, int $year): Collection
     {
         $members = TeamMember::with('user')->where('team_id', $teamId)->get();
-        $params  = LeaderboardParameter::where('team_id', $teamId)
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->get();
 
         $userIds = $members->pluck('user_id')->all();
 
-        // ponytail: entries di-query org-wide (semua team_id dalam org yang sama),
-        // bukan hanya selectedTeamId. Ini karena storeEntry() menyimpan entry dengan
-        // team_id = parameter->team_id (bisa team 1), bukan team dari member.
-        // Query by selectedTeamId saja menyebabkan semua poin nol di per_team view.
+        // ponytail: org-wide lookup — parameter dan entries keduanya disimpan
+        // dengan team_id = team pemilik parameter (bukan team member).
+        // Query by selectedTeamId saja menyebabkan mismatch scheme dan entries nol.
         $orgTeamIds = \App\Modules\Teams\Models\Team::withoutGlobalScopes()
             ->where('organization_id', function ($q) use ($teamId) {
                 $q->select('organization_id')->from('teams')->where('id', $teamId);
             })
             ->pluck('id')
             ->all();
+
+        $params = LeaderboardParameter::whereIn('team_id', $orgTeamIds)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
 
         $entriesByUserParam = $this->loadEntriesIndex(
             $orgTeamIds, $userIds, $params->pluck('id')->all(), $quarter, $year,
