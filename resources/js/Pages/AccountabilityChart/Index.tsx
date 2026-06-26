@@ -133,7 +133,7 @@ function SeatNode({ data }: { data: any }) {
     const { seat, isEditable } = data as { seat: Seat; isEditable: boolean };
     return (
         <div
-            className="rounded-lg border border-border bg-surface p-4 shadow-sm hover:border-primary hover:bg-surface-subtle transition-all"
+            className="rounded-lg border border-border bg-surface-raised p-4 shadow-sm hover:border-primary hover:bg-surface-subtle transition-all"
             style={{ width: NODE_W, minHeight: NODE_H }}
         >
             <Handle
@@ -475,7 +475,9 @@ export default function AccountabilityChartIndex() {
 
     const fetchSeats = useCallback(async () => {
         try {
-            const res = await axios.get(`/api/accountability-chart/seats?_t=${Date.now()}`);
+            const res = await axios.get(
+                `/api/accountability-chart/seats?_t=${Date.now()}`,
+            );
             setSeats(res.data.seats);
         } catch (err) {
             console.error("Failed to fetch seats", err);
@@ -484,7 +486,9 @@ export default function AccountabilityChartIndex() {
 
     const fetchUsers = useCallback(async () => {
         try {
-            const res = await axios.get(`/api/accountability-chart/users?_t=${Date.now()}`);
+            const res = await axios.get(
+                `/api/accountability-chart/users?_t=${Date.now()}`,
+            );
             setUsers(res.data.users);
         } catch (e) {
             console.error("Failed to fetch users", e);
@@ -601,18 +605,25 @@ export default function AccountabilityChartIndex() {
             // Close dialog IMMEDIATELY after successful delete
             setDeleteId(null);
             // Optimistic update — remove seat from local state
-            setSeats(prev => {
+            setSeats((prev) => {
                 const removeSeat = (list: Seat[]): Seat[] =>
-                    list.filter(s => s.id !== id).map(s => ({
-                        ...s,
-                        children: s.children ? removeSeat(s.children) : s.children,
-                    }));
+                    list
+                        .filter((s) => s.id !== id)
+                        .map((s) => ({
+                            ...s,
+                            children: s.children
+                                ? removeSeat(s.children)
+                                : s.children,
+                        }));
                 return removeSeat(prev);
             });
             // Re-fetch to sync with server
             await fetchSeats();
         } catch (e: any) {
-            const msg = e.response?.data?.message || e.message || "Gagal menghapus seat";
+            const msg =
+                e.response?.data?.message ||
+                e.message ||
+                "Gagal menghapus seat";
             setDeleteError(msg);
             console.error("Delete failed", e);
         } finally {
