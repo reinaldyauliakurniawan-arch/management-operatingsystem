@@ -33,3 +33,6 @@ Thumbs.db
 .env.*.local
 *.pem
 *.p12
+
+backup.sql
+management-operatingsystem.zip
