@@ -53,7 +53,8 @@ class LeaderboardController extends Controller
             ->orderBy('scheme')
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get();
+            ->get()
+            ->unique(fn($p) => $p->scheme . '|' . $p->name);
 
         $orgTeams = Team::withoutGlobalScopes()
             ->where('organization_id', $orgId)
