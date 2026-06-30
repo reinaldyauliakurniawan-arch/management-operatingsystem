@@ -41,8 +41,12 @@ class CalculateLeaderboardScores
         // 1 row kalau dia member di multi-team dengan role beda — tiap row
         // scoped ke team_id-nya sendiri. Dedupe by (user_id, team_id) saja,
         // jaga-jaga ada duplicate row di DB.
+        // ponytail-fix: orderBy('id') wajib — tanpa ini, urutan row dari DB
+        // gak deterministic antar request, bikin tie-break di sortByDesc('total')
+        // beda tiap query, sehingga urutan leaderboard tampak beda per login.
         $allMembers = TeamMember::with(['user', 'team'])
             ->whereIn('team_id', $teamIds)
+            ->orderBy('id')
             ->get()
             ->unique(fn($m) => $m->user_id . '|' . $m->team_id);
 
@@ -126,7 +130,10 @@ class CalculateLeaderboardScores
                 'breakdown' => $breakdown,
             ];
         })
-        ->sortByDesc('total')
+        ->sortBy([
+            ['total', 'desc'],
+            ['user_id', 'asc'],
+        ])
         ->values();
     }
 
