@@ -34,5 +34,5 @@ Thumbs.db
 *.pem
 *.p12
 
-backup.sql
+database.sql
 management-operatingsystem.zip
