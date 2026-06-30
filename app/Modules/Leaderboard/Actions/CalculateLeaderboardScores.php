@@ -180,7 +180,7 @@ class CalculateLeaderboardScores
 
             foreach ($params->where('scheme', $scheme) as $param) {
                 $points = $param->input_type === 'auto'
-                    ? $this->lookupAutoPoints($param, $userId, $autoRatesByUser)
+                    ? $this->lookupAutoPoints($param, $userId, $teamId, $autoRatesByUser)
                     : ($entriesByUserParam[$userId][$param->id] ?? 0);
 
                 $total += $points;
