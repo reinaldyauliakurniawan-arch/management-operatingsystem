@@ -73,11 +73,13 @@ class CalculateLeaderboardScores
             $breakdown = [];
             $total = 0;
 
+            $usedParamIds = [];
             foreach ($params as $param) {
                 $points = $param->input_type === 'auto'
                     ? $this->lookupAutoPoints($param, $userId, $autoRatesByUser)
                     : ($entriesByUserParam[$userId][$param->id] ?? 0);
 
+                $usedParamIds[] = $param->id;
                 $total += $points;
                 $breakdown[] = [
                     'parameter_id' => $param->id,
@@ -85,6 +87,24 @@ class CalculateLeaderboardScores
                     'input_type'   => $param->input_type,
                     'points'       => round($points, 2),
                     'is_auto'      => $param->input_type === 'auto',
+                ];
+            }
+
+            // ponytail-fix: entry yang nempel ke parameter_id udah soft-deleted
+            // (gak ada di $params aktif) tetap diakumulasi, biar total gak miss
+            // poin yang sebenarnya valid di DB. Ditandai "Arsip" di breakdown.
+            $orphaned = array_diff_key(
+                $entriesByUserParam[$userId] ?? [],
+                array_flip($usedParamIds),
+            );
+            foreach ($orphaned as $paramId => $points) {
+                $total += $points;
+                $breakdown[] = [
+                    'parameter_id' => $paramId,
+                    'parameter'    => '(Arsip) Parameter dihapus',
+                    'input_type'   => 'archived',
+                    'points'       => round($points, 2),
+                    'is_auto'      => false,
                 ];
             }
 
@@ -176,16 +196,21 @@ class CalculateLeaderboardScores
      */
     private function loadEntriesIndex(array $teamIds, array $userIds, array $paramIds, string $quarter, int $year): array
     {
-        if (empty($userIds) || empty($paramIds)) {
+        if (empty($userIds)) {
             return [];
         }
 
+        // ponytail-fix: jangan filter by paramIds (active params only) di query.
+        // Entry bisa nempel ke parameter_id yang sudah soft-deleted (mis. dupe
+        // cleanup) — tetap harus diagregasi biar gak hilang dari total/breakdown.
+        // Param info di-resolve via withTrashed supaya nama tetap kebaca walau
+        // parameter induknya udah dihapus.
         $entries = LeaderboardEntry::whereIn('team_id', $teamIds)
             ->whereIn('user_id', $userIds)
-            ->whereIn('parameter_id', $paramIds)
             ->where('quarter', $quarter)
             ->where('year', $year)
-            ->get(['user_id', 'parameter_id', 'points']);
+            ->with(['parameter' => fn($q) => $q->withTrashed()])
+            ->get(['id', 'user_id', 'parameter_id', 'points']);
 
         $index = [];
         foreach ($entries as $e) {
