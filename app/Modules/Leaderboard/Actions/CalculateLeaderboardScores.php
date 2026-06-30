@@ -37,10 +37,14 @@ class CalculateLeaderboardScores
         int $year,
         string $scheme, // "tutor" | "management"
     ): Collection {
+        // ponytail-fix: TIDAK dedupe by user_id. User boleh muncul lebih dari
+        // 1 row kalau dia member di multi-team dengan role beda — tiap row
+        // scoped ke team_id-nya sendiri. Dedupe by (user_id, team_id) saja,
+        // jaga-jaga ada duplicate row di DB.
         $allMembers = TeamMember::with(['user', 'team'])
             ->whereIn('team_id', $teamIds)
             ->get()
-            ->unique('user_id');
+            ->unique(fn($m) => $m->user_id . '|' . $m->team_id);
 
         $filtered = $allMembers->filter(fn($m) => $this->schemeFor($m->role) === $scheme)
             ->values();
@@ -55,7 +59,9 @@ class CalculateLeaderboardScores
         $userIds = $filtered->pluck('user_id')->all();
 
         // ponytail: 1 query for all entries across all users × all params.
-        $entriesByUserParam = $this->loadEntriesIndex(
+        // ponytail-fix: index by (user_id, team_id) bukan cuma user_id, biar
+        // entry dari team A gak ketuker / ke-sum ke row user di team B.
+        $entriesByUserTeamParam = $this->loadEntriesIndexByTeam(
             $teamIds, $userIds, $params->pluck('id')->all(), $quarter, $year,
         );
 
@@ -68,8 +74,9 @@ class CalculateLeaderboardScores
             ->values();
             $autoRatesByUser = $this->loadAutoRates($autoSources, $userIds, $teamIds, $quarter, $year);
 
-        return $filtered->map(function ($member) use ($params, $entriesByUserParam, $autoRatesByUser, $scheme) {
+        return $filtered->map(function ($member) use ($params, $entriesByUserTeamParam, $autoRatesByUser, $scheme) {
             $userId = $member->user_id;
+            $teamId = $member->team_id;
             $breakdown = [];
             $total = 0;
 
@@ -77,7 +84,7 @@ class CalculateLeaderboardScores
             foreach ($params as $param) {
                 $points = $param->input_type === 'auto'
                     ? $this->lookupAutoPoints($param, $userId, $autoRatesByUser)
-                    : ($entriesByUserParam[$userId][$param->id] ?? 0);
+                    : ($entriesByUserTeamParam[$userId][$teamId][$param->id] ?? 0);
 
                 $usedParamIds[] = $param->id;
                 $total += $points;
@@ -94,7 +101,7 @@ class CalculateLeaderboardScores
             // (gak ada di $params aktif) tetap diakumulasi, biar total gak miss
             // poin yang sebenarnya valid di DB. Ditandai "Arsip" di breakdown.
             $orphaned = array_diff_key(
-                $entriesByUserParam[$userId] ?? [],
+                $entriesByUserTeamParam[$userId][$teamId] ?? [],
                 array_flip($usedParamIds),
             );
             foreach ($orphaned as $paramId => $points) {
@@ -201,11 +208,6 @@ class CalculateLeaderboardScores
             return [];
         }
 
-        // ponytail-fix: jangan filter by paramIds (active params only) di query.
-        // Entry bisa nempel ke parameter_id yang sudah soft-deleted (mis. dupe
-        // cleanup) — tetap harus diagregasi biar gak hilang dari total/breakdown.
-        // Param info di-resolve via withTrashed supaya nama tetap kebaca walau
-        // parameter induknya udah dihapus.
         $entries = LeaderboardEntry::whereIn('team_id', $teamIds)
             ->whereIn('user_id', $userIds)
             ->where('quarter', $quarter)
@@ -216,6 +218,31 @@ class CalculateLeaderboardScores
         $index = [];
         foreach ($entries as $e) {
             $index[$e->user_id][$e->parameter_id] = $e->points;
+        }
+        return $index;
+    }
+
+    /**
+     * ponytail: per-team-scoped index — [user_id][team_id][parameter_id] = points.
+     * Dipakai executeAcrossTeams supaya entry user di team A gak ke-mix ke
+     * row scheme/team B untuk user dual-role.
+     */
+    private function loadEntriesIndexByTeam(array $teamIds, array $userIds, array $paramIds, string $quarter, int $year): array
+    {
+        if (empty($userIds)) {
+            return [];
+        }
+
+        $entries = LeaderboardEntry::whereIn('team_id', $teamIds)
+            ->whereIn('user_id', $userIds)
+            ->where('quarter', $quarter)
+            ->where('year', $year)
+            ->with(['parameter' => fn($q) => $q->withTrashed()])
+            ->get(['id', 'team_id', 'user_id', 'parameter_id', 'points']);
+
+        $index = [];
+        foreach ($entries as $e) {
+            $index[$e->user_id][$e->team_id][$e->parameter_id] = $e->points;
         }
         return $index;
     }

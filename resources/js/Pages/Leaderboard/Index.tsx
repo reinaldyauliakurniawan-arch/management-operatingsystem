@@ -749,8 +749,12 @@ export default function LeaderboardIndex({
                             " Input poin atau tambah parameter di Konfigurasi."}
                     </div>
                 )}
-                <SchemeTable rows={tutorScores} label="Tutor" />
-                <SchemeTable rows={mgmtScores} label="Manajemen" />
+                {(viewMode === "all_tutors" || viewMode === "per_team") && (
+                    <SchemeTable rows={tutorScores} label="Tutor" />
+                )}
+                {(viewMode === "all_management" || viewMode === "per_team") && (
+                    <SchemeTable rows={mgmtScores} label="Manajemen" />
+                )}
             </div>
 
             {/* === Config Modal === */}
