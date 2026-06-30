@@ -66,7 +66,8 @@ class CalculateLeaderboardScores
             ->filter()
             ->unique()
             ->values();
-            $autoRatesByUser = $this->loadAutoRates($autoSources, $userIds, $orgTeamIds, $quarter, $year);
+            $autoRatesByUser = $this->loadAutoRates($autoSources, $userIds, $teamIds, $quarter, $year);
+
         return $filtered->map(function ($member) use ($params, $entriesByUserParam, $autoRatesByUser, $scheme) {
             $userId = $member->user_id;
             $breakdown = [];
