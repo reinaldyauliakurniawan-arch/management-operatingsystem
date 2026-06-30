@@ -89,7 +89,7 @@ class CalculateLeaderboardScores
             $usedParamIds = [];
             foreach ($params as $param) {
                 $points = $param->input_type === 'auto'
-                    ? $this->lookupAutoPoints($param, $userId, $autoRatesByUser)
+                    ? $this->lookupAutoPoints($param, $userId, $teamId, $autoRatesByUser)
                     : ($entriesByUserTeamParam[$userId][$teamId][$param->id] ?? 0);
 
                 $usedParamIds[] = $param->id;
@@ -290,11 +290,11 @@ class CalculateLeaderboardScores
      * ponytail: lookup the auto-computed rate for a (param, user) from the
      * precomputed map, then convert to points using the param config.
      */
-    private function lookupAutoPoints(LeaderboardParameter $param, int $userId, array $autoRatesByUser): float
+    private function lookupAutoPoints(LeaderboardParameter $param, int $userId, int $teamId, array $autoRatesByUser): float
     {
         $config = is_array($param->config) ? $param->config : [];
         $source = $config['source'] ?? '';
-        $pct = $autoRatesByUser[$source][$userId] ?? 0;
+        $pct = $autoRatesByUser[$source][$userId][$teamId] ?? 0;
 
         if (!empty($config['tiers'])) {
             return $param->calculatePoints($pct);
@@ -329,17 +329,26 @@ class CalculateLeaderboardScores
             ->whereIn('owner_id', $userIds)
             ->whereBetween('created_at', [$from, $to]);
 
-        $totals = (clone $base)->selectRaw('owner_id, COUNT(*) as cnt')
-            ->groupBy('owner_id')->pluck('cnt', 'owner_id');
+        // ponytail-fix: group by (owner_id, team_id) — Rock dia di Team A
+        // gak boleh nyampur ke rate row dia di Team B.
+        $totals = (clone $base)->selectRaw('owner_id, team_id, COUNT(*) as cnt')
+            ->groupBy('owner_id', 'team_id')->get();
 
         $dones = (clone $base)->where('status', 'done')
-            ->selectRaw('owner_id, COUNT(*) as cnt')
-            ->groupBy('owner_id')->pluck('cnt', 'owner_id');
+            ->selectRaw('owner_id, team_id, COUNT(*) as cnt')
+            ->groupBy('owner_id', 'team_id')->get();
+
+        $doneMap = [];
+        foreach ($dones as $row) {
+            $doneMap[$row->owner_id][$row->team_id] = $row->cnt;
+        }
 
         $out = [];
-        foreach ($userIds as $uid) {
-            $total = $totals[$uid] ?? 0;
-            $out[$uid] = $total ? round((($dones[$uid] ?? 0) / $total) * 100, 2) : 0;
+        foreach ($totals as $row) {
+            $uid = $row->owner_id;
+            $tid = $row->team_id;
+            $total = $row->cnt;
+            $out[$uid][$tid] = $total ? round((($doneMap[$uid][$tid] ?? 0) / $total) * 100, 2) : 0;
         }
         return $out;
     }
@@ -350,23 +359,26 @@ class CalculateLeaderboardScores
      */
     private function batchScorecardRates(array $userIds, array $teamIds, string $from, string $to): array
     {
+        // ponytail-fix: include team_id, group rate by (owner_id, team_id).
         $metrics = Metric::withoutGlobalScopes()
             ->whereIn('team_id', $teamIds)
             ->whereIn('owner_id', $userIds)
             ->with(['scores' => fn($q) => $q->whereBetween('week_start_date', [$from, $to])])
-            ->get(['id', 'owner_id']);
+            ->get(['id', 'owner_id', 'team_id']);
 
         $totals = [];
         $greens = [];
         foreach ($metrics as $m) {
             $uid = $m->owner_id;
-            $totals[$uid] = ($totals[$uid] ?? 0) + $m->scores->count();
-            $greens[$uid] = ($greens[$uid] ?? 0) + $m->scores->where('status', 'green')->count();
+            $tid = $m->team_id;
+            $totals[$uid][$tid] = ($totals[$uid][$tid] ?? 0) + $m->scores->count();
+            $greens[$uid][$tid] = ($greens[$uid][$tid] ?? 0) + $m->scores->where('status', 'green')->count();
         }
         $out = [];
-        foreach ($userIds as $uid) {
-            $total = $totals[$uid] ?? 0;
-            $out[$uid] = $total ? round(($greens[$uid] ?? 0) / $total * 100, 2) : 0;
+        foreach ($totals as $uid => $byTeam) {
+            foreach ($byTeam as $tid => $total) {
+                $out[$uid][$tid] = $total ? round(($greens[$uid][$tid] ?? 0) / $total * 100, 2) : 0;
+            }
         }
         return $out;
     }
@@ -383,27 +395,32 @@ class CalculateLeaderboardScores
             ->groupBy('team_id')
             ->pluck('cnt', 'team_id');
 
-        // User → primary team mapping (use first team membership found).
-        $userTeams = TeamMember::withoutGlobalScopes()
-            ->whereIn('team_id', $teamIds)
-            ->whereIn('user_id', $userIds)
-            ->get(['user_id', 'team_id'])
-            ->groupBy('user_id')
-            ->map(fn($g) => $g->first()->team_id);
-
+        // ponytail-fix: attendance dihitung per (user_id, event's team_id) —
+        // user dual-team punya 2 attendance rate beda, sesuai event team-nya.
         $attended = EventAttendance::withoutGlobalScopes()
-            ->whereHas('event', fn($q) => $q->withoutGlobalScopes()->whereIn('team_id', $teamIds)->whereBetween('event_date', [$from, $to]))
             ->whereIn('user_id', $userIds)
             ->where('attended', true)
-            ->selectRaw('user_id, COUNT(*) as cnt')
-            ->groupBy('user_id')
-            ->pluck('cnt', 'user_id');
+            ->whereHas('event', fn($q) => $q->withoutGlobalScopes()->whereIn('team_id', $teamIds)->whereBetween('event_date', [$from, $to]))
+            ->with(['event' => fn($q) => $q->withoutGlobalScopes()])
+            ->get(['id', 'user_id', 'event_id']);
+
+        $attendedMap = [];
+        foreach ($attended as $a) {
+            $tid = $a->event->team_id;
+            $attendedMap[$a->user_id][$tid] = ($attendedMap[$a->user_id][$tid] ?? 0) + 1;
+        }
+
+        $memberTeams = TeamMember::withoutGlobalScopes()
+            ->whereIn('team_id', $teamIds)
+            ->whereIn('user_id', $userIds)
+            ->get(['user_id', 'team_id']);
 
         $out = [];
-        foreach ($userIds as $uid) {
-            $teamId = $userTeams[$uid] ?? null;
-            $total = $teamId ? ($eventsPerTeam[$teamId] ?? 0) : 0;
-            $out[$uid] = $total ? round((($attended[$uid] ?? 0) / $total) * 100, 2) : 0;
+        foreach ($memberTeams as $mt) {
+            $uid = $mt->user_id;
+            $tid = $mt->team_id;
+            $total = $eventsPerTeam[$tid] ?? 0;
+            $out[$uid][$tid] = $total ? round((($attendedMap[$uid][$tid] ?? 0) / $total) * 100, 2) : 0;
         }
         return $out;
     }
@@ -420,21 +437,29 @@ class CalculateLeaderboardScores
             ->groupBy('team_id')
             ->map(fn($g) => $g->sortByDesc('id')->first()?->id);
 
-        $cycleIds = $cycles->filter()->values()->all();
-        if (empty($cycleIds)) {
-            return array_fill_keys($userIds, 0);
+        if ($cycles->filter()->isEmpty()) {
+            return [];
         }
+
+        // ponytail-fix: cycle_id -> team_id reverse map, supaya rate bisa
+        // di-attribute ke team yang benar, bukan 1 angka global per user.
+        $cycleTeam = [];
+        foreach ($cycles as $tid => $cid) {
+            if ($cid) $cycleTeam[$cid] = $tid;
+        }
+        $cycleIds = array_keys($cycleTeam);
 
         $avgs = AssessmentResponse::whereIn('cycle_id', $cycleIds)
             ->whereIn('assessee_id', $userIds)
-            ->selectRaw('assessee_id, AVG(rubric_level) as avg_level')
-            ->groupBy('assessee_id')
-            ->pluck('avg_level', 'assessee_id');
+            ->selectRaw('assessee_id, cycle_id, AVG(rubric_level) as avg_level')
+            ->groupBy('assessee_id', 'cycle_id')
+            ->get();
 
         $out = [];
-        foreach ($userIds as $uid) {
-            $avg = $avgs[$uid] ?? null;
-            $out[$uid] = $avg ? round((($avg - 1) / 4) * 100, 2) : 0;
+        foreach ($avgs as $row) {
+            $tid = $cycleTeam[$row->cycle_id] ?? null;
+            if (!$tid) continue;
+            $out[$row->assessee_id][$tid] = round((($row->avg_level - 1) / 4) * 100, 2);
         }
         return $out;
     }
