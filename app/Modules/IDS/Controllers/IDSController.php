@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class IDSController extends Controller
@@ -39,7 +40,13 @@ class IDSController extends Controller
             'root_cause'  => 'nullable|string',
             'solution'    => 'nullable|string',
             'priority'    => 'nullable|integer|min:0|max:10',
-            'owner_id'    => ['nullable', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'owner_id'    => ['nullable', Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
         ]);
 
         $validated['team_id']    = $teamId;
@@ -67,7 +74,13 @@ class IDSController extends Controller
             'root_cause'  => 'nullable|string',
             'solution'    => 'nullable|string',
             'priority'    => 'sometimes|integer|min:0|max:10',
-            'owner_id'    => ['nullable', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'owner_id'    => ['nullable', Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
         ]);
 
         $issue->update([...$validated, 'updated_by' => $user->id]);

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ToDoController extends Controller
@@ -45,7 +46,13 @@ class ToDoController extends Controller
 
         $validated = $request->validate([
             'title'      => 'required|string|max:255',
-            'owner_id'   => ['required', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'owner_id'   => ['required', Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
             'due_date'   => 'required|date',
             'meeting_id' => ['nullable', Rule::exists('meetings', 'id')->where('team_id', $teamId)],
             'issue_id'   => ['nullable', Rule::exists('issues', 'id')->where('team_id', $teamId)],
@@ -91,7 +98,13 @@ class ToDoController extends Controller
 
         $validated = $request->validate([
             'title'      => 'sometimes|string|max:255',
-            'owner_id'   => ['sometimes', \Illuminate\Validation\Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'owner_id'   => ['sometimes', \Illuminate\Validation\Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
             'due_date'   => 'sometimes|date',
         ]);
 

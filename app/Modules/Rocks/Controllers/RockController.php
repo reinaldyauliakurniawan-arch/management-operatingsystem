@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class RockController extends Controller
@@ -80,7 +81,13 @@ class RockController extends Controller
         $validated = $request->validate([
             'title'       => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'owner_id'    => ['sometimes', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'owner_id'    => ['sometimes', Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
             'due_date'    => 'nullable|date',
         ]);
 

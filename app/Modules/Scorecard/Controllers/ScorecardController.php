@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
@@ -162,7 +163,13 @@ class ScorecardController extends Controller
 
         $validated = $request->validate([
             'title'               => 'required|string|max:255',
-            'owner_id'            => ['required', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'owner_id'            => ['required', Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
             'goal_value'          => 'required|numeric',
             'comparison_operator' => 'required|in:>=,<=,==',
             'frequency'           => 'nullable|in:weekly,monthly',
@@ -188,7 +195,13 @@ class ScorecardController extends Controller
 
         $validated = $request->validate([
             'title'               => 'sometimes|string|max:255',
-            'owner_id'            => ['sometimes', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'owner_id'            => ['sometimes', Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
             'goal_value'          => 'sometimes|numeric',
             'comparison_operator' => 'sometimes|in:>=,<=,==',
             'frequency'           => 'nullable|in:weekly,monthly',

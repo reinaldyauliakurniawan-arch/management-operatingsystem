@@ -16,6 +16,7 @@ use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class L10MeetingController extends Controller
@@ -74,7 +75,13 @@ class L10MeetingController extends Controller
             'title'           => 'nullable|string|max:255',
             'scheduled_at'    => 'nullable|date',
             'attendee_ids'    => 'nullable|array',
-            'attendee_ids.*'  => [Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'attendee_ids.*'  => [Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
         ]);
 
         $meeting = $createMeeting->execute($validated);
@@ -172,8 +179,20 @@ class L10MeetingController extends Controller
 
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
-            'owner_id'    => ['required_without:assignee_id', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
-            'assignee_id' => ['required_without:owner_id', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'owner_id'    => ['required_without:assignee_id', Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
+            'assignee_id' => ['required_without:owner_id', Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
             'due_date'    => 'required|date',
         ]);
 
@@ -200,7 +219,13 @@ class L10MeetingController extends Controller
             'root_cause'  => 'nullable|string',
             'solution'    => 'nullable|string',
             'priority'    => 'nullable',
-            'owner_id'    => ['nullable', Rule::exists('users', 'id')->where(fn($q) => $q->whereHas('teamMemberships', fn($q2) => $q2->where('team_id', $teamId)))],
+            'owner_id'    => ['nullable', Rule::exists('users', 'id')->where(fn($q) => $q->whereExists(function ($sub) use ($teamId) {
+                $sub->select(DB::raw(1))
+                    ->from('team_members')
+                    ->whereColumn('team_members.user_id', 'users.id')
+                    ->where('team_members.team_id', $teamId)
+                    ->whereNull('team_members.deleted_at');
+            }))],
         ]);
 
         $priority = $this->normalizePriority($validated['priority'] ?? null);
