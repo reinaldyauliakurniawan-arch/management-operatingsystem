@@ -344,7 +344,7 @@ export default function LeaderboardIndex({
     const [selectedTeamId, setSelectedTeamId] = useState<number>(
         auth.activeTeamId ?? 0,
     );
-    const [expanded, setExpanded] = useState<number | null>(null);
+    const [expanded, setExpanded] = useState<string | null>(null);
 
     // modals
     const [configOpen, setConfigOpen] = useState(false);
@@ -518,7 +518,9 @@ export default function LeaderboardIndex({
                         </thead>
                         <tbody className="divide-y divide-border">
                             {rows.map((row, idx) => (
-                                <React.Fragment key={row.user_id}>
+                                <React.Fragment
+                                    key={`${row.user_id}-${row.team_id}`}
+                                >
                                     <tr className="transition-colors hover:bg-surface-subtle">
                                         <td className="px-5 py-4">
                                             {idx === 0 ? (
@@ -556,14 +558,16 @@ export default function LeaderboardIndex({
                                             <button
                                                 onClick={() =>
                                                     setExpanded(
-                                                        expanded === row.user_id
+                                                        expanded ===
+                                                            `${row.user_id}-${row.team_id}`
                                                             ? null
-                                                            : row.user_id,
+                                                            : `${row.user_id}-${row.team_id}`,
                                                     )
                                                 }
                                                 className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1 text-[var(--font-sm)] font-medium text-text-secondary hover:bg-surface-raised"
                                             >
-                                                {expanded === row.user_id ? (
+                                                {expanded ===
+                                                `${row.user_id}-${row.team_id}` ? (
                                                     <>
                                                         <ChevronUp className="h-3 w-3" />{" "}
                                                         Tutup
@@ -577,7 +581,8 @@ export default function LeaderboardIndex({
                                             </button>
                                         </td>
                                     </tr>
-                                    {expanded === row.user_id && (
+                                    {expanded ===
+                                        `${row.user_id}-${row.team_id}` && (
                                         <tr>
                                             <td
                                                 colSpan={colSpanTotal}
