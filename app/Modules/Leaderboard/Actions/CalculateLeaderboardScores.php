@@ -62,11 +62,12 @@ class CalculateLeaderboardScores
         $userIdToTeamId = $filtered->pluck('team_id', 'user_id');
         $userIds = $filtered->pluck('user_id')->all();
 
-        // ponytail-fix: param shared org-wide (dibuat 1 team, dipakai semua
-        // team) — entry-nya harus tetap kehitung ke user manapun yang punya
-        // role itu, bukan cuma team pemilik param. Lookup by user_id+param_id
-        // saja (tidak strict team_id), supaya gak ke-drop pas user py >1 row.
-        $entriesByUserParam = $this->loadEntriesIndex(
+        // ponytail-fix v2: strict (user_id, team_id) match. Versi sebelumnya
+        // (lookup by user_id saja) bikin SEMUA row user dual-role dapat
+        // breakdown/total identik — salah. Entry's team_id = team pemilik
+        // parameter saat di-save (lihat storeEntry); row match kalau
+        // member->team_id sama persis dengan entry->team_id.
+        $entriesByUserTeamParam = $this->loadEntriesIndexByTeam(
             $teamIds, $userIds, $params->pluck('id')->all(), $quarter, $year,
         );
 
@@ -79,8 +80,9 @@ class CalculateLeaderboardScores
             ->values();
             $autoRatesByUser = $this->loadAutoRates($autoSources, $userIds, $teamIds, $quarter, $year);
 
-        return $filtered->map(function ($member) use ($params, $entriesByUserParam, $autoRatesByUser, $scheme) {
+        return $filtered->map(function ($member) use ($params, $entriesByUserTeamParam, $autoRatesByUser, $scheme) {
             $userId = $member->user_id;
+            $teamId = $member->team_id;
             $breakdown = [];
             $total = 0;
 
@@ -88,7 +90,7 @@ class CalculateLeaderboardScores
             foreach ($params as $param) {
                 $points = $param->input_type === 'auto'
                     ? $this->lookupAutoPoints($param, $userId, $autoRatesByUser)
-                    : ($entriesByUserParam[$userId][$param->id] ?? 0);
+                    : ($entriesByUserTeamParam[$userId][$teamId][$param->id] ?? 0);
 
                 $usedParamIds[] = $param->id;
                 $total += $points;
@@ -105,7 +107,7 @@ class CalculateLeaderboardScores
             // (gak ada di $params aktif) tetap diakumulasi, biar total gak miss
             // poin yang sebenarnya valid di DB. Ditandai "Arsip" di breakdown.
             $orphaned = array_diff_key(
-                $entriesByUserParam[$userId] ?? [],
+                $entriesByUserTeamParam[$userId][$teamId] ?? [],
                 array_flip($usedParamIds),
             );
             foreach ($orphaned as $paramId => $points) {
