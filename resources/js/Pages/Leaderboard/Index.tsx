@@ -49,6 +49,8 @@ interface ScoreRow {
     user_id: number;
     name: string;
     role: string;
+    team_id: number;
+    team_name?: string;
     scheme: "tutor" | "management";
     total: number;
     breakdown: BreakdownItem[];
@@ -329,8 +331,6 @@ export default function LeaderboardIndex({
     filters: {
         year: number;
         quarter: string;
-        view: ViewMode;
-        selected_team_id: number;
     };
 }) {
     const { auth } = usePage().props as any;
@@ -340,11 +340,9 @@ export default function LeaderboardIndex({
 
     const [quarter, setQuarter] = useState(filters.quarter);
     const [year, setYear] = useState(String(filters.year));
-    const [viewMode, setViewMode] = useState<ViewMode>(
-        filters.view ?? "all_management",
-    );
+    const [viewMode, setViewMode] = useState<ViewMode>("all_management");
     const [selectedTeamId, setSelectedTeamId] = useState<number>(
-        filters.selected_team_id ?? auth.activeTeamId ?? 0,
+        auth.activeTeamId ?? 0,
     );
     const [expanded, setExpanded] = useState<number | null>(null);
 
@@ -378,27 +376,21 @@ export default function LeaderboardIndex({
         notes: "",
     });
 
+    // ponytail: viewMode/selectedTeamId are now PURE client-side sort/filter
+    // over one canonical org-wide dataset. They never trigger a server
+    // refetch and never change what data exists — only how it's displayed.
+    // Only quarter/year change the underlying dataset (different period).
     const applyFilter = (
         overrides?: Partial<{
             quarter: string;
             year: string;
-            viewMode: ViewMode;
-            selectedTeamId: number;
         }>,
     ) => {
-        const resolvedView = overrides?.viewMode ?? viewMode;
         router.get(
             route("leaderboard.index"),
             {
                 quarter: overrides?.quarter ?? quarter,
                 year: overrides?.year ?? year,
-                view: resolvedView,
-                ...(resolvedView === "per_team"
-                    ? {
-                          selected_team_id:
-                              overrides?.selectedTeamId ?? selectedTeamId,
-                      }
-                    : {}),
             },
             { preserveState: true },
         );
@@ -476,10 +468,16 @@ export default function LeaderboardIndex({
         );
     };
 
-    // scores sudah difilter dari backend sesuai viewMode
-    // untuk per_team, kita masih pakai SchemeTable dua-duanya
-    const tutorScores = scores.filter((s) => s.scheme === "tutor");
-    const mgmtScores = scores.filter((s) => s.scheme === "management");
+    // ponytail: backend always returns the full org-wide dataset (both
+    // schemes, all teams) — every filtering below is client-side display
+    // only, so the underlying data is identical for every viewer.
+    const scopedScores =
+        viewMode === "per_team"
+            ? scores.filter((s) => s.team_id === selectedTeamId)
+            : scores;
+
+    const tutorScores = scopedScores.filter((s) => s.scheme === "tutor");
+    const mgmtScores = scopedScores.filter((s) => s.scheme === "management");
 
     const showTeamCol = viewMode !== "per_team";
 
@@ -545,8 +543,7 @@ export default function LeaderboardIndex({
                                         {showTeamCol && (
                                             <td className="px-5 py-4">
                                                 <span className="text-sm text-text-secondary">
-                                                    {(row as any).team_name ??
-                                                        "—"}
+                                                    {row.team_name ?? "—"}
                                                 </span>
                                             </td>
                                         )}
@@ -662,10 +659,7 @@ export default function LeaderboardIndex({
                             <button
                                 key={opt.value}
                                 type="button"
-                                onClick={() => {
-                                    setViewMode(opt.value);
-                                    applyFilter({ viewMode: opt.value });
-                                }}
+                                onClick={() => setViewMode(opt.value)}
                                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                                     viewMode === opt.value
                                         ? "bg-surface shadow-sm border border-border text-primary font-semibold"
@@ -684,12 +678,7 @@ export default function LeaderboardIndex({
                                 <button
                                     key={team.id}
                                     type="button"
-                                    onClick={() => {
-                                        setSelectedTeamId(team.id);
-                                        applyFilter({
-                                            selectedTeamId: team.id,
-                                        });
-                                    }}
+                                    onClick={() => setSelectedTeamId(team.id)}
                                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                                         selectedTeamId === team.id
                                             ? "bg-surface shadow-sm border border-border text-primary font-semibold"

@@ -24,7 +24,6 @@ class LeaderboardController extends Controller
 
         $year   = (int) $request->input('year', now()->year);
         $quarter = $request->input('quarter', 'Q' . ceil(now()->month / 3));
-        $view   = $request->input('view', 'all_management');
 
         $currentTeam = Team::withoutGlobalScopes()->findOrFail($teamId);
         $orgId       = $currentTeam->organization_id;
@@ -63,35 +62,23 @@ class LeaderboardController extends Controller
             ->get()
             ->map(fn($t) => ['id' => $t->id, 'name' => $t->name]);
 
-        if ($view === 'per_team') {
-            $selectedTeamId = (int) $request->input('selected_team_id', $teamId);
-            if (!$orgTeamIds->contains($selectedTeamId)) {
-                $selectedTeamId = $teamId;
-            }
-            $scores = $calc->execute($selectedTeamId, $quarter, $year);
-        } elseif ($view === 'all_tutors') {
-            $scores = $calc->executeAcrossTeams($orgTeamIds->toArray(), $quarter, $year, 'tutor');
-        } else {
-            $scores = $calc->executeAcrossTeams($orgTeamIds->toArray(), $quarter, $year, 'management');
-        }
+        $scoresManagement = $calc->executeAcrossTeams($orgTeamIds->toArray(), $quarter, $year, 'management');
+        $scoresTutor      = $calc->executeAcrossTeams($orgTeamIds->toArray(), $quarter, $year, 'tutor');
+        $scores = $scoresManagement->concat($scoresTutor)->sortByDesc('total')->values();
 
-        $selectedTeamId = $view === 'per_team'
-            ? (int) $request->input('selected_team_id', $teamId)
-            : $teamId;
-        if (!$orgTeamIds->contains($selectedTeamId)) {
-            $selectedTeamId = $teamId;
-        }
+        $user   = Auth::user();
+        $role   = $user->roleIn($teamId);
+        $canManage = $user->isAdminOfActiveOrg() || $role === 'leader';
 
         return Inertia::render('Leaderboard/Index', [
             'scores'     => $scores,
             'parameters' => $parameters,
             'members'    => $members,
             'orgTeams'   => $orgTeams,
+            'canManage'  => $canManage,
             'filters'    => [
-                'year'            => $year,
-                'quarter'         => $quarter,
-                'view'            => $view,
-                'selected_team_id' => $selectedTeamId,
+                'year'    => $year,
+                'quarter' => $quarter,
             ],
         ]);
     }

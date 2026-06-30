@@ -66,8 +66,7 @@ class CalculateLeaderboardScores
             ->filter()
             ->unique()
             ->values();
-        $autoRatesByUser = $this->loadAutoRates($autoSources, $userIds, $teamIds, $quarter, $year);
-
+            $autoRatesByUser = $this->loadAutoRates($autoSources, $userIds, $orgTeamIds, $quarter, $year);
         return $filtered->map(function ($member) use ($params, $entriesByUserParam, $autoRatesByUser, $scheme) {
             $userId = $member->user_id;
             $breakdown = [];
@@ -112,6 +111,7 @@ class CalculateLeaderboardScores
                 'user_id'   => $userId,
                 'name'      => $member->user->name,
                 'role'      => $member->role,
+                'team_id'   => $member->team_id,
                 'team_name' => $member->team->name ?? null,
                 'scheme'    => $scheme,
                 'total'     => round($total, 2),
@@ -153,7 +153,7 @@ class CalculateLeaderboardScores
             ->filter()
             ->unique()
             ->values();
-        $autoRatesByUser = $this->loadAutoRates($autoSources, $userIds, [$teamId], $quarter, $year);
+        $autoRatesByUser = $this->loadAutoRates($autoSources, $userIds, $orgTeamIds, $quarter, $year);
 
         return $members->map(function ($member) use ($params, $entriesByUserParam, $autoRatesByUser, $teamId) {
             $userId = $member->user_id;
