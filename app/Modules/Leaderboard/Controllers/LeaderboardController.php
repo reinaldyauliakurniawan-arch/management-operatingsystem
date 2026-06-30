@@ -12,6 +12,7 @@ use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class LeaderboardController extends Controller
@@ -157,7 +158,13 @@ class LeaderboardController extends Controller
             'user_id'      => [
                 'required',
                 Rule::exists('users', 'id')->where(function ($q) use ($orgTeamIds) {
-                    $q->whereHas('teamMemberships', fn($q2) => $q2->whereIn('team_id', $orgTeamIds));
+                    $q->whereExists(function ($sub) use ($orgTeamIds) {
+                        $sub->select(DB::raw(1))
+                            ->from('team_members')
+                            ->whereColumn('team_members.user_id', 'users.id')
+                            ->whereIn('team_members.team_id', $orgTeamIds)
+                            ->whereNull('team_members.deleted_at');
+                    });
                 }),
             ],
             'quarter'   => 'required|in:Q1,Q2,Q3,Q4',
