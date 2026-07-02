@@ -29,6 +29,10 @@ class VTOResource extends JsonResource
             'one_year_profit' => $this->one_year_profit,
             'one_year_measurables' => $this->one_year_measurables,
             'one_year_goals' => $this->one_year_goals ?? [],
+            'quarter_date' => $this->quarter_date?->format('Y-m-d'),
+            'quarter_revenue' => $this->quarter_revenue,
+            'quarter_profit' => $this->quarter_profit,
+            'quarter_measurables' => $this->quarter_measurables,
         ];
     }
 }

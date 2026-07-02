@@ -32,6 +32,10 @@ class VTOPlan extends Model
         'one_year_profit',
         'one_year_measurables',
         'one_year_goals',
+        'quarter_date',
+        'quarter_revenue',
+        'quarter_profit',
+        'quarter_measurables',
         'created_by',
         'updated_by',
     ];
@@ -42,5 +46,6 @@ class VTOPlan extends Model
         'one_year_goals' => 'array',
         'three_year_date' => 'date',
         'one_year_date' => 'date',
+        'quarter_date' => 'date',
     ];
 }

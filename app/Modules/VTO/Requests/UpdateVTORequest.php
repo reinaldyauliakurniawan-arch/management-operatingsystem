@@ -32,6 +32,10 @@ class UpdateVTORequest extends FormRequest
             'one_year_profit' => ['nullable', 'string'],
             'one_year_measurables' => ['nullable', 'string'],
             'one_year_goals' => ['nullable', 'array'],
+            'quarter_date' => ['nullable', 'date'],
+            'quarter_revenue' => ['nullable', 'string'],
+            'quarter_profit' => ['nullable', 'string'],
+            'quarter_measurables' => ['nullable', 'string'],
         ];
     }
 }

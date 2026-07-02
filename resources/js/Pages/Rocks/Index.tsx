@@ -69,9 +69,16 @@ const statusLabel: Record<Rock["status"], string> = {
 export default function RocksIndex({
     rocks,
     users,
+    quarterTarget,
 }: {
     rocks: { data: Rock[] };
     users: User[];
+    quarterTarget: {
+        quarter_date: string | null;
+        quarter_revenue: string | null;
+        quarter_profit: string | null;
+        quarter_measurables: string | null;
+    } | null;
 }) {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
@@ -95,6 +102,59 @@ export default function RocksIndex({
         year: new Date().getFullYear(),
         due_date: "",
     });
+
+    const [editOpen, setEditOpen] = useState(false);
+    const {
+        data: editData,
+        setData: setEditData,
+        patch,
+        processing: editProcessing,
+        errors: editErrors,
+    } = useForm({
+        title: "",
+        description: "",
+        owner_id: "" as number | string,
+        quarter: "Q1",
+        year: new Date().getFullYear(),
+        due_date: "",
+    });
+
+    const openEdit = (rock: Rock) => {
+        setEditData({
+            title: rock.title,
+            description: rock.description ?? "",
+            owner_id: rock.owner.id,
+            quarter: rock.quarter,
+            year: rock.year,
+            due_date: rock.due_date ?? "",
+        });
+        setEditOpen(true);
+    };
+
+    const submitEdit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!detailRock) return;
+        patch(route("rocks.update", detailRock.id), {
+            preserveScroll: true,
+            onSuccess: () => setEditOpen(false),
+        });
+    };
+
+    const [qtOpen, setQtOpen] = useState(false);
+    const { data: qtData, setData: setQtData } = useForm({
+        quarter_date: quarterTarget?.quarter_date ?? "",
+        quarter_revenue: quarterTarget?.quarter_revenue ?? "",
+        quarter_profit: quarterTarget?.quarter_profit ?? "",
+        quarter_measurables: quarterTarget?.quarter_measurables ?? "",
+    });
+
+    const submitQuarterTarget = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.post(route("vto.update"), qtData, {
+            preserveScroll: true,
+            onSuccess: () => setQtOpen(false),
+        });
+    };
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -168,6 +228,52 @@ export default function RocksIndex({
                     ) : undefined
                 }
             />
+
+            {/* Quarter Target */}
+            <Card className="mb-6">
+                <CardContent>
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
+                            Target Quarter Ini
+                        </p>
+                        {isLeader && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setQtOpen(true)}
+                            >
+                                Edit
+                            </Button>
+                        )}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[13px]">
+                        <div>
+                            <p className="text-text-muted mb-1">Future Date</p>
+                            <p className="text-text-primary font-medium">
+                                {quarterTarget?.quarter_date ?? "—"}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-text-muted mb-1">Revenue</p>
+                            <p className="text-text-primary font-medium">
+                                {quarterTarget?.quarter_revenue ?? "—"}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-text-muted mb-1">Profit</p>
+                            <p className="text-text-primary font-medium">
+                                {quarterTarget?.quarter_profit ?? "—"}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-text-muted mb-1">Measurables</p>
+                            <p className="text-text-primary font-medium">
+                                {quarterTarget?.quarter_measurables ?? "—"}
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Stats */}
             <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -573,20 +679,242 @@ export default function RocksIndex({
                                     )}
                                 </div>
                             </DialogBody>
-                            {isLeader && (
+                            {(isLeader ||
+                                detailRock.owner.id === auth.user.id) && (
                                 <DialogFooter>
                                     <Button
-                                        variant="danger"
-                                        onClick={() =>
-                                            setDeleteRockId(detailRock.id)
-                                        }
+                                        variant="secondary"
+                                        onClick={() => openEdit(detailRock)}
                                     >
-                                        Hapus Rock
+                                        Edit Rock
                                     </Button>
+                                    {isLeader && (
+                                        <Button
+                                            variant="danger"
+                                            onClick={() =>
+                                                setDeleteRockId(detailRock.id)
+                                            }
+                                        >
+                                            Hapus Rock
+                                        </Button>
+                                    )}
                                 </DialogFooter>
                             )}
                         </>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Rock Modal */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent size="md">
+                    <DialogHeader>
+                        <DialogTitle>Edit Rock</DialogTitle>
+                    </DialogHeader>
+                    <DialogBody>
+                        <form
+                            id="rock-edit-form"
+                            onSubmit={submitEdit}
+                            className="flex flex-col gap-lg"
+                        >
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="edit-title">Judul Rock *</Label>
+                                <Input
+                                    id="edit-title"
+                                    value={editData.title}
+                                    onChange={(e) =>
+                                        setEditData("title", e.target.value)
+                                    }
+                                    aria-invalid={!!editErrors.title}
+                                />
+                                {editErrors.title && (
+                                    <p className="text-[var(--font-base)] text-error-text">
+                                        {editErrors.title}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="edit-desc">Deskripsi</Label>
+                                <Textarea
+                                    id="edit-desc"
+                                    value={editData.description}
+                                    onChange={(e) =>
+                                        setEditData(
+                                            "description",
+                                            e.target.value,
+                                        )
+                                    }
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="edit-owner">Owner *</Label>
+                                <Select
+                                    id="edit-owner"
+                                    value={editData.owner_id}
+                                    onChange={(e) =>
+                                        setEditData("owner_id", e.target.value)
+                                    }
+                                >
+                                    {users.map((u) => (
+                                        <option key={u.id} value={u.id}>
+                                            {u.name}
+                                        </option>
+                                    ))}
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-3 gap-md">
+                                <div className="flex flex-col gap-xs">
+                                    <Label htmlFor="edit-quarter">
+                                        Quarter *
+                                    </Label>
+                                    <Select
+                                        id="edit-quarter"
+                                        value={editData.quarter}
+                                        onChange={(e) =>
+                                            setEditData(
+                                                "quarter",
+                                                e.target.value,
+                                            )
+                                        }
+                                    >
+                                        {["Q1", "Q2", "Q3", "Q4"].map((q) => (
+                                            <option key={q} value={q}>
+                                                {q}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </div>
+                                <div className="flex flex-col gap-xs">
+                                    <Label htmlFor="edit-year">Year *</Label>
+                                    <Input
+                                        id="edit-year"
+                                        type="number"
+                                        value={editData.year}
+                                        onChange={(e) =>
+                                            setEditData(
+                                                "year",
+                                                parseInt(e.target.value),
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-xs">
+                                    <Label htmlFor="edit-due">Due Date</Label>
+                                    <Input
+                                        id="edit-due"
+                                        type="date"
+                                        value={editData.due_date}
+                                        onChange={(e) =>
+                                            setEditData(
+                                                "due_date",
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </div>
+                        </form>
+                    </DialogBody>
+                    <DialogFooter>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setEditOpen(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="submit"
+                            form="rock-edit-form"
+                            disabled={editProcessing}
+                        >
+                            {editProcessing ? "Menyimpan…" : "Simpan"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Quarter Target Modal */}
+            <Dialog open={qtOpen} onOpenChange={setQtOpen}>
+                <DialogContent size="md">
+                    <DialogHeader>
+                        <DialogTitle>Edit Target Quarter</DialogTitle>
+                    </DialogHeader>
+                    <DialogBody>
+                        <form
+                            id="qt-form"
+                            onSubmit={submitQuarterTarget}
+                            className="flex flex-col gap-lg"
+                        >
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="qt-date">Future Date</Label>
+                                <Input
+                                    id="qt-date"
+                                    type="date"
+                                    value={qtData.quarter_date}
+                                    onChange={(e) =>
+                                        setQtData(
+                                            "quarter_date",
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="qt-revenue">Revenue</Label>
+                                <Input
+                                    id="qt-revenue"
+                                    value={qtData.quarter_revenue}
+                                    onChange={(e) =>
+                                        setQtData(
+                                            "quarter_revenue",
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="qt-profit">Profit</Label>
+                                <Input
+                                    id="qt-profit"
+                                    value={qtData.quarter_profit}
+                                    onChange={(e) =>
+                                        setQtData(
+                                            "quarter_profit",
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-xs">
+                                <Label htmlFor="qt-measurables">
+                                    Measurables
+                                </Label>
+                                <Textarea
+                                    id="qt-measurables"
+                                    value={qtData.quarter_measurables}
+                                    onChange={(e) =>
+                                        setQtData(
+                                            "quarter_measurables",
+                                            e.target.value,
+                                        )
+                                    }
+                                    rows={3}
+                                />
+                            </div>
+                        </form>
+                    </DialogBody>
+                    <DialogFooter>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setQtOpen(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button type="submit" form="qt-form">
+                            Simpan
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

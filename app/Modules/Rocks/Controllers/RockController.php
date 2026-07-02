@@ -8,6 +8,7 @@ use App\Modules\Rocks\Actions\UpdateRockStatus;
 use App\Modules\Rocks\Models\Rock;
 use App\Modules\Rocks\Requests\CreateRockRequest;
 use App\Modules\Rocks\Resources\RockResource;
+use App\Modules\VTO\Models\VTOPlan;
 use App\Models\User;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
@@ -20,14 +21,24 @@ class RockController extends Controller
     public function index()
     {
         $teamId = TenantContext::teamId();
+        $orgId  = TenantContext::organizationId();
         abort_if(!$teamId, 403, 'Tidak ada active team.');
 
         $rocks = Rock::with(['owner', 'milestones'])->where('team_id', $teamId)->latest()->get();
         $users = User::inTeam($teamId);
+        $vto   = $orgId
+            ? VTOPlan::withoutGlobalScopes()->where('organization_id', $orgId)->first()
+            : null;
 
         return Inertia::render('Rocks/Index', [
             'rocks' => RockResource::collection($rocks),
             'users' => $users,
+            'quarterTarget' => $vto ? [
+                'quarter_date'        => $vto->quarter_date?->format('Y-m-d'),
+                'quarter_revenue'     => $vto->quarter_revenue,
+                'quarter_profit'      => $vto->quarter_profit,
+                'quarter_measurables' => $vto->quarter_measurables,
+            ] : null,
         ]);
     }
 
@@ -88,6 +99,8 @@ class RockController extends Controller
                     ->where('team_members.team_id', $teamId)
                     ->whereNull('team_members.deleted_at');
             }))],
+            'quarter'     => 'sometimes|string',
+            'year'        => 'sometimes|integer',
             'due_date'    => 'nullable|date',
         ]);
 
