@@ -18,13 +18,41 @@ use Inertia\Inertia;
 
 class RockController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $teamId = TenantContext::teamId();
         $orgId  = TenantContext::organizationId();
         abort_if(!$teamId, 403, 'Tidak ada active team.');
 
-        $rocks = Rock::with(['owner', 'milestones'])->where('team_id', $teamId)->latest()->get();
+        $team        = \App\Modules\Teams\Models\Team::withoutGlobalScopes()->find($teamId);
+        $q1StartDate = $team?->q1_start_date
+            ? \Carbon\Carbon::parse($team->q1_start_date)
+            : \Carbon\Carbon::create(\Carbon\Carbon::now()->year, 1, 1);
+
+        $now  = \Carbon\Carbon::now();
+        $year = (int) $request->query('year', $now->year);
+
+        // Auto-detect quarter aktif berdasarkan q1_start_date — sama pola dengan Scorecard
+        $detectedQuarter = 1;
+        for ($q = 4; $q >= 1; $q--) {
+            $qs = $q1StartDate->copy()->addWeeks(($q - 1) * 13);
+            $qe = $qs->copy()->addWeeks(13)->subDay();
+            if ($now->between($qs, $qe)) {
+                $detectedQuarter = $q;
+                break;
+            }
+        }
+
+        $quarterNum = (int) $request->query('quarter', $detectedQuarter);
+        $quarterNum = max(1, min(4, $quarterNum));
+        $quarterKey = 'Q' . $quarterNum;
+
+        $rocks = Rock::with(['owner', 'milestones'])
+            ->where('team_id', $teamId)
+            ->where('quarter', $quarterKey)
+            ->where('year', $year)
+            ->latest()
+            ->get();
         $users = User::inTeam($teamId);
         $vto   = $orgId
             ? VTOPlan::withoutGlobalScopes()->where('organization_id', $orgId)->first()
@@ -33,6 +61,10 @@ class RockController extends Controller
         return Inertia::render('Rocks/Index', [
             'rocks' => RockResource::collection($rocks),
             'users' => $users,
+            'filters' => [
+                'quarter' => $quarterNum,
+                'year'    => $year,
+            ],
             'quarterTarget' => $vto ? [
                 'quarter_date'        => $vto->quarter_date?->format('Y-m-d'),
                 'quarter_revenue'     => $vto->quarter_revenue,

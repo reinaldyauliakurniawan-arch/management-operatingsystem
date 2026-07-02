@@ -70,6 +70,7 @@ export default function RocksIndex({
     rocks,
     users,
     quarterTarget,
+    filters,
 }: {
     rocks: { data: Rock[] };
     users: User[];
@@ -79,6 +80,7 @@ export default function RocksIndex({
         quarter_profit: string | null;
         quarter_measurables: string | null;
     } | null;
+    filters: { quarter: number; year: number };
 }) {
     const { auth } = usePage().props as any;
     const isLeader = auth.teamRole === "leader";
@@ -156,6 +158,14 @@ export default function RocksIndex({
         });
     };
 
+    const goToPeriod = (quarter: number, year: number) => {
+        router.get(
+            route("rocks.index"),
+            { quarter, year },
+            { preserveState: true },
+        );
+    };
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post(route("rocks.store"), {
@@ -221,11 +231,48 @@ export default function RocksIndex({
                 title="Rocks"
                 subtitle="90-day priorities tim"
                 action={
-                    isLeader ? (
-                        <Button onClick={() => setCreateOpen(true)}>
-                            + Tambah Rock
-                        </Button>
-                    ) : undefined
+                    <div className="flex items-center gap-sm">
+                        <Select
+                            value={String(filters.year)}
+                            onChange={(e) =>
+                                goToPeriod(
+                                    filters.quarter,
+                                    parseInt(e.target.value),
+                                )
+                            }
+                            className="h-9 w-auto"
+                        >
+                            {[
+                                filters.year - 1,
+                                filters.year,
+                                filters.year + 1,
+                            ].map((y) => (
+                                <option key={y} value={y}>
+                                    {y}
+                                </option>
+                            ))}
+                        </Select>
+                        <Select
+                            value={String(filters.quarter)}
+                            onChange={(e) =>
+                                goToPeriod(
+                                    parseInt(e.target.value),
+                                    filters.year,
+                                )
+                            }
+                            className="h-9 w-auto"
+                        >
+                            <option value={1}>Q1</option>
+                            <option value={2}>Q2</option>
+                            <option value={3}>Q3</option>
+                            <option value={4}>Q4</option>
+                        </Select>
+                        {isLeader && (
+                            <Button onClick={() => setCreateOpen(true)}>
+                                + Tambah Rock
+                            </Button>
+                        )}
+                    </div>
                 }
             />
 
