@@ -56,6 +56,6 @@ class VTOController extends Controller
 
         $updateVTO->execute($request->validated());
 
-        return redirect()->route('vto.index')->with('message', 'VTO diperbarui.');
+        return back()->with('message', 'VTO diperbarui.');
     }
 }

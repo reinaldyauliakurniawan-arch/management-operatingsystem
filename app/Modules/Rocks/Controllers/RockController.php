@@ -8,7 +8,7 @@ use App\Modules\Rocks\Actions\UpdateRockStatus;
 use App\Modules\Rocks\Models\Rock;
 use App\Modules\Rocks\Requests\CreateRockRequest;
 use App\Modules\Rocks\Resources\RockResource;
-use App\Modules\VTO\Models\VTOPlan;
+use App\Modules\Rocks\Models\RockQuarterTarget;
 use App\Models\User;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
@@ -54,9 +54,10 @@ class RockController extends Controller
             ->latest()
             ->get();
         $users = User::inTeam($teamId);
-        $vto   = $orgId
-            ? VTOPlan::withoutGlobalScopes()->where('organization_id', $orgId)->first()
-            : null;
+        $qt    = RockQuarterTarget::where('team_id', $teamId)
+            ->where('quarter', $quarterKey)
+            ->where('year', $year)
+            ->first();
 
         return Inertia::render('Rocks/Index', [
             'rocks' => RockResource::collection($rocks),
@@ -65,13 +66,46 @@ class RockController extends Controller
                 'quarter' => $quarterNum,
                 'year'    => $year,
             ],
-            'quarterTarget' => $vto ? [
-                'quarter_date'        => $vto->quarter_date?->format('Y-m-d'),
-                'quarter_revenue'     => $vto->quarter_revenue,
-                'quarter_profit'      => $vto->quarter_profit,
-                'quarter_measurables' => $vto->quarter_measurables,
+            'quarterTarget' => $qt ? [
+                'quarter_date'        => $qt->quarter_date?->format('Y-m-d'),
+                'quarter_revenue'     => $qt->quarter_revenue,
+                'quarter_profit'      => $qt->quarter_profit,
+                'quarter_measurables' => $qt->quarter_measurables,
             ] : null,
         ]);
+    }
+
+    public function updateQuarterTarget(Request $request)
+    {
+        $teamId = TenantContext::teamId();
+        $role   = $request->user()->roleIn($teamId);
+        abort_if($role !== 'leader', 403, 'Hanya leader yang bisa mengubah target quarter.');
+
+        $validated = $request->validate([
+            'quarter'             => 'required|integer|min:1|max:4',
+            'year'                => 'required|integer',
+            'quarter_date'        => 'nullable|date',
+            'quarter_revenue'     => 'nullable|string|max:100',
+            'quarter_profit'      => 'nullable|string|max:100',
+            'quarter_measurables' => 'nullable|string|max:500',
+        ]);
+
+        RockQuarterTarget::updateOrCreate(
+            [
+                'team_id' => $teamId,
+                'quarter' => 'Q' . $validated['quarter'],
+                'year'    => $validated['year'],
+            ],
+            [
+                'quarter_date'        => $validated['quarter_date'] ?? null,
+                'quarter_revenue'     => $validated['quarter_revenue'] ?? null,
+                'quarter_profit'      => $validated['quarter_profit'] ?? null,
+                'quarter_measurables' => $validated['quarter_measurables'] ?? null,
+                'updated_by'          => $request->user()->id,
+            ],
+        );
+
+        return back()->with('message', 'Target quarter diperbarui.');
     }
 
     public function store(CreateRockRequest $request, CreateRock $createRock)

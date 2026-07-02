@@ -150,12 +150,25 @@ export default function RocksIndex({
         quarter_measurables: quarterTarget?.quarter_measurables ?? "",
     });
 
+    useEffect(() => {
+        setQtData({
+            quarter_date: quarterTarget?.quarter_date ?? "",
+            quarter_revenue: quarterTarget?.quarter_revenue ?? "",
+            quarter_profit: quarterTarget?.quarter_profit ?? "",
+            quarter_measurables: quarterTarget?.quarter_measurables ?? "",
+        });
+    }, [quarterTarget]);
+
     const submitQuarterTarget = (e: React.FormEvent) => {
         e.preventDefault();
-        router.post(route("vto.update"), qtData, {
-            preserveScroll: true,
-            onSuccess: () => setQtOpen(false),
-        });
+        router.patch(
+            route("rocks.quarterTarget.update"),
+            { ...qtData, quarter: filters.quarter, year: filters.year },
+            {
+                preserveScroll: true,
+                onSuccess: () => setQtOpen(false),
+            },
+        );
     };
 
     const goToPeriod = (quarter: number, year: number) => {
