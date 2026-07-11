@@ -132,15 +132,15 @@ One VTO per organization — all leaders in the same org see the same VTO.
 - View evaluations org-wide (not just active team)
 - Seat selection org-wide (cross-division candidates)
 
-### 11. Leadership Assessment
-**Access:** Leader (create cycles, assign, view results), all members (take assessment)
+### 11. Leadership Assessment (360°)
+**Access:** Leader (create cycles, matrix-assign, view results, manage extra assessors), all members (take assessment, self-assess)
 
-- 360° anonymous assessment: each member assesses others
+- 360° assessment, self included: matrix assign (rows = members, columns = leadership types) creates all assignments in one submit
+- Extra assessors: leader can add any org-wide user (any team/division) as assessor-only on a specific assignment — they are never assessed themselves
 - Create assessment cycle (name, period)
-- Assign assessee + leadership type
-- Take assessment: rate each item on rubric scale 1-5
-- Submit is final (cannot re-submit)
-- Results: average score per type + breakdown per item
+- Take assessment: rate each item on rubric scale 1.00-5.00 (decimal, custom value option)
+- Submit is final per (cycle, assessor, assessee, item) — updateOrCreate, idempotent
+- Results: self score shown separately (comparison only, excluded from final), each assessor's score under a stable anonymous label, final = average of assessors' scores per item, rolled up to type/overall
 - Rubrik admin: create/edit/delete leadership types, items, rubric levels (per-org scoped)
 
 ### 12. Events

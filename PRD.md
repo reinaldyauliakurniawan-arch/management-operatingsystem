@@ -256,9 +256,9 @@ Satu VTO per organisasi. Semua leader dalam org yang sama melihat VTO yang sama.
 
 ---
 
-## Module 10 — Leadership Assessment
+## Module 10 — Leadership Assessment (360°)
 
-**Access:** Leader (create cycles, assign, view results, rubrik admin), all members (take assessment)
+**Access:** Leader (create cycles, matrix-assign, view results, rubrik admin, manage extra assessors), all members (take assessment, self-assess)
 
 **Cycle CRUD:**
 - Create: name, periode_start, periode_end
@@ -266,21 +266,33 @@ Satu VTO per organisasi. Semua leader dalam org yang sama melihat VTO yang sama.
 - Close: set status = closed (no new submissions, results still viewable)
 - Delete: only if no submissions
 
-**Assignment:**
-- Assign assessee + leadership type to cycle
+**Assignment (matrix):**
+- Leader assigns via matrix: rows = team members, columns = leadership types, checkbox per cell
+- One submit creates all (assessee, type) pairs at once — no per-person manual assign
+- Falls back to legacy single {user_id, leadership_type_id} shape if matrix not sent
 - Validation: assessee must be team member, leadership_type_id valid
 
+**Additional (extra) assessors:**
+- Per assignment, leader can add any user org-wide (any team/division) as an extra assessor
+- Extra assessors are assessor-only — they never appear as an assessee row
+- Assessor pool for an assignment = team members of assessee's team UNION additional_assessors for that assignment
+- Managed via `assignments/{assignment}/extra-assessors` (store/destroy), leader-only
+
 **Assessment:**
-- Take assessment: rate each item on rubric scale 1-5
+- Take assessment: rate each item on rubric scale 1.00-5.00 (decimal). Click a rubric level as base, or check "custom decimal" to type an exact value (e.g. 3.78, free range 1.00-5.00, no bucket restriction)
 - All items must be answered before submit
-- Submit is final (updateOrCreate, idempotent)
-- Cannot assess self
+- Submit is final per (cycle, assessor, assessee, item) — updateOrCreate, idempotent
+- Self-assessment allowed (assessee can rate themselves)
+- Access gated on real assessor pool (team member OR additional_assessor for that assignment) — not on caller's active team matching cycle's team, so cross-team extra assessors can take/submit
 - Cannot submit items outside assignment scope (validated)
+- Pending list ("Menunggu Kamu") includes both own-team assignments and any assignment where the user is an additional_assessor, even across teams
 
 **Results:**
-- Average score per type + breakdown per item
-- Viewable by leader or after cycle closed
-- Anonymous (assessor identity not in results)
+- Per item: self score (shown separately, comparison only), each assessor's score under a stable anonymous label (Assessor 1, 2, 3… ordered by first submission, consistent across all items for that assessee), and a final score
+- Final score = average of others' scores only (self excluded from calculation)
+- Type-level and overall average = average of each item's final score (not a flat average of all raw rows — avoids over-weighting items with more submissions)
+- Viewable by leader anytime, or by the assessee only after cycle is closed
+- Anonymous: assessor identity never exposed in the API response, only the stable per-assessee label
 
 **Rubrik Admin (Leader/Org Admin):**
 - Create/edit/delete leadership types, items, rubric levels
