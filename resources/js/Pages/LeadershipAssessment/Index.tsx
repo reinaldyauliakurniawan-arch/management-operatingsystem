@@ -35,6 +35,10 @@ interface User {
     id: number;
     name: string;
 }
+interface AdditionalAssessor {
+    id: number;
+    user: User;
+}
 interface Assignment {
     id: number;
     cycle_id: number;
@@ -44,6 +48,7 @@ interface Assignment {
     submission_count: number;
     total_assessors: number;
     is_closed: boolean;
+    additional_assessors: AdditionalAssessor[];
 }
 interface Cycle {
     id: number;
@@ -65,11 +70,13 @@ const fmt = (s: string | null) =>
 export default function LeadershipAssessmentIndex({
     cycles,
     users,
+    allOrgUsers,
     types,
     pendingAssignments,
 }: {
     cycles: Cycle[];
     users: User[];
+    allOrgUsers: User[];
     types: LeadershipType[];
     pendingAssignments: Assignment[];
 }) {
@@ -79,13 +86,29 @@ export default function LeadershipAssessmentIndex({
     const [cycleOpen, setCycleOpen] = useState(false);
     const [assignOpen, setAssignOpen] = useState(false);
     const [deleteCycleId, setDeleteCycleId] = useState<number | null>(null);
+    const [extraAssessorFor, setExtraAssessorFor] = useState<Assignment | null>(
+        null,
+    );
+    const [extraUserIds, setExtraUserIds] = useState<Set<number>>(new Set());
 
     const cycleForm = useForm({ name: "", periode_start: "", periode_end: "" });
     const assignForm = useForm({
         cycle_id: "",
-        user_id: "",
-        leadership_type_id: "",
+        matrix: [] as { user_id: number; leadership_type_ids: number[] }[],
     });
+    const [matrixSelection, setMatrixSelection] = useState<
+        Record<number, Set<number>>
+    >({});
+
+    const toggleMatrixCell = (userId: number, typeId: number) => {
+        setMatrixSelection((prev) => {
+            const next = { ...prev };
+            const set = new Set(next[userId] ?? []);
+            set.has(typeId) ? set.delete(typeId) : set.add(typeId);
+            next[userId] = set;
+            return next;
+        });
+    };
 
     const submitCycle = (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,6 +122,16 @@ export default function LeadershipAssessmentIndex({
 
     const submitAssign = (e: React.FormEvent) => {
         e.preventDefault();
+        const matrix = Object.entries(matrixSelection)
+            .filter(([, set]) => set.size > 0)
+            .map(([userId, set]) => ({
+                user_id: Number(userId),
+                leadership_type_ids: Array.from(set),
+            }));
+
+        if (matrix.length === 0 || !assignForm.data.cycle_id) return;
+
+        assignForm.transform(() => ({ matrix }));
         assignForm.post(
             route(
                 "leadership-assessment.cycles.assign",
@@ -107,6 +140,7 @@ export default function LeadershipAssessmentIndex({
             {
                 onSuccess: () => {
                     setAssignOpen(false);
+                    setMatrixSelection({});
                     assignForm.reset();
                 },
             },
@@ -125,6 +159,41 @@ export default function LeadershipAssessmentIndex({
             preserveScroll: true,
             onSuccess: () => setDeleteCycleId(null),
         });
+
+    const toggleExtraUser = (userId: number) => {
+        setExtraUserIds((prev) => {
+            const next = new Set(prev);
+            next.has(userId) ? next.delete(userId) : next.add(userId);
+            return next;
+        });
+    };
+
+    const submitExtraAssessors = () => {
+        if (!extraAssessorFor || extraUserIds.size === 0) return;
+        router.post(
+            route(
+                "leadership-assessment.assignments.extra-assessors.store",
+                extraAssessorFor.id,
+            ),
+            { user_ids: Array.from(extraUserIds) },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setExtraAssessorFor(null);
+                    setExtraUserIds(new Set());
+                },
+            },
+        );
+    };
+
+    const removeExtraAssessor = (assignmentId: number, extraId: number) =>
+        router.delete(
+            route("leadership-assessment.assignments.extra-assessors.destroy", {
+                assignment: assignmentId,
+                extra: extraId,
+            }),
+            { preserveScroll: true },
+        );
 
     return (
         <AuthenticatedLayout>
@@ -314,25 +383,72 @@ export default function LeadershipAssessmentIndex({
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                {(isLeader ||
-                                                    cycle.is_closed) && (
-                                                    <Link
-                                                        href={route(
-                                                            "leadership-assessment.results",
-                                                            {
-                                                                cycle: cycle.id,
-                                                                assessee:
-                                                                    a.user_id,
-                                                            },
+                                                <div className="flex items-center gap-xs">
+                                                    {isLeader &&
+                                                        !cycle.is_closed && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setExtraAssessorFor(
+                                                                        a,
+                                                                    );
+                                                                    setExtraUserIds(
+                                                                        new Set(),
+                                                                    );
+                                                                }}
+                                                            >
+                                                                + Assessor
+                                                            </Button>
                                                         )}
-                                                    >
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
+                                                    {(isLeader ||
+                                                        cycle.is_closed) && (
+                                                        <Link
+                                                            href={route(
+                                                                "leadership-assessment.results",
+                                                                {
+                                                                    cycle: cycle.id,
+                                                                    assessee:
+                                                                        a.user_id,
+                                                                },
+                                                            )}
                                                         >
-                                                            Hasil
-                                                        </Button>
-                                                    </Link>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                            >
+                                                                Hasil
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                                {a.additional_assessors.length >
+                                                    0 && (
+                                                    <div className="mt-xs flex flex-wrap gap-xs">
+                                                        {a.additional_assessors.map(
+                                                            (ex) => (
+                                                                <Badge
+                                                                    key={ex.id}
+                                                                    variant="neutral"
+                                                                    className="cursor-pointer"
+                                                                    onClick={() =>
+                                                                        isLeader &&
+                                                                        !cycle.is_closed &&
+                                                                        removeExtraAssessor(
+                                                                            a.id,
+                                                                            ex.id,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        ex.user
+                                                                            .name
+                                                                    }{" "}
+                                                                    ✕
+                                                                </Badge>
+                                                            ),
+                                                        )}
+                                                    </div>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -454,42 +570,58 @@ export default function LeadershipAssessmentIndex({
                                 </Select>
                             </div>
                             <div className="flex flex-col gap-xs">
-                                <Label>Assessee *</Label>
-                                <Select
-                                    value={assignForm.data.user_id}
-                                    onChange={(e) =>
-                                        assignForm.setData(
-                                            "user_id",
-                                            e.target.value,
-                                        )
-                                    }
-                                >
-                                    <option value="">— Pilih user —</option>
-                                    {users.map((u) => (
-                                        <option key={u.id} value={u.id}>
-                                            {u.name}
-                                        </option>
-                                    ))}
-                                </Select>
-                            </div>
-                            <div className="flex flex-col gap-xs">
-                                <Label>Tipe Leadership *</Label>
-                                <Select
-                                    value={assignForm.data.leadership_type_id}
-                                    onChange={(e) =>
-                                        assignForm.setData(
-                                            "leadership_type_id",
-                                            e.target.value,
-                                        )
-                                    }
-                                >
-                                    <option value="">— Pilih tipe —</option>
-                                    {types.map((t) => (
-                                        <option key={t.id} value={t.id}>
-                                            {t.name}
-                                        </option>
-                                    ))}
-                                </Select>
+                                <Label>
+                                    Matrix Assessee × Tipe Leadership *
+                                </Label>
+                                <div className="overflow-x-auto rounded-lg border border-border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Anggota</TableHead>
+                                                {types.map((t) => (
+                                                    <TableHead
+                                                        key={t.id}
+                                                        className="text-center"
+                                                    >
+                                                        {t.name}
+                                                    </TableHead>
+                                                ))}
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {users.map((u) => (
+                                                <TableRow key={u.id}>
+                                                    <TableCell>
+                                                        {u.name}
+                                                    </TableCell>
+                                                    {types.map((t) => (
+                                                        <TableCell
+                                                            key={t.id}
+                                                            className="text-center"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={
+                                                                    matrixSelection[
+                                                                        u.id
+                                                                    ]?.has(
+                                                                        t.id,
+                                                                    ) ?? false
+                                                                }
+                                                                onChange={() =>
+                                                                    toggleMatrixCell(
+                                                                        u.id,
+                                                                        t.id,
+                                                                    )
+                                                                }
+                                                            />
+                                                        </TableCell>
+                                                    ))}
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
                         </form>
                     </DialogBody>
@@ -506,6 +638,55 @@ export default function LeadershipAssessmentIndex({
                             disabled={assignForm.processing}
                         >
                             {assignForm.processing ? "Menyimpan…" : "Assign"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Additional Assessor Modal */}
+            <Dialog
+                open={extraAssessorFor !== null}
+                onOpenChange={(open) => !open && setExtraAssessorFor(null)}
+            >
+                <DialogContent size="sm">
+                    <DialogHeader>
+                        <DialogTitle>
+                            Tambah Assessor — {extraAssessorFor?.user.name} (
+                            {extraAssessorFor?.type.name})
+                        </DialogTitle>
+                    </DialogHeader>
+                    <DialogBody>
+                        <div className="flex max-h-64 flex-col gap-xs overflow-y-auto">
+                            {allOrgUsers
+                                .filter(
+                                    (u) => u.id !== extraAssessorFor?.user_id,
+                                )
+                                .map((u) => (
+                                    <label
+                                        key={u.id}
+                                        className="flex items-center gap-sm rounded-md px-sm py-xs hover:bg-surface-overlay"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={extraUserIds.has(u.id)}
+                                            onChange={() =>
+                                                toggleExtraUser(u.id)
+                                            }
+                                        />
+                                        {u.name}
+                                    </label>
+                                ))}
+                        </div>
+                    </DialogBody>
+                    <DialogFooter>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setExtraAssessorFor(null)}
+                        >
+                            Batal
+                        </Button>
+                        <Button onClick={submitExtraAssessors}>
+                            Tambahkan
                         </Button>
                     </DialogFooter>
                 </DialogContent>

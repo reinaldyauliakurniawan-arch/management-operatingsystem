@@ -33,4 +33,9 @@ class AssessmentAssignment extends Model
         return $this->hasMany(AssessmentResponse::class, 'assessee_id', 'user_id')
             ->where('cycle_id', $this->cycle_id ?? 0);
     }
+
+    public function additionalAssessors()
+    {
+        return $this->hasMany(AdditionalAssessor::class, 'assignment_id');
+    }
 }

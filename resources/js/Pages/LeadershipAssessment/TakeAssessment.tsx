@@ -57,6 +57,7 @@ export default function TakeAssessment({
 
     const [responses, setResponses] =
         useState<Record<number, number>>(initialResponses);
+    const [customMode, setCustomMode] = useState<Record<number, boolean>>({});
     const [processing, setProcessing] = useState(false);
 
     const allItems = assignments.flatMap((a) => a.leadership_type.items);
@@ -118,8 +119,11 @@ export default function TakeAssessment({
                                                 )
                                                 .map((rubric) => {
                                                     const selected =
-                                                        responses[item.id] ===
-                                                        rubric.level;
+                                                        Math.round(
+                                                            responses[
+                                                                item.id
+                                                            ] ?? -1,
+                                                        ) === rubric.level;
                                                     return (
                                                         <button
                                                             key={rubric.id}
@@ -153,6 +157,52 @@ export default function TakeAssessment({
                                                         </button>
                                                     );
                                                 })}
+                                            <div className="flex items-center gap-sm pt-xs">
+                                                <label className="flex items-center gap-xs text-[var(--font-base)] text-text-muted">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={
+                                                            customMode[
+                                                                item.id
+                                                            ] ?? false
+                                                        }
+                                                        onChange={(e) =>
+                                                            setCustomMode({
+                                                                ...customMode,
+                                                                [item.id]:
+                                                                    e.target
+                                                                        .checked,
+                                                            })
+                                                        }
+                                                    />
+                                                    Nilai desimal manual
+                                                </label>
+                                                {customMode[item.id] && (
+                                                    <input
+                                                        type="number"
+                                                        min={1}
+                                                        max={5}
+                                                        step={0.01}
+                                                        value={
+                                                            responses[
+                                                                item.id
+                                                            ] ?? ""
+                                                        }
+                                                        onChange={(e) =>
+                                                            setResponses({
+                                                                ...responses,
+                                                                [item.id]:
+                                                                    Number(
+                                                                        e.target
+                                                                            .value,
+                                                                    ),
+                                                            })
+                                                        }
+                                                        className="w-24 rounded-md border border-border bg-surface px-sm py-xs text-[var(--font-base)]"
+                                                        placeholder="mis. 3.78"
+                                                    />
+                                                )}
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>

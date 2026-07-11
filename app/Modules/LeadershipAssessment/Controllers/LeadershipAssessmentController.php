@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\LeadershipAssessment\Models\AssessmentCycle;
 use App\Modules\LeadershipAssessment\Models\AssessmentAssignment;
 use App\Modules\LeadershipAssessment\Models\AssessmentResponse;
+use App\Modules\LeadershipAssessment\Models\AdditionalAssessor;
 use App\Modules\LeadershipAssessment\Models\LeadershipType;
 use App\Modules\LeadershipAssessment\Models\LeadershipItem;
 use App\Modules\LeadershipAssessment\Models\LeadershipRubric;
@@ -33,7 +34,7 @@ class LeadershipAssessmentController extends Controller
         return TeamMember::where('team_id', $teamId)->pluck('user_id');
     }
 
-    private function countAssessorSubmissions(int $cycleId, int $assesseeId, int $leadershipTypeId, int $teamId): array
+    private function countAssessorSubmissions(int $cycleId, int $assesseeId, int $leadershipTypeId, int $teamId, ?int $assignmentId = null): array
     {
         $type = LeadershipType::with('items')->find($leadershipTypeId);
         $itemIds = $type?->items->pluck('id') ?? collect();
@@ -43,9 +44,16 @@ class LeadershipAssessmentController extends Controller
             return ['submission_count' => 0, 'total_assessors' => 0];
         }
 
+        // ponytail: assessor pool now includes self (allowed) plus team
+        // members plus any additional_assessors tied to this assignment —
+        // union instead of a single flat team-member query.
         $assessorIds = TeamMember::where('team_id', $teamId)
-            ->where('user_id', '!=', $assesseeId)
             ->pluck('user_id');
+
+        if ($assignmentId) {
+            $extraIds = AdditionalAssessor::where('assignment_id', $assignmentId)->pluck('user_id');
+            $assessorIds = $assessorIds->merge($extraIds)->unique();
+        }
 
         $submissionCount = $assessorIds->filter(function ($assessorId) use ($cycleId, $assesseeId, $itemIds, $requiredItems) {
             $answered = AssessmentResponse::where('cycle_id', $cycleId)
@@ -73,17 +81,25 @@ class LeadershipAssessmentController extends Controller
                     $cycle->id,
                     $assignment->user_id,
                     $assignment->leadership_type_id,
-                    $teamId
+                    $teamId,
+                    $assignment->id
                 );
 
                 return [
-                    'id'                => $assignment->id,
-                    'cycle_id'          => $cycle->id,
-                    'user_id'           => $assignment->user_id,
-                    'user'              => $assignment->user,
-                    'type'              => $assignment->leadershipType,
-                    'submission_count'  => $progress['submission_count'],
-                    'total_assessors'   => $progress['total_assessors'],
+                    'id'                    => $assignment->id,
+                    'cycle_id'              => $cycle->id,
+                    'user_id'               => $assignment->user_id,
+                    'user'                  => $assignment->user,
+                    'type'                  => $assignment->leadershipType,
+                    'submission_count'      => $progress['submission_count'],
+                    'total_assessors'       => $progress['total_assessors'],
+                    'additional_assessors'  => $assignment->additionalAssessors()
+                        ->with('user:id,name')
+                        ->get()
+                        ->map(fn ($ex) => [
+                            'id'   => $ex->id,
+                            'user' => $ex->user,
+                        ]),
                 ];
             })
             ->values();
@@ -106,13 +122,37 @@ class LeadershipAssessmentController extends Controller
 
     private function pendingForUser(int $teamId, int $userId): \Illuminate\Support\Collection
     {
-        return AssessmentCycle::where('team_id', $teamId)
+        // ponytail: pending list must reach two audiences —
+        // (1) members of the assessee's own team (default assessor pool),
+        // (2) anyone added as an additional_assessor on a specific
+        // assignment, regardless of which team they belong to.
+        // Scoping the outer query to $teamId alone hid case (2) entirely
+        // when the extra assessor wasn't a member of that team.
+        $ownTeamCycles = AssessmentCycle::where('team_id', $teamId)
             ->where('status', 'open')
             ->with(['assignments.user:id,name', 'assignments.leadershipType.items'])
-            ->get()
-            ->flatMap(function ($cycle) use ($userId) {
+            ->get();
+
+        $extraAssignmentIds = AdditionalAssessor::where('user_id', $userId)->pluck('assignment_id');
+        $extraCycles = AssessmentCycle::where('status', 'open')
+            ->whereHas('assignments', fn ($q) => $q->whereIn('id', $extraAssignmentIds))
+            ->with(['assignments' => fn ($q) => $q->whereIn('id', $extraAssignmentIds)
+                ->with(['user:id,name', 'leadershipType.items'])])
+            ->get();
+
+        $cycles = $ownTeamCycles->merge($extraCycles)->unique('id');
+
+        return $cycles
+            ->flatMap(function ($cycle) use ($userId, $teamId, $extraAssignmentIds) {
                 return $cycle->assignments
-                    ->filter(fn ($a) => $a->user_id !== $userId)
+                    ->filter(function ($assignment) use ($userId, $cycle, $teamId, $extraAssignmentIds) {
+                        $isTeamMember = TeamMember::where('team_id', $cycle->team_id ?? $teamId)
+                            ->where('user_id', $userId)
+                            ->exists();
+                        $isExtra = $extraAssignmentIds->contains($assignment->id);
+
+                        return $isTeamMember || $isExtra;
+                    })
                     ->filter(function ($assignment) use ($cycle, $userId) {
                         $itemIds = $assignment->leadershipType?->items->pluck('id') ?? collect();
                         if ($itemIds->isEmpty()) {
@@ -154,12 +194,17 @@ class LeadershipAssessmentController extends Controller
         // cross-tenant rubrik leakage.
         $leadershipTypes = LeadershipType::with('items.rubrics')->get();
         $users           = User::inTeam($teamId);
+        // ponytail: separate org-wide pool for "additional assessor" picker
+        // — the matrix stays team-scoped (users), but adding an extra
+        // assessor to a single assignment can reach across teams/divisions.
+        $allOrgUsers     = User::inOrganization(TenantContext::organizationId());
 
         return Inertia::render('LeadershipAssessment/Index', [
             'cycles'              => $cycles,
             'pendingAssignments'  => $this->pendingForUser($teamId, $userId),
             'types'               => $leadershipTypes,
             'users'               => $users,
+            'allOrgUsers'         => $allOrgUsers,
         ]);
     }
 
@@ -197,47 +242,88 @@ class LeadershipAssessmentController extends Controller
             abort(422, 'Cycle sudah ditutup.');
         }
 
-        // ponytail: previously `assessee_id` was `required` but the frontend
-        // (LeadershipAssessment/Index.tsx submitAssign) sends `user_id` only.
-        // That mismatch silently failed every "Assign Assessment" click with
-        // a 422 the user never saw — fixed by accepting either field.
+        // ponytail: matrix bulk-assign — frontend sends a grid of
+        // {user_id, leadership_type_ids[]} rows in one submit instead of
+        // one request per (assessee, type) pair. Falls back to the old
+        // single assessee_id/user_id shape for backward compatibility.
         $validated = $request->validate([
             'assessee_id'           => 'nullable|exists:users,id',
             'user_id'               => 'nullable|exists:users,id',
             'leadership_type_id'    => 'nullable|exists:leadership_types,id',
             'leadership_type_ids'   => 'nullable|array|min:1',
             'leadership_type_ids.*' => 'exists:leadership_types,id',
+            'matrix'                => 'nullable|array|min:1',
+            'matrix.*.user_id'      => 'required|exists:users,id',
+            'matrix.*.leadership_type_ids'   => 'required|array|min:1',
+            'matrix.*.leadership_type_ids.*' => 'exists:leadership_types,id',
         ]);
 
-        $assesseeId = $validated['assessee_id'] ?? $validated['user_id'] ?? null;
-        if (!$assesseeId) {
-            abort(422, 'Assessee wajib dipilih.');
+        $rows = [];
+
+        if (!empty($validated['matrix'])) {
+            $rows = $validated['matrix'];
+        } else {
+            $assesseeId = $validated['assessee_id'] ?? $validated['user_id'] ?? null;
+            if (!$assesseeId) {
+                abort(422, 'Assessee wajib dipilih.');
+            }
+            $typeIds = $validated['leadership_type_ids']
+                ?? (isset($validated['leadership_type_id']) ? [$validated['leadership_type_id']] : []);
+            if (empty($typeIds)) {
+                abort(422, 'Tipe leadership wajib dipilih.');
+            }
+            $rows = [['user_id' => $assesseeId, 'leadership_type_ids' => $typeIds]];
         }
 
-        $isMember = TeamMember::where('team_id', $teamId)
-            ->where('user_id', $assesseeId)
-            ->exists();
+        $teamMemberIds = TeamMember::where('team_id', $teamId)->pluck('user_id');
 
-        if (!$isMember) {
-            abort(422, 'User bukan anggota team aktif.');
-        }
+        DB::transaction(function () use ($rows, $cycle, $teamMemberIds) {
+            foreach ($rows as $row) {
+                if (!$teamMemberIds->contains($row['user_id'])) {
+                    abort(422, 'User bukan anggota team aktif.');
+                }
+                foreach ($row['leadership_type_ids'] as $typeId) {
+                    AssessmentAssignment::firstOrCreate([
+                        'cycle_id'           => $cycle->id,
+                        'user_id'            => $row['user_id'],
+                        'leadership_type_id' => $typeId,
+                    ]);
+                }
+            }
+        });
 
-        $typeIds = $validated['leadership_type_ids']
-            ?? (isset($validated['leadership_type_id']) ? [$validated['leadership_type_id']] : []);
+        return back()->with('message', 'Assessment di-assign.');
+    }
 
-        if (empty($typeIds)) {
-            abort(422, 'Tipe leadership wajib dipilih.');
-        }
+    public function addExtraAssessor(Request $request, AssessmentAssignment $assignment)
+    {
+        $this->requireLeader();
+        abort_unless($assignment->cycle->team_id === TenantContext::teamId(), 403, 'Assignment bukan milik team aktif.');
 
-        foreach ($typeIds as $typeId) {
-            AssessmentAssignment::firstOrCreate([
-                'cycle_id'           => $cycle->id,
-                'user_id'            => $assesseeId,
-                'leadership_type_id' => $typeId,
+        $validated = $request->validate([
+            'user_ids'   => 'required|array|min:1',
+            'user_ids.*' => 'exists:users,id',
+        ]);
+
+        foreach ($validated['user_ids'] as $uid) {
+            AdditionalAssessor::firstOrCreate([
+                'assignment_id' => $assignment->id,
+                'user_id'       => $uid,
             ]);
         }
 
-        return back()->with('message', 'Assessee ditambahkan.');
+        return back()->with('message', 'Assessor tambahan ditambahkan.');
+    }
+
+    public function removeExtraAssessor(AssessmentAssignment $assignment, AdditionalAssessor $extra)
+    {
+        $this->requireLeader();
+        abort_unless($assignment->cycle->team_id === TenantContext::teamId(), 403, 'Assignment bukan milik team aktif.');
+        abort_unless($extra->assignment_id === $assignment->id, 404);
+
+        $extra->delete();
+
+        return back()->with('message', 'Assessor tambahan dihapus.');
     }
 
     public function updateCycle(Request $request, AssessmentCycle $cycle)
@@ -286,18 +372,12 @@ class LeadershipAssessmentController extends Controller
     public function takeAssessment(AssessmentCycle $cycle, User $assessee)
     {
         $userId = Auth::id();
-        $teamId = TenantContext::teamId();
-        abort_unless($cycle->team_id === $teamId, 403, 'Cycle bukan milik team aktif.');
-
-        if ($assessee->id === $userId) {
-            abort(403, 'Tidak bisa menilai diri sendiri.');
-        }
 
         if ($cycle->isClosed()) {
             abort(403, 'Cycle sudah ditutup.');
         }
 
-        $isAssesseeMember = TeamMember::where('team_id', $teamId)
+        $isAssesseeMember = TeamMember::where('team_id', $cycle->team_id)
             ->where('user_id', $assessee->id)
             ->exists();
 
@@ -313,6 +393,20 @@ class LeadershipAssessmentController extends Controller
         if ($assignments->isEmpty()) {
             abort(404, 'Tidak ada assignment untuk user ini.');
         }
+
+        // ponytail: authorization gate moved here so it can check the real
+        // assessor pool (team member OR additional_assessor per assignment)
+        // instead of gating on "cycle.team_id === caller's active team",
+        // which wrongly blocked extra assessors from other teams/divisions.
+        $assignmentIds = $assignments->pluck('id');
+        $isTeamMember = TeamMember::where('team_id', $cycle->team_id)
+            ->where('user_id', $userId)
+            ->exists();
+        $isExtraAssessor = AdditionalAssessor::whereIn('assignment_id', $assignmentIds)
+            ->where('user_id', $userId)
+            ->exists();
+
+        abort_unless($isTeamMember || $isExtraAssessor, 403, 'Kamu bukan assessor untuk assessee ini.');
 
         $existingResponses = AssessmentResponse::where('cycle_id', $cycle->id)
             ->where('assessor_id', $userId)
@@ -331,23 +425,42 @@ class LeadershipAssessmentController extends Controller
     public function submitResponse(Request $request, AssessmentCycle $cycle, User $assessee)
     {
         $userId = Auth::id();
-        $teamId = TenantContext::teamId();
-        abort_unless($cycle->team_id === $teamId, 403, 'Cycle bukan milik team aktif.');
 
-        if ($assessee->id === $userId) {
-            abort(403);
-        }
         if ($cycle->isClosed()) {
             abort(403, 'Cycle sudah ditutup.');
         }
 
+        $assignments = AssessmentAssignment::where('cycle_id', $cycle->id)
+            ->where('user_id', $assessee->id)
+            ->get();
+
+        if ($assignments->isEmpty()) {
+            abort(404, 'Tidak ada assignment untuk user ini.');
+        }
+
+        // ponytail: same pool check as takeAssessment — team member OR
+        // additional_assessor. Previously gated on cycle.team_id === caller's
+        // active team, which silently 403'd every extra assessor outside
+        // that team even though they were legitimately assigned.
+        $assignmentIds = $assignments->pluck('id');
+        $isTeamMember = TeamMember::where('team_id', $cycle->team_id)
+            ->where('user_id', $userId)
+            ->exists();
+        $isExtraAssessor = AdditionalAssessor::whereIn('assignment_id', $assignmentIds)
+            ->where('user_id', $userId)
+            ->exists();
+
+        abort_unless($isTeamMember || $isExtraAssessor, 403, 'Kamu bukan assessor untuk assessee ini.');
+
         // ponytail: validate that every item_id belongs to a leadership type
         // assigned to this assessee in this cycle — prevents assessor from
         // submitting responses for items outside the assignment scope.
+        // level is now decimal (1.00-5.00) so a human rating isn't forced
+        // into an integer bucket.
         $validated = $request->validate([
             'responses'           => 'required|array',
             'responses.*.item_id' => 'required|exists:leadership_items,id',
-            'responses.*.level'   => 'required|integer|between:1,5',
+            'responses.*.level'   => 'required|numeric|between:1,5',
         ]);
 
         $assignedTypeIds = AssessmentAssignment::where('cycle_id', $cycle->id)
@@ -398,24 +511,54 @@ class LeadershipAssessmentController extends Controller
         $responses = AssessmentResponse::where('cycle_id', $cycle->id)
             ->where('assessee_id', $assessee->id)
             ->with('item.leadershipType')
+            ->orderBy('created_at')
             ->get();
 
+        // ponytail: anonymous but stable assessor numbering — first submitter
+        // becomes "Assessor 1" and keeps that label across every item for
+        // this assessee, instead of re-randomizing per item (which would
+        // make the columns unreadable / inconsistent).
+        $othersResponses = $responses->where('assessor_id', '!=', $assessee->id);
+        $assessorOrder = $othersResponses->pluck('assessor_id')->unique()->values();
+        $assessorLabel = $assessorOrder->mapWithKeys(fn ($id, $idx) => [$id => 'Assessor ' . ($idx + 1)]);
+
         $byType = $responses->groupBy(fn ($r) => $r->item->leadership_type_id)
-            ->map(fn ($group) => [
-                'type'  => $group->first()->item->leadershipType->name,
-                'avg'   => round($group->avg('rubric_level'), 2),
-                'count' => $group->count(),
-                'items' => $group->map(fn ($r) => [
-                    'item'  => $r->item->title,
-                    'level' => $r->rubric_level,
-                ])->values(),
-            ])->values();
+            ->map(function ($group) use ($assessee, $assessorLabel) {
+                $itemGroups = $group->groupBy('item_id')->map(function ($itemResponses) use ($assessee, $assessorLabel) {
+                    $self = $itemResponses->firstWhere('assessor_id', $assessee->id);
+                    $others = $itemResponses->where('assessor_id', '!=', $assessee->id);
+
+                    return [
+                        'item'          => $itemResponses->first()->item->title,
+                        'self'          => $self?->rubric_level,
+                        'assessors'     => $others->map(fn ($r) => [
+                            'label' => $assessorLabel[$r->assessor_id],
+                            'level' => $r->rubric_level,
+                        ])->values(),
+                        'final'         => $others->isEmpty() ? null : round($others->avg('rubric_level'), 2),
+                    ];
+                })->values();
+
+                // ponytail: type-level final is the average of each item's
+                // final (others-only), not a flat average of every raw row —
+                // otherwise an item with more submissions would silently
+                // outweigh one with fewer.
+                $itemFinals = $itemGroups->pluck('final')->filter(fn ($v) => $v !== null);
+
+                return [
+                    'type'  => $group->first()->item->leadershipType->name,
+                    'avg'   => $itemFinals->isEmpty() ? null : round($itemFinals->avg(), 2),
+                    'items' => $itemGroups,
+                ];
+            })->values();
+
+        $overallFinals = $byType->pluck('avg')->filter(fn ($v) => $v !== null);
 
         return Inertia::render('LeadershipAssessment/Results', [
             'cycle'      => $cycle->only(['id', 'name', 'status']),
             'assessee'   => $assessee->only(['id', 'name']),
             'byType'     => $byType,
-            'overallAvg' => $responses->isEmpty() ? null : round($responses->avg('rubric_level'), 2),
+            'overallAvg' => $overallFinals->isEmpty() ? null : round($overallFinals->avg(), 2),
         ]);
     }
 

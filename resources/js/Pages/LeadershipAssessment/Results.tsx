@@ -5,14 +5,19 @@ import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 
+interface AssessorScore {
+    label: string;
+    level: number;
+}
 interface ResultItem {
     item: string;
-    level: number;
+    self: number | null;
+    assessors: AssessorScore[];
+    final: number | null;
 }
 interface TypeResult {
     type: string;
-    avg: number;
-    count: number;
+    avg: number | null;
     items: ResultItem[];
 }
 interface User {
@@ -88,21 +93,41 @@ export default function Results({
                                         {group.type}
                                     </h2>
                                     <Badge variant="info">
-                                        Avg {group.avg} ({group.count} respons)
+                                        Final {group.avg ?? "—"}
                                     </Badge>
                                 </div>
-                                <div className="flex flex-col gap-sm">
+                                <div className="flex flex-col gap-md">
                                     {group.items.map((item, idx) => (
                                         <div
                                             key={idx}
-                                            className="flex items-center justify-between rounded-lg border border-border px-lg py-md"
+                                            className="rounded-lg border border-border px-lg py-md"
                                         >
-                                            <span className="text-[var(--font-base)] text-text-primary">
-                                                {item.item}
-                                            </span>
-                                            <Badge variant="neutral">
-                                                Level {item.level}
-                                            </Badge>
+                                            <div className="mb-sm flex items-center justify-between">
+                                                <span className="text-[var(--font-base)] font-medium text-text-primary">
+                                                    {item.item}
+                                                </span>
+                                                <Badge variant="success">
+                                                    Final {item.final ?? "—"}
+                                                </Badge>
+                                            </div>
+                                            <div className="flex flex-wrap gap-xs">
+                                                {item.self !== null && (
+                                                    <Badge variant="warning">
+                                                        Diri Sendiri:{" "}
+                                                        {item.self}
+                                                    </Badge>
+                                                )}
+                                                {item.assessors.map(
+                                                    (a, aIdx) => (
+                                                        <Badge
+                                                            key={aIdx}
+                                                            variant="neutral"
+                                                        >
+                                                            {a.label}: {a.level}
+                                                        </Badge>
+                                                    ),
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

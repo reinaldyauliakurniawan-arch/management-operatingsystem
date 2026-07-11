@@ -83,6 +83,18 @@ class User extends Authenticatable
             ->get($columns);
     }
 
+    /**
+     * ponytail: org-wide user lookup, same scoped pattern as inTeam() —
+     * used for cross-team assessor picking (e.g. leadership assessment
+     * additional assessors) where the pool must not be limited to one team.
+     */
+    public static function inOrganization(int $organizationId, array $columns = ['id', 'name']): \Illuminate\Database\Eloquent\Collection
+    {
+        return static::whereHas('organizations', fn($q) => $q->where('organization_id', $organizationId))
+            ->orderBy('name')
+            ->get($columns);
+    }
+
     public function roleIn(int $teamId): ?string
     {
         return $this->teamMemberships()->where('team_id', $teamId)->value('role');
