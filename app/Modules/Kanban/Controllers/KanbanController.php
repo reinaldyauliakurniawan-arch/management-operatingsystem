@@ -28,7 +28,7 @@ class KanbanController extends Controller
 
         return Inertia::render('Kanban/Index', [
             'boards' => $boards->map(fn($b) => ['id' => $b->id, 'title' => $b->title]),
-            'activeBoard' => $activeBoard ? new KanbanBoardResource($activeBoard) : null,
+            'activeBoard' => $activeBoard ? (new KanbanBoardResource($activeBoard))->resolve() : null,
         ]);
     }
 
