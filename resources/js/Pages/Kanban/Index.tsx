@@ -70,6 +70,7 @@ export default function KanbanIndex({
     const [detailCard, setDetailCard] = useState<KanbanCard | null>(null);
     const [newStepTitle, setNewStepTitle] = useState("");
     const [deleteCardId, setDeleteCardId] = useState<number | null>(null);
+    const [deleteBoardId, setDeleteBoardId] = useState<number | null>(null);
     const [draggedCardId, setDraggedCardId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -203,6 +204,14 @@ export default function KanbanIndex({
         });
     };
 
+    const confirmDeleteBoard = () => {
+        if (!deleteBoardId) return;
+        router.delete(route("kanban.boards.destroy", deleteBoardId), {
+            preserveScroll: true,
+            onSuccess: () => setDeleteBoardId(null),
+        });
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title="Kanban" />
@@ -221,8 +230,21 @@ export default function KanbanIndex({
                             />
                             <DropdownMenuContent>
                                 {boards.map((b) => (
-                                    <DropdownMenuItem key={b.id} onClick={() => switchBoard(b.id)}>
+                                    <DropdownMenuItem
+                                        key={b.id}
+                                        onClick={() => switchBoard(b.id)}
+                                        className="flex items-center justify-between gap-4"
+                                    >
                                         {b.title}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteBoardId(b.id);
+                                            }}
+                                            className="text-text-secondary hover:text-red-600"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
                                     </DropdownMenuItem>
                                 ))}
                             </DropdownMenuContent>
@@ -237,6 +259,14 @@ export default function KanbanIndex({
                         )}
                     </div>
                 }
+            />
+
+            <ConfirmDialog
+                open={deleteBoardId !== null}
+                onOpenChange={(open) => !open && setDeleteBoardId(null)}
+                title="Hapus Board?"
+                description="Semua kolom dan card di board ini akan dihapus permanen."
+                onConfirm={confirmDeleteBoard}
             />
 
             {!activeBoard ? (
