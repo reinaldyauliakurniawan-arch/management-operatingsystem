@@ -56,6 +56,9 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\EnsureHasOrganization::cl
     if (file_exists(base_path('app/Modules/ToDo/routes.php'))) {
         require base_path('app/Modules/ToDo/routes.php');
     }
+    if (file_exists(base_path('app/Modules/Kanban/routes.php'))) {
+        require base_path('app/Modules/Kanban/routes.php');
+    }
     if (file_exists(base_path('app/Modules/IDS/routes.php'))) {
         require base_path('app/Modules/IDS/routes.php');
     }

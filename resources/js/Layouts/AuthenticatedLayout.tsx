@@ -16,6 +16,7 @@ import {
     Trophy,
     UsersRound,
     Workflow,
+    Kanban,
 } from "lucide-react";
 
 const navGroups = [
@@ -123,6 +124,13 @@ const navGroups = [
                 href: "/leaderboard",
                 routeName: "leaderboard.index",
                 icon: Trophy,
+                external: false,
+            },
+            {
+                label: "Kanban",
+                href: "/kanban",
+                routeName: "kanban.index",
+                icon: Kanban,
                 external: false,
             },
         ],
