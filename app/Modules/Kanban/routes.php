@@ -21,3 +21,7 @@ Route::delete('/kanban/cards/{card}', [KanbanController::class, 'destroyCard'])-
 Route::post('/kanban/cards/{card}/steps', [KanbanController::class, 'storeStep'])->name('kanban.steps.store');
 Route::patch('/kanban/steps/{step}/toggle', [KanbanController::class, 'toggleStep'])->name('kanban.steps.toggle');
 Route::delete('/kanban/steps/{step}', [KanbanController::class, 'destroyStep'])->name('kanban.steps.destroy');
+
+Route::post('/kanban/boards/{board}/calendar-events', [KanbanController::class, 'storeCalendarEvent'])->name('kanban.calendar-events.store');
+Route::patch('/kanban/calendar-events/{calendarEvent}', [KanbanController::class, 'updateCalendarEvent'])->name('kanban.calendar-events.update');
+Route::delete('/kanban/calendar-events/{calendarEvent}', [KanbanController::class, 'destroyCalendarEvent'])->name('kanban.calendar-events.destroy');

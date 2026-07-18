@@ -24,8 +24,19 @@ import { Label } from "@/Components/ui/label";
 import { EmptyState } from "@/Components/ui/empty-state";
 import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
 import { Checkbox } from "@/Components/ui/checkbox";
-import { Plus, ChevronDown, Trash2, X } from "lucide-react";
+import { Plus, ChevronDown, Trash2, X, CalendarDays, Columns3 } from "lucide-react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
 
+interface CalendarEvent {
+    id: number;
+    title: string;
+    description: string | null;
+    responsible: string | null;
+    start_date: string;
+    end_date: string | null;
+}
 interface Step {
     id: number;
     title: string;
@@ -55,6 +66,7 @@ interface Board {
     id: number;
     title: string;
     columns: Column[];
+    calendarEvents: CalendarEvent[];
 }
 
 export default function KanbanIndex({
@@ -72,6 +84,9 @@ export default function KanbanIndex({
     const [deleteCardId, setDeleteCardId] = useState<number | null>(null);
     const [deleteBoardId, setDeleteBoardId] = useState<number | null>(null);
     const [draggedCardId, setDraggedCardId] = useState<number | null>(null);
+    const [view, setView] = useState<"board" | "calendar">("board");
+    const [eventDialogDate, setEventDialogDate] = useState<string | null>(null);
+    const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null);
 
     useEffect(() => {
         if (detailCard && activeBoard) {
@@ -212,6 +227,109 @@ export default function KanbanIndex({
         });
     };
 
+    const {
+        data: eventData,
+        setData: setEventData,
+        post: postEvent,
+        patch: patchEvent,
+        reset: resetEvent,
+    } = useForm({
+        title: "",
+        description: "",
+        responsible: "",
+        start_date: "",
+        end_date: "",
+    });
+
+    const openNewEvent = (dateStr: string) => {
+        resetEvent();
+        setEventData("start_date", dateStr);
+        setEventDialogDate(dateStr);
+    };
+
+    const submitNewEvent = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!activeBoard) return;
+        postEvent(route("kanban.calendar-events.store", activeBoard.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setEventDialogDate(null);
+                resetEvent();
+            },
+        });
+    };
+
+    const openEditEvent = (ev: CalendarEvent) => {
+        setEventData({
+            title: ev.title,
+            description: ev.description ?? "",
+            responsible: ev.responsible ?? "",
+            start_date: ev.start_date,
+            end_date: ev.end_date ?? "",
+        });
+        setDetailEvent(ev);
+    };
+
+    const saveEvent = () => {
+        if (!detailEvent) return;
+        patchEvent(route("kanban.calendar-events.update", detailEvent.id), {
+            preserveScroll: true,
+            onSuccess: () => setDetailEvent(null),
+        });
+    };
+
+    const deleteEvent = () => {
+        if (!detailEvent) return;
+        router.delete(route("kanban.calendar-events.destroy", detailEvent.id), {
+            preserveScroll: true,
+            onSuccess: () => setDetailEvent(null),
+        });
+    };
+
+    // ponytail: due_date card jadi titik 1 hari, agenda custom jadi bar (bisa multi-day) — beda warna
+    const fcEvents = activeBoard
+        ? [
+              ...activeBoard.columns
+                  .flatMap((c) => c.cards)
+                  .filter((card) => card.due_date)
+                  .map((card) => ({
+                      id: `card-${card.id}`,
+                      title: card.title,
+                      date: card.due_date as string,
+                      backgroundColor: "#6366f1",
+                      borderColor: "#6366f1",
+                      textColor: "#ffffff",
+                      extendedProps: { kind: "card", cardId: card.id },
+                  })),
+              ...activeBoard.calendarEvents.map((ev) => ({
+                  id: `event-${ev.id}`,
+                  title: ev.title,
+                  start: ev.start_date,
+                  end: ev.end_date
+                      ? new Date(new Date(ev.end_date).getTime() + 86400000).toISOString().slice(0, 10)
+                      : undefined,
+                  backgroundColor: "#f59e0b",
+                  borderColor: "#f59e0b",
+                  textColor: "#ffffff",
+                  extendedProps: { kind: "event", eventId: ev.id },
+              })),
+          ]
+        : [];
+
+    const handleFcEventClick = (info: any) => {
+        if (info.event.extendedProps.kind === "card") {
+            const card = activeBoard?.columns
+                .flatMap((c) => c.cards)
+                .find((c) => c.id === info.event.extendedProps.cardId);
+            if (card) openDetail(card);
+        } else {
+            const ev = activeBoard?.calendarEvents.find(
+                (e) => e.id === info.event.extendedProps.eventId,
+            );
+            if (ev) openEditEvent(ev);
+        }
+    };
+
     return (
         <AuthenticatedLayout>
             <Head title="Kanban" />
@@ -257,6 +375,24 @@ export default function KanbanIndex({
                                 <Plus className="h-4 w-4 mr-1" /> Column
                             </Button>
                         )}
+                        {activeBoard && (
+                            <div className="flex rounded-full border border-border bg-surface-subtle p-1 gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setView("board")}
+                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[var(--font-base)] font-medium transition-all ${view === "board" ? "bg-surface shadow-[var(--shadow-xs)] text-primary" : "text-text-secondary hover:text-text-primary"}`}
+                                >
+                                    <Columns3 className="h-3.5 w-3.5" /> Board
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setView("calendar")}
+                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[var(--font-base)] font-medium transition-all ${view === "calendar" ? "bg-surface shadow-[var(--shadow-xs)] text-primary" : "text-text-secondary hover:text-text-primary"}`}
+                                >
+                                    <CalendarDays className="h-3.5 w-3.5" /> Calendar
+                                </button>
+                            </div>
+                        )}
                     </div>
                 }
             />
@@ -274,6 +410,24 @@ export default function KanbanIndex({
                     title="Belum ada board"
                     description="Buat board pertama untuk mulai tracking."
                 />
+            ) : view === "calendar" ? (
+                <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 overflow-hidden fc-theme-custom">
+                    <FullCalendar
+                        plugins={[dayGridPlugin, interactionPlugin]}
+                        initialView="dayGridMonth"
+                        locale="id"
+                        headerToolbar={{
+                            left: "prev,next today",
+                            center: "title",
+                            right: "dayGridMonth",
+                        }}
+                        buttonText={{ today: "Hari Ini", month: "Bulan" }}
+                        events={fcEvents}
+                        eventClick={handleFcEventClick}
+                        dateClick={(info) => openNewEvent(info.dateStr)}
+                        height="auto"
+                    />
+                </div>
             ) : (
                 <div className="flex gap-4 overflow-x-auto pb-4">
                     {activeBoard.columns.map((column) => (
@@ -335,6 +489,82 @@ export default function KanbanIndex({
                     ))}
                 </div>
             )}
+
+            {/* New/Edit Calendar Event */}
+            <Dialog open={eventDialogDate !== null} onOpenChange={(open) => !open && setEventDialogDate(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Agenda Baru</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={submitNewEvent}>
+                        <DialogBody className="space-y-3">
+                            <div>
+                                <Label>Judul</Label>
+                                <Input value={eventData.title} onChange={(e) => setEventData("title", e.target.value)} required />
+                            </div>
+                            <div>
+                                <Label>Deskripsi</Label>
+                                <Textarea value={eventData.description} onChange={(e) => setEventData("description", e.target.value)} />
+                            </div>
+                            <div>
+                                <Label>Responsible (opsional)</Label>
+                                <Input value={eventData.responsible} onChange={(e) => setEventData("responsible", e.target.value)} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label>Mulai</Label>
+                                    <Input type="date" value={eventData.start_date} onChange={(e) => setEventData("start_date", e.target.value)} required />
+                                </div>
+                                <div>
+                                    <Label>Selesai (opsional)</Label>
+                                    <Input type="date" value={eventData.end_date} onChange={(e) => setEventData("end_date", e.target.value)} />
+                                </div>
+                            </div>
+                        </DialogBody>
+                        <DialogFooter>
+                            <Button type="submit">Simpan</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={detailEvent !== null} onOpenChange={(open) => !open && setDetailEvent(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Agenda</DialogTitle>
+                    </DialogHeader>
+                    <DialogBody className="space-y-3">
+                        <div>
+                            <Label>Judul</Label>
+                            <Input value={eventData.title} onChange={(e) => setEventData("title", e.target.value)} required />
+                        </div>
+                        <div>
+                            <Label>Deskripsi</Label>
+                            <Textarea value={eventData.description} onChange={(e) => setEventData("description", e.target.value)} />
+                        </div>
+                        <div>
+                            <Label>Responsible (opsional)</Label>
+                            <Input value={eventData.responsible} onChange={(e) => setEventData("responsible", e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label>Mulai</Label>
+                                <Input type="date" value={eventData.start_date} onChange={(e) => setEventData("start_date", e.target.value)} required />
+                            </div>
+                            <div>
+                                <Label>Selesai (opsional)</Label>
+                                <Input type="date" value={eventData.end_date} onChange={(e) => setEventData("end_date", e.target.value)} />
+                            </div>
+                        </div>
+                    </DialogBody>
+                    <DialogFooter>
+                        <Button variant="destructive" onClick={deleteEvent}>
+                            <Trash2 className="h-4 w-4 mr-1" /> Hapus
+                        </Button>
+                        <Button onClick={saveEvent}>Simpan</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* New Board */}
             <Dialog open={newBoardOpen} onOpenChange={setNewBoardOpen}>

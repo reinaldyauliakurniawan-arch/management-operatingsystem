@@ -4,6 +4,7 @@ namespace App\Modules\Kanban\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Kanban\Models\KanbanBoard;
+use App\Modules\Kanban\Models\KanbanCalendarEvent;
 use App\Modules\Kanban\Models\KanbanCard;
 use App\Modules\Kanban\Models\KanbanCardStep;
 use App\Modules\Kanban\Models\KanbanColumn;
@@ -24,7 +25,7 @@ class KanbanController extends Controller
         $activeBoardId = (int) $request->query('board', $boards->first()?->id);
         $activeBoard = $boards->firstWhere('id', $activeBoardId) ?? $boards->first();
 
-        $activeBoard?->load(['columns.cards.steps']);
+        $activeBoard?->load(['columns.cards.steps', 'calendarEvents']);
 
         return Inertia::render('Kanban/Index', [
             'boards' => $boards->map(fn($b) => ['id' => $b->id, 'title' => $b->title]),
@@ -185,5 +186,48 @@ class KanbanController extends Controller
         $step->delete();
 
         return back()->with('message', 'Step dihapus.');
+    }
+
+    // ponytail: calendar event CRUD, ownership checked via board.team_id
+    public function storeCalendarEvent(Request $request, KanbanBoard $board)
+    {
+        abort_unless($board->team_id === TenantContext::teamId(), 403);
+
+        $validated = $request->validate([
+            'title'       => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'responsible' => 'nullable|string|max:255',
+            'start_date'  => 'required|date',
+            'end_date'    => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        $board->calendarEvents()->create($validated);
+
+        return back()->with('message', 'Agenda ditambah.');
+    }
+
+    public function updateCalendarEvent(Request $request, KanbanCalendarEvent $calendarEvent)
+    {
+        abort_unless($calendarEvent->board->team_id === TenantContext::teamId(), 403);
+
+        $validated = $request->validate([
+            'title'       => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'responsible' => 'nullable|string|max:255',
+            'start_date'  => 'sometimes|date',
+            'end_date'    => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        $calendarEvent->update($validated);
+
+        return back()->with('message', 'Agenda diperbarui.');
+    }
+
+    public function destroyCalendarEvent(KanbanCalendarEvent $calendarEvent)
+    {
+        abort_unless($calendarEvent->board->team_id === TenantContext::teamId(), 403);
+        $calendarEvent->delete();
+
+        return back()->with('message', 'Agenda dihapus.');
     }
 }

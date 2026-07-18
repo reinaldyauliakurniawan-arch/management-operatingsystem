@@ -21,4 +21,9 @@ class KanbanBoard extends Model
     {
         return $this->hasMany(KanbanColumn::class, 'board_id')->orderBy('sort_order');
     }
+
+    public function calendarEvents()
+    {
+        return $this->hasMany(KanbanCalendarEvent::class, 'board_id')->orderBy('start_date');
+    }
 }

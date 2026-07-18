@@ -35,6 +35,14 @@ class KanbanBoardResource extends JsonResource
                     ]),
                 ]),
             ]),
+            'calendarEvents' => $this->calendarEvents->map(fn($event) => [
+                'id'          => $event->id,
+                'title'       => $event->title,
+                'description' => $event->description,
+                'responsible' => $event->responsible,
+                'start_date'  => $event->start_date->format('Y-m-d'),
+                'end_date'    => $event->end_date?->format('Y-m-d'),
+            ]),
         ];
     }
 }
