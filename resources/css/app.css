@@ -313,3 +313,14 @@
     font-weight: 600;
     color: var(--color-text-primary);
 }
+
+/* ponytail: fcicons data:-font kena block CSP font-src di production, ganti pakai unicode arrow */
+.fc-theme-custom .fc-icon {
+    font-family: inherit !important;
+}
+.fc-theme-custom .fc-icon-chevron-left::before {
+    content: "‹";
+}
+.fc-theme-custom .fc-icon-chevron-right::before {
+    content: "›";
+}
