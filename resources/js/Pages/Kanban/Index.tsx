@@ -257,6 +257,7 @@ export default function KanbanIndex({
         post: postSeat,
         patch: patchSeat,
         reset: resetSeat,
+        transform: transformSeat,
     } = useForm({
         title: "",
         parent_id: "",
@@ -273,23 +274,22 @@ export default function KanbanIndex({
     const submitSeat = (e: React.FormEvent) => {
         e.preventDefault();
         if (!activeBoard) return;
-        const onSuccess = () => {
-            setSeatDialogOpen(false);
-            setEditSeatId(null);
-            resetSeat();
-        };
+        transformSeat((data) => ({
+            title: data.title,
+            parent_id: data.parent_id || null,
+            user_id: data.user_id || null,
+            responsibilities: data.responsibilities
+                .split("\n")
+                .map((r) => r.trim())
+                .filter(Boolean),
+        }));
         const options = {
             preserveScroll: true,
-            onSuccess,
-            transform: (data: any) => ({
-                title: data.title,
-                parent_id: data.parent_id || null,
-                user_id: data.user_id || null,
-                responsibilities: (data.responsibilities as string)
-                    .split("\n")
-                    .map((r: string) => r.trim())
-                    .filter(Boolean),
-            }),
+            onSuccess: () => {
+                setSeatDialogOpen(false);
+                setEditSeatId(null);
+                resetSeat();
+            },
         };
         if (editSeatId) {
             patchSeat(route("kanban.board-seats.update", editSeatId), options);
@@ -715,10 +715,10 @@ export default function KanbanIndex({
                                         }}
                                     >
                                         <Card
-                                            className="cursor-pointer hover:shadow-md transition-shadow"
+                                            className="cursor-pointer hover:shadow-md transition-shadow [--card-spacing:var(--spacing-gap-sm)]"
                                             onClick={() => openDetail(card)}
                                         >
-                                            <CardContent className="p-2">
+                                            <CardContent className="p-0">
                                                 <p className="text-xs font-medium leading-snug line-clamp-2">{card.title}</p>
                                                 {(card.responsible || card.steps.length > 0 || card.due_date) && (
                                                     <div className="flex items-center gap-2 mt-1 text-[10px] text-text-secondary">
