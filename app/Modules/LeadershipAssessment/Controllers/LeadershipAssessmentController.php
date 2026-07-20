@@ -576,7 +576,12 @@ class LeadershipAssessmentController extends Controller
     {
         $userId = Auth::id();
 
-        $cycles = AssessmentCycle::where('status', 'closed')
+        // ponytail: AssessmentCycle uses HasTeam, which auto-scopes every
+        // query to session's active_team_id via TeamScope. That silently
+        // capped this cross-team query to 1 team — withoutGlobalScopes()
+        // is the documented escape hatch for intentional cross-team reads.
+        $cycles = AssessmentCycle::withoutGlobalScopes()
+            ->where('status', 'closed')
             ->whereHas('assignments', fn ($q) => $q->where('user_id', $assessee->id))
             ->get()
             ->filter(fn ($c) => Auth::user()->roleIn($c->team_id) === 'leader' || $assessee->id === $userId);
