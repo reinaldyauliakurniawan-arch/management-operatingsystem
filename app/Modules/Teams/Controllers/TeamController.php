@@ -38,10 +38,13 @@ class TeamController extends Controller
             ->where('organization_id', $orgId)
             ->pluck('id');
 
-        return User::whereHas('teamMemberships', fn($q) => $q->whereIn('team_id', $teamIds))
-            ->leftJoin('organization_user', function ($join) use ($orgId) {
+        return User::leftJoin('organization_user', function ($join) use ($orgId) {
                 $join->on('users.id', '=', 'organization_user.user_id')
                     ->where('organization_user.organization_id', $orgId);
+            })
+            ->where(function ($q) use ($orgId, $teamIds) {
+                $q->whereNotNull('organization_user.organization_id')
+                    ->orWhereHas('teamMemberships', fn($qq) => $qq->whereIn('team_id', $teamIds));
             })
             ->select('users.id', 'users.name', 'users.email', 'users.created_at',
                 \DB::raw('COALESCE(organization_user.is_admin, 0) as is_org_admin'))
@@ -207,10 +210,12 @@ class TeamController extends Controller
                 // happens via promoteToOrgAdmin() below for the active org.
             ]);
 
-            // ponytail: if caller wants admin, grant it via per-org pivot.
-            if (!empty($validated['is_org_admin'])) {
-                $user->promoteToOrgAdmin($orgId);
-            }
+            // ponytail: every new user must be attached to the active org's
+            // pivot, or usersInActiveOrg() can never see them.
+            \DB::table('organization_user')->updateOrInsert(
+                ['organization_id' => $orgId, 'user_id' => $user->id],
+                ['is_admin' => !empty($validated['is_org_admin']) ? 1 : 0, 'updated_at' => now(), 'created_at' => now()]
+            );
 
             if (!empty($validated['team_id']) && !empty($validated['role'])) {
                 TeamMember::create([
