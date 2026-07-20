@@ -495,6 +495,7 @@ class LeadershipAssessmentController extends Controller
 
     public function results(AssessmentCycle $cycle, User $assessee)
     {
+        $allTeamsData = $this->buildAllTeamsResult($assessee);
         $userId = Auth::id();
         $teamId = TenantContext::teamId();
         abort_unless($cycle->team_id === $teamId, 403, 'Cycle bukan milik team aktif.');
@@ -528,6 +529,10 @@ class LeadershipAssessmentController extends Controller
                     $self = $itemResponses->firstWhere('assessor_id', $assessee->id);
                     $others = $itemResponses->where('assessor_id', '!=', $assessee->id);
 
+                    // ponytail: final now averages ALL responses including
+                    // self — previously $self was computed but never fed
+                    // into 'final', silently dropping self-rating from the
+                    // score it was supposedly part of.
                     return [
                         'item'          => $itemResponses->first()->item->title,
                         'self'          => $self?->rubric_level,
@@ -535,7 +540,7 @@ class LeadershipAssessmentController extends Controller
                             'label' => $assessorLabel[$r->assessor_id],
                             'level' => $r->rubric_level,
                         ])->values(),
-                        'final'         => $others->isEmpty() ? null : round($others->avg('rubric_level'), 2),
+                        'final'         => round($itemResponses->avg('rubric_level'), 2),
                     ];
                 })->values();
 
@@ -559,7 +564,47 @@ class LeadershipAssessmentController extends Controller
             'assessee'   => $assessee->only(['id', 'name']),
             'byType'     => $byType,
             'overallAvg' => $overallFinals->isEmpty() ? null : round($overallFinals->avg(), 2),
+            'allTeams'   => $allTeamsData,
         ]);
+    }
+
+    // ponytail: pooled view across every closed cycle the assessee was ever
+    // assigned in, any team. Same item->type rollup as results() above,
+    // just not scoped to one cycle_id. Visibility: caller sees a cycle if
+    // they're leader in that cycle's team, or it's their own record.
+    private function buildAllTeamsResult(User $assessee): array
+    {
+        $userId = Auth::id();
+
+        $cycles = AssessmentCycle::where('status', 'closed')
+            ->whereHas('assignments', fn ($q) => $q->where('user_id', $assessee->id))
+            ->get()
+            ->filter(fn ($c) => Auth::user()->roleIn($c->team_id) === 'leader' || $assessee->id === $userId);
+
+        $responses = AssessmentResponse::whereIn('cycle_id', $cycles->pluck('id'))
+            ->where('assessee_id', $assessee->id)
+            ->with('item.leadershipType')
+            ->get();
+
+        $byType = $responses->groupBy(fn ($r) => $r->item->leadership_type_id)
+            ->map(function ($group) {
+                $itemFinals = $group->groupBy('item_id')
+                    ->map(fn ($itemResponses) => round($itemResponses->avg('rubric_level'), 2));
+
+                return [
+                    'type' => $group->first()->item->leadershipType->name,
+                    'avg'  => $itemFinals->isEmpty() ? null : round($itemFinals->avg(), 2),
+                ];
+            })->values();
+
+        $overallFinals = $byType->pluck('avg')->filter(fn ($v) => $v !== null);
+
+        return [
+            'teamCount'  => $cycles->pluck('team_id')->unique()->count(),
+            'cycleCount' => $cycles->count(),
+            'byType'     => $byType,
+            'overallAvg' => $overallFinals->isEmpty() ? null : round($overallFinals->avg(), 2),
+        ];
     }
 
     // ---- Rubrik CRUD ----
