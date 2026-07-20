@@ -17,6 +17,7 @@ import {
     DropdownMenuTrigger,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
 } from "@/Components/ui/dropdown-menu";
 import { Input } from "@/Components/ui/input";
 import { Textarea } from "@/Components/ui/textarea";
@@ -585,16 +586,12 @@ export default function KanbanIndex({
                                         </button>
                                     </DropdownMenuItem>
                                 ))}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => setNewBoardOpen(true)}>
+                                    <Plus className="h-3.5 w-3.5 mr-1.5" /> New Board
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <Button onClick={() => setNewBoardOpen(true)}>
-                            <Plus className="h-4 w-4 mr-1" /> New Board
-                        </Button>
-                        {activeBoard && (
-                            <Button variant="secondary" onClick={() => setNewColumnOpen(true)}>
-                                <Plus className="h-4 w-4 mr-1" /> Column
-                            </Button>
-                        )}
                         {activeBoard && (
                             <div className="flex rounded-full border border-border bg-surface-subtle p-1 gap-1">
                                 <button
@@ -743,6 +740,13 @@ export default function KanbanIndex({
                             </button>
                         </div>
                     ))}
+
+                    <button
+                        onClick={() => setNewColumnOpen(true)}
+                        className="w-72 shrink-0 h-fit flex items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-border p-3 text-sm text-text-secondary hover:border-primary hover:text-primary transition-colors"
+                    >
+                        <Plus className="h-4 w-4" /> Add Column
+                    </button>
                 </div>
             )}
 
