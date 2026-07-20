@@ -225,6 +225,8 @@ export default function KanbanIndex({
     const [view, setView] = useState<"board" | "calendar" | "chart">("board");
     const [eventDialogDate, setEventDialogDate] = useState<string | null>(null);
     const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null);
+    const [editColumnId, setEditColumnId] = useState<number | null>(null);
+    const [editColumnTitle, setEditColumnTitle] = useState("");
     const [seatDialogOpen, setSeatDialogOpen] = useState(false);
     const [editSeatId, setEditSeatId] = useState<number | null>(null);
     const [deleteSeatId, setDeleteSeatId] = useState<number | null>(null);
@@ -308,6 +310,25 @@ export default function KanbanIndex({
     };
 
     const seatFlow = activeBoard ? buildSeatFlow(buildSeatTree(activeBoard.boardSeats)) : { nodes: [], edges: [] };
+
+    const startEditColumn = (column: Column) => {
+        setEditColumnId(column.id);
+        setEditColumnTitle(column.title);
+    };
+
+    const submitEditColumn = () => {
+        if (!editColumnId) return;
+        const title = editColumnTitle.trim();
+        if (!title) {
+            setEditColumnId(null);
+            return;
+        }
+        router.patch(
+            route("kanban.columns.update", editColumnId),
+            { title },
+            { preserveScroll: true, onFinish: () => setEditColumnId(null) },
+        );
+    };
 
     useEffect(() => {
         if (detailCard && activeBoard) {
@@ -692,9 +713,29 @@ export default function KanbanIndex({
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={() => onDrop(column.id, column.cards.length)}
                         >
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium text-sm">{column.title}</span>
-                                <button onClick={() => deleteColumn(column.id)} className="text-text-secondary hover:text-red-600">
+                            <div className="flex items-center justify-between mb-2 gap-2">
+                                {editColumnId === column.id ? (
+                                    <input
+                                        autoFocus
+                                        value={editColumnTitle}
+                                        onChange={(e) => setEditColumnTitle(e.target.value)}
+                                        onBlur={submitEditColumn}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") submitEditColumn();
+                                            if (e.key === "Escape") setEditColumnId(null);
+                                        }}
+                                        className="font-medium text-sm bg-white border border-primary rounded px-1.5 py-0.5 w-full outline-none"
+                                    />
+                                ) : (
+                                    <span
+                                        className="font-medium text-sm cursor-text hover:text-primary truncate"
+                                        onClick={() => startEditColumn(column)}
+                                        title="Klik untuk ganti nama"
+                                    >
+                                        {column.title}
+                                    </span>
+                                )}
+                                <button onClick={() => deleteColumn(column.id)} className="text-text-secondary hover:text-red-600 shrink-0">
                                     <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                             </div>
