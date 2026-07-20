@@ -43,6 +43,13 @@ class KanbanBoardResource extends JsonResource
                 'start_date'  => $event->start_date->format('Y-m-d'),
                 'end_date'    => $event->end_date?->format('Y-m-d'),
             ]),
+            'boardSeats' => $this->boardSeats->map(fn($seat) => [
+                'id'               => $seat->id,
+                'title'            => $seat->title,
+                'parent_id'        => $seat->parent_id,
+                'user'             => $seat->user ? ['id' => $seat->user->id, 'name' => $seat->user->name] : null,
+                'responsibilities' => $seat->responsibilities ?? [],
+            ]),
         ];
     }
 }

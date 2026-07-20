@@ -25,3 +25,8 @@ Route::delete('/kanban/steps/{step}', [KanbanController::class, 'destroyStep'])-
 Route::post('/kanban/boards/{board}/calendar-events', [KanbanController::class, 'storeCalendarEvent'])->name('kanban.calendar-events.store');
 Route::patch('/kanban/calendar-events/{calendarEvent}', [KanbanController::class, 'updateCalendarEvent'])->name('kanban.calendar-events.update');
 Route::delete('/kanban/calendar-events/{calendarEvent}', [KanbanController::class, 'destroyCalendarEvent'])->name('kanban.calendar-events.destroy');
+
+Route::get('/kanban/boards/{board}/seat-users', [KanbanController::class, 'apiBoardUsers'])->name('kanban.board-seats.users');
+Route::post('/kanban/boards/{board}/seats', [KanbanController::class, 'storeBoardSeat'])->name('kanban.board-seats.store');
+Route::patch('/kanban/seats/{boardSeat}', [KanbanController::class, 'updateBoardSeat'])->name('kanban.board-seats.update');
+Route::delete('/kanban/seats/{boardSeat}', [KanbanController::class, 'destroyBoardSeat'])->name('kanban.board-seats.destroy');

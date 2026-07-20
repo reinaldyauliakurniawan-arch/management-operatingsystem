@@ -26,4 +26,9 @@ class KanbanBoard extends Model
     {
         return $this->hasMany(KanbanCalendarEvent::class, 'board_id')->orderBy('start_date');
     }
+
+    public function boardSeats()
+    {
+        return $this->hasMany(KanbanBoardSeat::class, 'board_id');
+    }
 }

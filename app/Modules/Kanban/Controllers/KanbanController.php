@@ -3,7 +3,9 @@
 namespace App\Modules\Kanban\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Modules\Kanban\Models\KanbanBoard;
+use App\Modules\Kanban\Models\KanbanBoardSeat;
 use App\Modules\Kanban\Models\KanbanCalendarEvent;
 use App\Modules\Kanban\Models\KanbanCard;
 use App\Modules\Kanban\Models\KanbanCardStep;
@@ -25,7 +27,7 @@ class KanbanController extends Controller
         $activeBoardId = (int) $request->query('board', $boards->first()?->id);
         $activeBoard = $boards->firstWhere('id', $activeBoardId) ?? $boards->first();
 
-        $activeBoard?->load(['columns.cards.steps', 'calendarEvents']);
+        $activeBoard?->load(['columns.cards.steps', 'calendarEvents', 'boardSeats.user']);
 
         return Inertia::render('Kanban/Index', [
             'boards' => $boards->map(fn($b) => ['id' => $b->id, 'title' => $b->title]),
@@ -229,5 +231,77 @@ class KanbanController extends Controller
         $calendarEvent->delete();
 
         return back()->with('message', 'Agenda dihapus.');
+    }
+
+    // ponytail: board-scoped accountability chart, reuses HasTeam scoping
+    // via team_id but ownership is checked against board_id, same pattern
+    // as columns/cards/calendar events above
+    public function apiBoardUsers(KanbanBoard $board)
+    {
+        abort_unless($board->team_id === TenantContext::teamId(), 403);
+
+        $users = User::whereHas(
+            'teamMemberships',
+            fn($q) => $q->where('team_id', $board->team_id),
+        )->orderBy('name')->get(['id', 'name']);
+
+        return response()->json(['users' => $users]);
+    }
+
+    public function storeBoardSeat(Request $request, KanbanBoard $board)
+    {
+        abort_unless($board->team_id === TenantContext::teamId(), 403);
+
+        $validated = $request->validate([
+            'title'            => 'required|string|max:255',
+            'parent_id'        => ['nullable', 'exists:kanban_board_seats,id'],
+            'user_id'          => 'nullable|exists:users,id',
+            'responsibilities' => 'nullable|array',
+        ]);
+
+        if (!empty($validated['parent_id'])) {
+            $parent = KanbanBoardSeat::find($validated['parent_id']);
+            abort_unless($parent && $parent->board_id === $board->id, 422, 'Parent seat tidak valid.');
+        }
+
+        $board->boardSeats()->create([
+            'team_id'          => $board->team_id,
+            'title'            => $validated['title'],
+            'parent_id'        => $validated['parent_id'] ?? null,
+            'user_id'          => $validated['user_id'] ?? null,
+            'responsibilities' => $validated['responsibilities'] ?? [],
+        ]);
+
+        return back()->with('message', 'Seat ditambah.');
+    }
+
+    public function updateBoardSeat(Request $request, KanbanBoardSeat $boardSeat)
+    {
+        abort_unless($boardSeat->board->team_id === TenantContext::teamId(), 403);
+
+        $validated = $request->validate([
+            'title'            => 'sometimes|string|max:255',
+            'parent_id'        => ['nullable', 'exists:kanban_board_seats,id'],
+            'user_id'          => 'nullable|exists:users,id',
+            'responsibilities' => 'nullable|array',
+        ]);
+
+        if (!empty($validated['parent_id'])) {
+            abort_if((int) $validated['parent_id'] === $boardSeat->id, 422, 'Seat tidak bisa jadi parent dirinya sendiri.');
+            $parent = KanbanBoardSeat::find($validated['parent_id']);
+            abort_unless($parent && $parent->board_id === $boardSeat->board_id, 422, 'Parent seat tidak valid.');
+        }
+
+        $boardSeat->update($validated);
+
+        return back()->with('message', 'Seat diperbarui.');
+    }
+
+    public function destroyBoardSeat(KanbanBoardSeat $boardSeat)
+    {
+        abort_unless($boardSeat->board->team_id === TenantContext::teamId(), 403);
+        $boardSeat->delete();
+
+        return back()->with('message', 'Seat dihapus.');
     }
 }

@@ -24,10 +24,22 @@ import { Label } from "@/Components/ui/label";
 import { EmptyState } from "@/Components/ui/empty-state";
 import { ConfirmDialog } from "@/Components/ui/confirm-dialog";
 import { Checkbox } from "@/Components/ui/checkbox";
-import { Plus, ChevronDown, Trash2, X, CalendarDays, Columns3 } from "lucide-react";
+import { Plus, ChevronDown, Trash2, X, CalendarDays, Columns3, Network } from "lucide-react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import {
+    ReactFlow,
+    ReactFlowProvider,
+    Node,
+    Edge,
+    Background,
+    Controls,
+    Handle,
+    Position,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { Select } from "@/Components/ui/select";
 
 interface CalendarEvent {
     id: number;
@@ -62,12 +74,137 @@ interface Column {
     sort_order: number;
     cards: KanbanCard[];
 }
+interface BoardSeat {
+    id: number;
+    title: string;
+    parent_id: number | null;
+    user: { id: number; name: string } | null;
+    responsibilities: string[];
+}
 interface Board {
     id: number;
     title: string;
     columns: Column[];
     calendarEvents: CalendarEvent[];
+    boardSeats: BoardSeat[];
 }
+
+// ponytail: reused tree-layout math from AccountabilityChart/Index.tsx —
+// same algorithm, board-scoped seats instead of org-wide seats
+const SEAT_W = 200;
+const SEAT_H = 72;
+const SEAT_GAP_X = 32;
+const SEAT_GAP_Y = 80;
+
+type SeatTree = BoardSeat & { children: SeatTree[] };
+
+function buildSeatTree(seats: BoardSeat[]): SeatTree[] {
+    const byId = new Map<number, SeatTree>(seats.map((s) => [s.id, { ...s, children: [] }]));
+    const roots: SeatTree[] = [];
+    byId.forEach((seat) => {
+        if (seat.parent_id && byId.has(seat.parent_id)) {
+            byId.get(seat.parent_id)!.children.push(seat);
+        } else {
+            roots.push(seat);
+        }
+    });
+    return roots;
+}
+
+function measureSeatWidth(seat: SeatTree): number {
+    if (seat.children.length === 0) return SEAT_W;
+    const w = seat.children.reduce((sum, c) => sum + measureSeatWidth(c) + SEAT_GAP_X, -SEAT_GAP_X);
+    return Math.max(SEAT_W, w);
+}
+
+function buildSeatFlow(roots: SeatTree[]): { nodes: Node[]; edges: Edge[] } {
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+    let x = 0;
+    const place = (seat: SeatTree, sx: number, y: number) => {
+        const subtreeW = measureSeatWidth(seat);
+        const cx = sx + subtreeW / 2 - SEAT_W / 2;
+        nodes.push({
+            id: String(seat.id),
+            type: "boardSeatNode",
+            position: { x: cx, y },
+            data: { seat },
+            style: { width: SEAT_W, cursor: "default" },
+            draggable: false,
+            selectable: true,
+            focusable: false,
+        });
+        let childX = sx;
+        for (const child of seat.children) {
+            const childW = measureSeatWidth(child);
+            edges.push({
+                id: `e${seat.id}-${child.id}`,
+                source: String(seat.id),
+                target: String(child.id),
+                type: "smoothstep",
+                style: { stroke: "#94a3b8", strokeWidth: 2 },
+            });
+            place(child, childX, y + SEAT_H + SEAT_GAP_Y);
+            childX += childW + SEAT_GAP_X;
+        }
+    };
+    for (const root of roots) {
+        const w = measureSeatWidth(root);
+        place(root, x, 0);
+        x += w + SEAT_GAP_X * 2;
+    }
+    return { nodes, edges };
+}
+
+const boardSeatCallbacksRef = {
+    onEdit: (_seat: BoardSeat) => {},
+    onDelete: (_id: number) => {},
+};
+
+function BoardSeatNode({ data }: { data: any }) {
+    const { seat } = data as { seat: BoardSeat };
+    return (
+        <div
+            className="rounded-lg border border-border bg-surface-raised p-3 shadow-sm hover:border-primary transition-all"
+            style={{ width: SEAT_W, minHeight: SEAT_H }}
+        >
+            <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
+            <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
+            <div className="flex items-start justify-between mb-1">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-primary opacity-60">
+                    {seat.title || "—"}
+                </span>
+                <div className="flex gap-1">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            boardSeatCallbacksRef.onEdit(seat);
+                        }}
+                        className="rounded px-1 py-0.5 text-[10px] font-medium text-text-secondary hover:bg-surface-overlay"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            boardSeatCallbacksRef.onDelete(seat.id);
+                        }}
+                        className="rounded px-1 py-0.5 text-[10px] font-medium text-error hover:bg-error-subtle"
+                    >
+                        Hapus
+                    </button>
+                </div>
+            </div>
+            {seat.user ? (
+                <p className="text-xs font-medium text-text-primary">{seat.user.name}</p>
+            ) : (
+                <p className="text-xs italic text-text-muted">Belum terisi</p>
+            )}
+        </div>
+    );
+}
+
+const boardSeatNodeTypes = { boardSeatNode: BoardSeatNode };
 
 export default function KanbanIndex({
     boards,
@@ -84,9 +221,92 @@ export default function KanbanIndex({
     const [deleteCardId, setDeleteCardId] = useState<number | null>(null);
     const [deleteBoardId, setDeleteBoardId] = useState<number | null>(null);
     const [draggedCardId, setDraggedCardId] = useState<number | null>(null);
-    const [view, setView] = useState<"board" | "calendar">("board");
+    const [view, setView] = useState<"board" | "calendar" | "chart">("board");
     const [eventDialogDate, setEventDialogDate] = useState<string | null>(null);
     const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null);
+    const [seatDialogOpen, setSeatDialogOpen] = useState(false);
+    const [editSeatId, setEditSeatId] = useState<number | null>(null);
+    const [deleteSeatId, setDeleteSeatId] = useState<number | null>(null);
+    const [boardUsers, setBoardUsers] = useState<{ id: number; name: string }[]>([]);
+
+    useEffect(() => {
+        boardSeatCallbacksRef.onEdit = (seat: BoardSeat) => {
+            setSeatData({
+                title: seat.title,
+                parent_id: seat.parent_id ? String(seat.parent_id) : "",
+                user_id: seat.user ? String(seat.user.id) : "",
+                responsibilities: (seat.responsibilities ?? []).join("\n"),
+            });
+            setEditSeatId(seat.id);
+            setSeatDialogOpen(true);
+        };
+        boardSeatCallbacksRef.onDelete = (id: number) => setDeleteSeatId(id);
+    }, []);
+
+    useEffect(() => {
+        if (view === "chart" && activeBoard) {
+            fetch(route("kanban.board-seats.users", activeBoard.id))
+                .then((r) => r.json())
+                .then((d) => setBoardUsers(d.users ?? []));
+        }
+    }, [view, activeBoard?.id]);
+
+    const {
+        data: seatData,
+        setData: setSeatData,
+        post: postSeat,
+        patch: patchSeat,
+        reset: resetSeat,
+    } = useForm({
+        title: "",
+        parent_id: "",
+        user_id: "",
+        responsibilities: "",
+    });
+
+    const openNewSeat = () => {
+        resetSeat();
+        setEditSeatId(null);
+        setSeatDialogOpen(true);
+    };
+
+    const submitSeat = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!activeBoard) return;
+        const onSuccess = () => {
+            setSeatDialogOpen(false);
+            setEditSeatId(null);
+            resetSeat();
+        };
+        const options = {
+            preserveScroll: true,
+            onSuccess,
+            transform: (data: any) => ({
+                title: data.title,
+                parent_id: data.parent_id || null,
+                user_id: data.user_id || null,
+                responsibilities: (data.responsibilities as string)
+                    .split("\n")
+                    .map((r: string) => r.trim())
+                    .filter(Boolean),
+            }),
+        };
+        if (editSeatId) {
+            patchSeat(route("kanban.board-seats.update", editSeatId), options);
+        } else {
+            postSeat(route("kanban.board-seats.store", activeBoard.id), options);
+        }
+    };
+
+    const confirmDeleteSeat = () => {
+        if (!deleteSeatId) return;
+        router.delete(route("kanban.board-seats.destroy", deleteSeatId), {
+            preserveScroll: true,
+            onSuccess: () => setDeleteSeatId(null),
+        });
+    };
+
+    const seatFlow = activeBoard ? buildSeatFlow(buildSeatTree(activeBoard.boardSeats)) : { nodes: [], edges: [] };
 
     useEffect(() => {
         if (detailCard && activeBoard) {
@@ -391,6 +611,13 @@ export default function KanbanIndex({
                                 >
                                     <CalendarDays className="h-3.5 w-3.5" /> Calendar
                                 </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setView("chart")}
+                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[var(--font-base)] font-medium transition-all ${view === "chart" ? "bg-surface shadow-[var(--shadow-xs)] text-primary" : "text-text-secondary hover:text-text-primary"}`}
+                                >
+                                    <Network className="h-3.5 w-3.5" /> Chart
+                                </button>
                             </div>
                         )}
                     </div>
@@ -428,6 +655,37 @@ export default function KanbanIndex({
                         height="auto"
                     />
                 </div>
+            ) : view === "chart" ? (
+                <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+                    <div className="flex justify-end mb-2">
+                        <Button size="sm" onClick={openNewSeat}>
+                            <Plus className="h-4 w-4 mr-1" /> Tambah Seat
+                        </Button>
+                    </div>
+                    {activeBoard.boardSeats.length === 0 ? (
+                        <EmptyState
+                            title="Belum ada struktur"
+                            description="Tambah seat pertama untuk membuat accountability chart khusus board ini."
+                        />
+                    ) : (
+                        <div style={{ height: 480 }}>
+                            <ReactFlowProvider>
+                                <ReactFlow
+                                    nodes={seatFlow.nodes}
+                                    edges={seatFlow.edges}
+                                    nodeTypes={boardSeatNodeTypes}
+                                    fitView
+                                    nodesDraggable={false}
+                                    nodesConnectable={false}
+                                    elementsSelectable={true}
+                                >
+                                    <Background />
+                                    <Controls showInteractive={false} />
+                                </ReactFlow>
+                            </ReactFlowProvider>
+                        </div>
+                    )}
+                </div>
             ) : (
                 <div className="flex gap-4 overflow-x-auto pb-4">
                     {activeBoard.columns.map((column) => (
@@ -444,7 +702,7 @@ export default function KanbanIndex({
                                 </button>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-2 max-h-[560px] overflow-y-auto pr-1">
                                 {column.cards.map((card, idx) => (
                                     <div
                                         key={card.id}
@@ -460,18 +718,16 @@ export default function KanbanIndex({
                                             className="cursor-pointer hover:shadow-md transition-shadow"
                                             onClick={() => openDetail(card)}
                                         >
-                                            <CardContent className="p-3">
-                                                <p className="text-sm font-medium">{card.title}</p>
-                                                {card.responsible && (
-                                                    <p className="text-xs text-text-secondary mt-1">R: {card.responsible}</p>
-                                                )}
-                                                {card.steps.length > 0 && (
-                                                    <p className="text-xs text-text-secondary mt-1">
-                                                        ☑ {card.steps.filter((s) => s.is_done).length}/{card.steps.length} steps
-                                                    </p>
-                                                )}
-                                                {card.due_date && (
-                                                    <p className="text-xs text-text-secondary mt-1">🗓 {card.due_date}</p>
+                                            <CardContent className="p-2">
+                                                <p className="text-xs font-medium leading-snug line-clamp-2">{card.title}</p>
+                                                {(card.responsible || card.steps.length > 0 || card.due_date) && (
+                                                    <div className="flex items-center gap-2 mt-1 text-[10px] text-text-secondary">
+                                                        {card.responsible && <span className="truncate max-w-[6rem]">R: {card.responsible}</span>}
+                                                        {card.steps.length > 0 && (
+                                                            <span>☑ {card.steps.filter((s) => s.is_done).length}/{card.steps.length}</span>
+                                                        )}
+                                                        {card.due_date && <span>🗓 {card.due_date}</span>}
+                                                    </div>
                                                 )}
                                             </CardContent>
                                         </Card>
@@ -733,6 +989,58 @@ export default function KanbanIndex({
                 title="Hapus Card?"
                 description="Card dan semua step di dalamnya akan dihapus permanen."
                 onConfirm={confirmDeleteCard}
+            />
+
+            {/* Board Seat Add/Edit */}
+            <Dialog open={seatDialogOpen} onOpenChange={(open) => { setSeatDialogOpen(open); if (!open) setEditSeatId(null); }}>
+                <DialogContent size="sm">
+                    <DialogHeader>
+                        <DialogTitle>{editSeatId ? "Edit Seat" : "Seat Baru"}</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={submitSeat}>
+                        <DialogBody className="space-y-3">
+                            <div>
+                                <Label>Nama Seat / Posisi</Label>
+                                <Input value={seatData.title} onChange={(e) => setSeatData("title", e.target.value)} autoFocus required />
+                            </div>
+                            <div>
+                                <Label>Responsibilities (satu per baris)</Label>
+                                <Textarea value={seatData.responsibilities} onChange={(e) => setSeatData("responsibilities", e.target.value)} rows={3} />
+                            </div>
+                            <div>
+                                <Label>User (opsional)</Label>
+                                <Select value={seatData.user_id} onChange={(e) => setSeatData("user_id", e.target.value)}>
+                                    <option value="">— Belum terisi —</option>
+                                    {boardUsers.map((u) => (
+                                        <option key={u.id} value={String(u.id)}>{u.name}</option>
+                                    ))}
+                                </Select>
+                            </div>
+                            <div>
+                                <Label>Parent Seat (opsional)</Label>
+                                <Select value={seatData.parent_id} onChange={(e) => setSeatData("parent_id", e.target.value)}>
+                                    <option value="">— Root —</option>
+                                    {(activeBoard?.boardSeats ?? [])
+                                        .filter((s) => s.id !== editSeatId)
+                                        .map((s) => (
+                                            <option key={s.id} value={String(s.id)}>{s.title}</option>
+                                        ))}
+                                </Select>
+                            </div>
+                        </DialogBody>
+                        <DialogFooter showCloseButton>
+                            <Button type="submit">Simpan</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <ConfirmDialog
+                open={deleteSeatId !== null}
+                onOpenChange={(open) => !open && setDeleteSeatId(null)}
+                title="Hapus Seat?"
+                description="Seat ini dan posisinya di chart akan dihapus permanen."
+                onConfirm={confirmDeleteSeat}
             />
         </AuthenticatedLayout>
     );
