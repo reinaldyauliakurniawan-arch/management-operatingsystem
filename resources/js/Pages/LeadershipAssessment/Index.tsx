@@ -305,7 +305,8 @@ export default function LeadershipAssessmentIndex({
                                         </Button>
                                     )}
                                     {isLeader &&
-                                        cycle.assignments.length === 0 && (
+                                        (cycle.assignments.length === 0 ||
+                                            cycle.is_closed) && (
                                             <Button
                                                 variant="danger"
                                                 size="sm"

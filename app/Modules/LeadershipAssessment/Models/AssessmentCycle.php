@@ -42,6 +42,6 @@ class AssessmentCycle extends Model
 
     public function canBeDeleted(): bool
     {
-        return $this->responses()->count() === 0;
+        return $this->isClosed() || $this->responses()->count() === 0;
     }
 }

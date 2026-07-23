@@ -364,9 +364,14 @@ class LeadershipAssessmentController extends Controller
             abort(422, 'Cycle tidak bisa dihapus — sudah ada submission.');
         }
 
-        $cycle->delete();
+        DB::transaction(function () use ($cycle) {
+            AssessmentResponse::where('cycle_id', $cycle->id)->delete();
+            AdditionalAssessor::whereIn('assignment_id', $cycle->assignments()->pluck('id'))->delete();
+            $cycle->assignments()->delete();
+            $cycle->delete();
+        });
 
-        return back()->with('message', 'Cycle dihapus.');
+        return back()->with('message', 'Cycle dihapus, hasil akhir diperbarui.');
     }
 
     public function takeAssessment(AssessmentCycle $cycle, User $assessee)
