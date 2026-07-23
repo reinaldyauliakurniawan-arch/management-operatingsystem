@@ -516,7 +516,7 @@ class LeadershipAssessmentController extends Controller
 
         $responses = AssessmentResponse::where('cycle_id', $cycle->id)
             ->where('assessee_id', $assessee->id)
-            ->with('item.leadershipType')
+            ->with('item.leadershipType', 'item.rubrics')
             ->orderBy('created_at')
             ->get();
 
@@ -539,6 +539,7 @@ class LeadershipAssessmentController extends Controller
                     // into 'final', silently dropping self-rating from the
                     // score it was supposedly part of.
                     return [
+                        'itemId'        => $itemResponses->first()->item_id,
                         'item'          => $itemResponses->first()->item->title,
                         'self'          => $self?->rubric_level,
                         'assessors'     => $others->map(fn ($r) => [
@@ -546,6 +547,10 @@ class LeadershipAssessmentController extends Controller
                             'level' => $r->rubric_level,
                         ])->values(),
                         'final'         => round($itemResponses->avg('rubric_level'), 2),
+                        'rubrics'       => $itemResponses->first()->item->rubrics->map(fn ($r) => [
+                            'level'       => $r->level,
+                            'description' => $r->description,
+                        ])->values(),
                     ];
                 })->values();
 
