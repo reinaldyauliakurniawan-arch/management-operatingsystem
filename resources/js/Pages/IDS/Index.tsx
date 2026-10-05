@@ -3,7 +3,6 @@ import { useForm, Head, usePage, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageHeader } from "@/Components/ui/page-header";
 import { Button } from "@/Components/ui/button";
-import { Badge } from "@/Components/ui/badge";
 import { Card, CardContent } from "@/Components/ui/card";
 import {
     Table,
@@ -50,6 +49,69 @@ function priorityClass(priority: number) {
     return "text-text-secondary";
 }
 
+// Eisenhower matrix: kuadran diturunkan dari skala priority (0–10).
+// dropPriority = nilai yang di-set saat issue di-drag ke kuadran itu.
+interface Quadrant {
+    key: "do" | "schedule" | "delegate" | "eliminate";
+    title: string;
+    subtitle: string;
+    min: number;
+    max: number;
+    dropPriority: number;
+    boxClass: string;
+    titleClass: string;
+}
+
+const QUADRANTS: Quadrant[] = [
+    {
+        key: "do",
+        title: "Do",
+        subtitle: "Urgent & Important",
+        min: 8,
+        max: 10,
+        dropPriority: 9,
+        boxClass: "border-error-subtle bg-error-subtle/40",
+        titleClass: "text-error-text",
+    },
+    {
+        key: "schedule",
+        title: "Schedule",
+        subtitle: "Important, Not Urgent",
+        min: 5,
+        max: 7,
+        dropPriority: 6,
+        boxClass: "border-warning-subtle bg-warning-subtle/40",
+        titleClass: "text-warning-text",
+    },
+    {
+        key: "delegate",
+        title: "Delegate",
+        subtitle: "Urgent, Not Important",
+        min: 3,
+        max: 4,
+        dropPriority: 4,
+        boxClass: "border-info-subtle bg-info-subtle/60",
+        titleClass: "text-info-text",
+    },
+    {
+        key: "eliminate",
+        title: "Eliminate",
+        subtitle: "Not Urgent, Not Important",
+        min: 0,
+        max: 2,
+        dropPriority: 1,
+        boxClass: "border-border bg-surface-subtle",
+        titleClass: "text-text-secondary",
+    },
+];
+
+function quadrantOf(priority: number): Quadrant {
+    return (
+        QUADRANTS.find((q) => priority >= q.min && priority <= q.max) ??
+        QUADRANTS[QUADRANTS.length - 1]
+    );
+}
+
 export default function IDSIndex({
     issues,
     users,
@@ -63,6 +125,11 @@ export default function IDSIndex({
     const [createOpen, setCreateOpen] = useState(false);
     const [editIssue, setEditIssue] = useState<Issue | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [draggedId, setDraggedId] = useState<number | null>(null);
+    const [dragOverKey, setDragOverKey] = useState<Quadrant["key"] | null>(
+        null,
+    );
+    const canEdit = isLeader || isMember;
 
     // Create form
     const createForm = useForm({
@@ -127,9 +194,25 @@ export default function IDSIndex({
         });
     };
 
+    // Native HTML5 drag-drop, sama seperti Kanban — pindah kuadran = update priority
+    const onDrop = (q: Quadrant) => {
+        setDragOverKey(null);
+        if (draggedId === null) return;
+        const issue = issues.data.find((i) => i.id === draggedId);
+        setDraggedId(null);
+        if (!issue || quadrantOf(issue.priority).key === q.key) return;
+        router.patch(
+            route("ids.update", issue.id),
+            { priority: q.dropPriority },
+            { preserveScroll: true },
+        );
+    };
+
     const issueList = issues.data;
-    const open = issueList.filter((i) => i.status === "open").length;
-    const resolved = issueList.filter((i) => i.status === "resolved").length;
+    const openIssues = issueList.filter((i) => i.status === "open");
+    const resolvedIssues = issueList.filter((i) => i.status === "resolved");
+    const open = openIssues.length;
+    const resolved = resolvedIssues.length;
 
     return (
         <AuthenticatedLayout>
@@ -175,6 +258,155 @@ export default function IDSIndex({
                 ))}
             </div>
 
+            {/* Eisenhower Matrix */}
+            <div className="mb-xl grid grid-cols-1 gap-lg md:grid-cols-2">
+                {QUADRANTS.map((q) => {
+                    const items = openIssues.filter(
+                        (i) => quadrantOf(i.priority).key === q.key,
+                    );
+                    return (
+                        <div
+                            key={q.key}
+                            onDragOver={(e) => {
+                                if (!canEdit) return;
+                                e.preventDefault();
+                                setDragOverKey(q.key);
+                            }}
+                            onDragLeave={(e) => {
+                                if (
+                                    !e.currentTarget.contains(
+                                        e.relatedTarget as Node,
+                                    )
+                                )
+                                    setDragOverKey(null);
+                            }}
+                            onDrop={() => onDrop(q)}
+                            className={`flex min-h-[220px] flex-col rounded-[var(--radius-lg)] border-2 p-md transition-colors ${q.boxClass} ${
+                                dragOverKey === q.key
+                                    ? "border-dashed !border-primary"
+                                    : ""
+                            }`}
+                        >
+                            <div className="mb-md flex items-start justify-between gap-sm">
+                                <div>
+                                    <p
+                                        className={`text-sm font-semibold ${q.titleClass}`}
+                                    >
+                                        {q.title}
+                                    </p>
+                                    <p className="text-xs text-text-muted">
+                                        {q.subtitle} · Skala {q.min}–{q.max}
+                                    </p>
+                                </div>
+                                <span className="rounded-full bg-white px-sm py-xs text-xs font-semibold tabular-nums text-text-secondary">
+                                    {items.length}
+                                </span>
+                            </div>
+
+                            <div className="flex max-h-[360px] flex-1 flex-col gap-sm overflow-y-auto pr-xs">
+                                {items.length === 0 && (
+                                    <p className="m-auto text-xs text-text-muted">
+                                        {canEdit
+                                            ? "Drag issue ke sini"
+                                            : "Kosong"}
+                                    </p>
+                                )}
+                                {items.map((issue) => (
+                                    <div
+                                        key={issue.id}
+                                        draggable={canEdit}
+                                        onDragStart={() =>
+                                            setDraggedId(issue.id)
+                                        }
+                                        onDragEnd={() => {
+                                            setDraggedId(null);
+                                            setDragOverKey(null);
+                                        }}
+                                        className={`rounded-[var(--radius-md)] border border-border bg-white p-sm shadow-[var(--shadow-sm)] ${
+                                            canEdit
+                                                ? "cursor-grab active:cursor-grabbing"
+                                                : ""
+                                        } ${draggedId === issue.id ? "opacity-50" : ""}`}
+                                    >
+                                        <div className="flex items-start gap-sm">
+                                            <span
+                                                className={`text-sm font-semibold tabular-nums ${priorityClass(issue.priority)}`}
+                                            >
+                                                {issue.priority}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[13px] font-medium text-text-primary break-words">
+                                                    {issue.title}
+                                                </p>
+                                                {issue.description && (
+                                                    <p
+                                                        className="mt-0.5 text-xs text-text-muted line-clamp-2"
+                                                        title={issue.description}
+                                                    >
+                                                        {issue.description}
+                                                    </p>
+                                                )}
+                                                <div className="mt-xs flex flex-wrap items-center gap-sm text-xs text-text-secondary">
+                                                    <span>
+                                                        {issue.owner?.name ??
+                                                            "Tanpa owner"}
+                                                    </span>
+                                                    {issue.todo_count > 0 && (
+                                                        <span className="rounded-full bg-primary-subtle px-sm text-primary-text">
+                                                            {issue.todo_count}{" "}
+                                                            to-do
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {canEdit && (
+                                            <div className="mt-sm flex items-center justify-end gap-xs">
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        openEdit(issue)
+                                                    }
+                                                >
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        resolve(issue.id)
+                                                    }
+                                                >
+                                                    Solve
+                                                </Button>
+                                                {isLeader && (
+                                                    <Button
+                                                        variant="danger"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            setDeleteId(
+                                                                issue.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        Hapus
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Resolved */}
+            <h2 className="mb-md text-sm font-semibold text-text-primary">
+                Resolved ({resolvedIssues.length})
+            </h2>
             <div className="overflow-x-auto">
                 <Table>
                     <TableHeader>
@@ -195,32 +427,22 @@ export default function IDSIndex({
                             <TableHead className="min-w-[100px]">
                                 Owner
                             </TableHead>
-                            <TableHead className="min-w-[80px]">
-                                Status
-                            </TableHead>
-                            <TableHead className="w-[180px]" />
+                            <TableHead className="w-[140px]" />
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {issueList.length === 0 && (
+                        {resolvedIssues.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={8}>
+                                <TableCell colSpan={7}>
                                     <EmptyState
-                                        title="Tidak ada issue"
-                                        description="Semua aman! Belum ada issue yang di-identify."
+                                        title="Belum ada issue resolved"
+                                        description="Issue yang di-solve bakal muncul di sini."
                                     />
                                 </TableCell>
                             </TableRow>
                         )}
-                        {issueList.map((issue) => (
-                            <TableRow
-                                key={issue.id}
-                                className={
-                                    issue.status === "resolved"
-                                        ? "opacity-50"
-                                        : ""
-                                }
-                            >
+                        {resolvedIssues.map((issue) => (
+                            <TableRow key={issue.id}>
                                 <TableCell className="w-12">
                                     <span
                                         className={`text-[var(--font-base)] font-semibold ${priorityClass(issue.priority)}`}
@@ -284,17 +506,8 @@ export default function IDSIndex({
                                     {issue.owner?.name ?? "—"}
                                 </TableCell>
                                 <TableCell>
-                                    {issue.status === "open" ? (
-                                        <Badge variant="error">Open</Badge>
-                                    ) : (
-                                        <Badge variant="success">
-                                            Resolved
-                                        </Badge>
-                                    )}
-                                </TableCell>
-                                <TableCell>
                                     <div className="flex items-center justify-end gap-sm">
-                                        {(isLeader || isMember) && (
+                                        {canEdit && (
                                             <Button
                                                 variant="secondary"
                                                 size="sm"
@@ -303,18 +516,6 @@ export default function IDSIndex({
                                                 Edit
                                             </Button>
                                         )}
-                                        {issue.status === "open" &&
-                                            (isLeader || isMember) && (
-                                                <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        resolve(issue.id)
-                                                    }
-                                                >
-                                                    Solve
-                                                </Button>
-                                            )}
                                         {isLeader && (
                                             <Button
                                                 variant="danger"
@@ -434,6 +635,9 @@ export default function IDSIndex({
                                             )
                                         }
                                     />
+                                    <p className="text-xs text-text-muted">
+                                        Kuadran: {quadrantOf(createForm.data.priority).title}
+                                    </p>
                                 </div>
                                 <div className="flex flex-col gap-xs">
                                     <Label htmlFor="c-owner">Owner</Label>
@@ -578,6 +782,9 @@ export default function IDSIndex({
                                             )
                                         }
                                     />
+                                    <p className="text-xs text-text-muted">
+                                        Kuadran: {quadrantOf(editForm.data.priority).title}
+                                    </p>
                                 </div>
                                 <div className="flex flex-col gap-xs">
                                     <Label htmlFor="e-owner">Owner</Label>
