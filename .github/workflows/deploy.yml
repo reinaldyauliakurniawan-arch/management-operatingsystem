@@ -12,6 +12,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # public/build di-gitignore, jadi aset frontend harus di-build di sini
+      # supaya ikut ter-upload ke hosting.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npx vite build
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
